@@ -1,41 +1,70 @@
 ﻿using System;
-using System.Diagnostics;
 
 namespace VM
 {
     class Program
     {
+        static Memory memory;
+        static Processor processor;
+
         static void Main(string[] args)
         {
-            var memory = new Memory(256);
+            Console.CancelKeyPress += (o, e) => Environment.Exit(1);
 
-            var processor = new Processor(memory);
+            memory = new Memory(256 * 256);
+            processor = new Processor(memory);
 
-            memory.SetU8(0, (byte)Instruction.MOV_LIT_R1);
-            memory.SetU16(1, 0x1234);
-
-            memory.SetU8(3, (byte)Instruction.MOV_LIT_R2);
-            memory.SetU16(4, 0xabcd);
-
-            memory.SetU8(6, (byte)Instruction.ADD_REG_REG);
-            memory.SetU8(7, (byte)Register.R1);
-            memory.SetU8(8, (byte)Register.R2);
+            // Program
+            WriteInstruction(Instruction.MOV_MEM_REG, 0x0100, Register.R1);
+            WriteInstruction(Instruction.MOV_LIT_REG, 0x0001, Register.R2);
+            WriteInstruction(Instruction.ADD_REG_REG, Register.R1, Register.R2);
+            WriteInstruction(Instruction.MOV_REG_MEM, Register.ACC, 0x0100);
+            WriteInstruction(Instruction.JMP_NOT_EQ, 0x0003, (ushort)0x0000);
 
             // print initial state
             processor.Debug();
+            processor.ViewMemoryAt(processor.GetRegister(Register.IP));
+            processor.ViewMemoryAt(0x0100);
 
-            for (var i = 0; i < 3; i++)
+            while (true)
             {
+                Console.ReadLine();
+
                 // execute and print state
                 processor.Step();
 
                 processor.Debug();
+                processor.ViewMemoryAt(processor.GetRegister(Register.IP));
+                processor.ViewMemoryAt(0x0100);
             }
+        }
 
-            if (Debugger.IsAttached)
-            {
-                Console.ReadLine();
-            }
+        static void WriteInstruction(Instruction instruction, ushort value, Register register)
+        {
+            memory.WriteU8((byte)instruction);
+            memory.WriteU16(value);
+            memory.WriteU8((byte)register);
+        }
+
+        static void WriteInstruction(Instruction instruction, Register register1, Register register2)
+        {
+            memory.WriteU8((byte)instruction);
+            memory.WriteU8((byte)register1);
+            memory.WriteU8((byte)register2);
+        }
+
+        static void WriteInstruction(Instruction instruction, Register register, ushort value)
+        {
+            memory.WriteU8((byte)instruction);
+            memory.WriteU8((byte)register);
+            memory.WriteU16(value);
+        }
+
+        static void WriteInstruction(Instruction instruction, ushort value1, ushort value2)
+        {
+            memory.WriteU8((byte)instruction);
+            memory.WriteU16(value1);
+            memory.WriteU16(value2);
         }
     }
 }

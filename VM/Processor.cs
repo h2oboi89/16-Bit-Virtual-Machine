@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 
 namespace VM
 {
@@ -19,12 +20,17 @@ namespace VM
         {
             foreach (var register in (Register[])Enum.GetValues(typeof(Register)))
             {
-                Console.WriteLine($"{register.ToString().PadLeft(3, ' ')}: 0x{GetRegister(register).ToString("X").PadLeft(4, '0')}");
+                Console.WriteLine($"{register.ToString().PadLeft(3, ' ')}: {Utility.FormatU16(GetRegister(register))}");
             }
             Console.WriteLine();
         }
 
-        private ushort GetRegister(Register register)
+        public void ViewMemoryAt(ushort address)
+        {
+            Console.WriteLine($"{Utility.FormatU16(address)}: {string.Join(' ', memory.Skip(address).Take(8).Select(x => Utility.FormatU8(x)))}");
+        }
+
+        public ushort GetRegister(Register register)
         {
             return registers.GetU16((int)register * 2);
         }
@@ -56,24 +62,56 @@ namespace VM
 
         private void Execute(Instruction instruction)
         {
-            ushort literal;
+            ushort value;
+            ushort address;
+            Register registerTo;
+            Register registerFrom;
 
             switch (instruction)
             {
-                case Instruction.MOV_LIT_R1:
-                    literal = FetchU16();
-                    SetRegister(Register.R1, literal);
+                case Instruction.MOV_LIT_REG:
+                    value = FetchU16();
+                    registerTo = (Register)Fetch();
+
+                    SetRegister(registerTo, value);
                     return;
-                case Instruction.MOV_LIT_R2:
-                    literal = FetchU16();
-                    SetRegister(Register.R2, literal);
+
+                case Instruction.MOV_REG_REG:
+                    registerFrom = (Register)Fetch();
+                    registerTo = (Register)Fetch();
+
+                    SetRegister(registerTo, GetRegister(registerFrom));
                     return;
+
+                case Instruction.MOV_REG_MEM:
+                    registerFrom = (Register)Fetch();
+                    address = FetchU16();
+
+                    memory.SetU16(address, GetRegister(registerFrom));
+                    return;
+
+                case Instruction.MOV_MEM_REG:
+                    address = FetchU16();
+                    registerTo = (Register)Fetch();
+
+                    SetRegister(registerTo, memory.GetU16(address));
+                    return;
+
                 case Instruction.ADD_REG_REG:
                     var r1 = (Register)Fetch();
                     var r2 = (Register)Fetch();
-                    var r1Val = GetRegister(r1);
-                    var r2Val = GetRegister(r2);
-                    SetRegister(Register.ACC, (ushort)(r1Val + r2Val));
+
+                    SetRegister(Register.ACC, (ushort)(GetRegister(r1) + GetRegister(r2)));
+                    return;
+
+                case Instruction.JMP_NOT_EQ:
+                    value = FetchU16();
+                    address = FetchU16();
+
+                    if (value != GetRegister(Register.ACC))
+                    {
+                        SetRegister(Register.IP, address);
+                    }
                     return;
             }
         }

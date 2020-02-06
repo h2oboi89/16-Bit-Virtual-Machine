@@ -14,7 +14,10 @@ namespace VM
 
         private ushort stackFrameSize;
 
-        private const int DATA_SIZE = sizeof(ushort);
+        /// <summary>
+        /// Size of <see cref="Register"/>s and Literals.
+        /// </summary>
+        public const int DATA_SIZE = sizeof(ushort);
 
         /// <summary>
         /// Creates a new <see cref="Processor"/> with the specified <see cref="Memory"/>
@@ -26,8 +29,8 @@ namespace VM
 
             registers = new Memory(Enum.GetValues(typeof(Register)).Length * DATA_SIZE);
 
-            SetRegister(Register.SP, (ushort)(memory.Count() - DATA_SIZE));
-            SetRegister(Register.FP, (ushort)(memory.Count() - DATA_SIZE));
+            SetRegister(Register.SP, (ushort)(memory.MaxAddress - DATA_SIZE));
+            SetRegister(Register.FP, (ushort)(memory.MaxAddress - DATA_SIZE));
 
             stackFrameSize = 0;
         }
@@ -51,7 +54,7 @@ namespace VM
         /// <param name="count">Number of bytes to print.</param>
         public void ViewMemoryAt(ushort address, int count = 8)
         {
-            Console.WriteLine($"{Utility.FormatU16(address)}: {string.Join(' ', memory.Skip(address).Take(count).Select(x => Utility.FormatU8(x)))}");
+            Console.WriteLine($"{Utility.FormatU16(address)}: {string.Join(" ", memory.Skip(address).Take(count).Select(x => Utility.FormatU8(x)))}");
         }
 
         /// <summary>

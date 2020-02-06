@@ -20,11 +20,16 @@ namespace VM
         }
 
         /// <summary>
+        /// Highest available writeable address
+        /// </summary>
+        public int MaxAddress { get { return memory.Length - 1; } }
+
+        #region data type methods (U8, U16)
+        /// <summary>
         /// Retrieves a <see cref="byte"/> from memory at the specified location.
         /// </summary>
         /// <param name="address">Address to retrieve from.</param>
         /// <returns>Data at memory address.</returns>
-        #region data type methods (U8, U16)
         public byte GetU8(int address)
         {
             return memory[address];
@@ -67,7 +72,8 @@ namespace VM
         #region Used for flashing initial contents
         /// <summary>
         /// Address that is currently being written to.
-        /// Used by <see cref="WriteU8(byte)"/> and <see cref="WriteU16(ushort)"/>
+        /// Used by <see cref="WriteU8(byte)"/> and <see cref="WriteU16(ushort)"/>.
+        /// Automatically increments each time one of those methods is called.
         /// </summary>
         public int Address { get; set; }
 

@@ -1,9 +1,8 @@
-using NUnit.Framework;
-using System.Linq;
+﻿using NUnit.Framework;
 
 namespace VM.Tests
 {
-    public class Tests
+    public class ProcessorTests
     {
         private Memory memory;
         private Processor processor;
@@ -32,8 +31,8 @@ namespace VM.Tests
             Assert.That(processor.GetRegister(Register.R7), Is.Zero);
             Assert.That(processor.GetRegister(Register.R8), Is.Zero);
 
-            Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(memory.Count() - 2));
-            Assert.That(processor.GetRegister(Register.FP), Is.EqualTo(memory.Count() - 2));
+            Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(memory.MaxAddress - Processor.DATA_SIZE));
+            Assert.That(processor.GetRegister(Register.FP), Is.EqualTo(memory.MaxAddress - Processor.DATA_SIZE));
         }
 
         [Test]

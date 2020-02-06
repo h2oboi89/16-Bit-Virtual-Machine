@@ -1,0 +1,242 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>VM</name>
+    </assembly>
+    <members>
+        <member name="T:VM.Instruction">
+            <summary>
+            Instruction Opcodes for the Virtual Machine
+            </summary>
+        </member>
+        <member name="F:VM.Instruction.MOV_LIT_REG">
+            <summary>
+            Move Literal to <see cref="T:VM.Register"/>
+            </summary>
+        </member>
+        <member name="F:VM.Instruction.MOV_REG_REG">
+            <summary>
+            Move <see cref="T:VM.Register"/> to <see cref="T:VM.Register"/>
+            </summary>
+        </member>
+        <member name="F:VM.Instruction.MOV_REG_MEM">
+            <summary>
+            Move <see cref="T:VM.Register"/> to <see cref="T:VM.Memory"/>
+            </summary>
+        </member>
+        <member name="F:VM.Instruction.MOV_MEM_REG">
+            <summary>
+            Move <see cref="T:VM.Memory"/> to <see cref="T:VM.Register"/>
+            </summary>
+        </member>
+        <member name="F:VM.Instruction.ADD_REG_REG">
+            <summary>
+            Add <see cref="T:VM.Register"/> to <see cref="T:VM.Register"/>
+            </summary>
+        </member>
+        <member name="F:VM.Instruction.JMP_NOT_EQ">
+            <summary>
+            Jump if Not Equal
+            </summary>
+        </member>
+        <member name="F:VM.Instruction.PSH_LIT">
+            <summary>
+            Push Literal to Stack
+            </summary>
+        </member>
+        <member name="F:VM.Instruction.PSH_REG">
+            <summary>
+            Push <see cref="T:VM.Register"/> to Stack
+            </summary>
+        </member>
+        <member name="F:VM.Instruction.POP">
+            <summary>
+            Pop value from Stack
+            </summary>
+        </member>
+        <member name="F:VM.Instruction.CAL_LIT">
+            <summary>
+            Call Literal
+            </summary>
+        </member>
+        <member name="F:VM.Instruction.CAL_REG">
+            <summary>
+            Call <see cref="T:VM.Register"/>
+            </summary>
+        </member>
+        <member name="F:VM.Instruction.RET">
+            <summary>
+            Return from Call
+            </summary>
+        </member>
+        <member name="T:VM.Memory">
+            <summary>
+            Represents a block of memory in the Virtual Machine
+            </summary>
+        </member>
+        <member name="M:VM.Memory.#ctor(System.Int32)">
+            <summary>
+            Creates a new block of memory with the specified size.
+            </summary>
+            <param name="sizeInBytes">Size of memory in bytes.</param>
+        </member>
+        <member name="M:VM.Memory.GetU8(System.Int32)">
+            <summary>
+            Retrieves a <see cref="T:System.Byte"/> from memory at the specified location.
+            </summary>
+            <param name="address">Address to retrieve from.</param>
+            <returns>Data at memory address.</returns>
+        </member>
+        <member name="M:VM.Memory.SetU8(System.Int32,System.Byte)">
+            <summary>
+            Stores a <see cref="T:System.Byte"/> at the specified location in memory.
+            </summary>
+            <param name="address">Address to store at.</param>
+            <param name="value">Data to store.</param>
+        </member>
+        <member name="M:VM.Memory.GetU16(System.Int32)">
+            <summary>
+            Retrieves a <see cref="T:System.UInt16"/> from memory at the specified location.
+            </summary>
+            <param name="address">Address to retrieve from.</param>
+            <returns>Data at memory address.</returns>
+        </member>
+        <member name="M:VM.Memory.SetU16(System.Int32,System.UInt16)">
+            <summary>
+            Stores a <see cref="T:System.UInt16"/> at the specified location in memory.
+            </summary>
+            <param name="address">Address to store at.</param>
+            <param name="value">Data to store.</param>
+        </member>
+        <member name="P:VM.Memory.Address">
+            <summary>
+            Address that is currently being written to.
+            Used by <see cref="M:VM.Memory.WriteU8(System.Byte)"/> and <see cref="M:VM.Memory.WriteU16(System.UInt16)"/>
+            </summary>
+        </member>
+        <member name="M:VM.Memory.WriteU8(System.Byte)">
+            <summary>
+            Writes the specifed <see cref="T:System.Byte"/> to current memory location as specifed by <see cref="P:VM.Memory.Address"/>.
+            </summary>
+            <param name="value">Value to write to memory.</param>
+        </member>
+        <member name="M:VM.Memory.WriteU16(System.UInt16)">
+            <summary>
+            Writes the specifed <see cref="T:System.UInt16"/> to current memory location as specifed by <see cref="P:VM.Memory.Address"/>.
+            </summary>
+            <param name="value">Value to write to memory.</param>
+        </member>
+        <member name="M:VM.Memory.GetEnumerator">
+            <summary>
+            Returns an enumerator that iterates through the <see cref="T:VM.Memory"/>.
+            </summary>
+            <returns>An enumerator for the <see cref="T:VM.Memory"/></returns>
+        </member>
+        <member name="M:VM.Memory.System#Collections#IEnumerable#GetEnumerator">
+            <summary>
+            Returns an <see cref="T:System.Collections.IEnumerator"/> for the <see cref="T:VM.Memory"/>
+            </summary>
+            <returns>An <see cref="T:System.Collections.IEnumerator"/> for the <see cref="T:VM.Memory"/>.</returns>
+        </member>
+        <member name="T:VM.Processor">
+            <summary>
+            Central Processing Unit of the Virtual Machine
+            </summary>
+        </member>
+        <member name="M:VM.Processor.#ctor(VM.Memory)">
+            <summary>
+            Creates a new <see cref="T:VM.Processor"/> with the specified <see cref="T:VM.Memory"/>
+            </summary>
+            <param name="memory"><see cref="T:VM.Memory"/> that this <see cref="T:VM.Processor"/> can utilize.</param>
+        </member>
+        <member name="M:VM.Processor.Debug">
+            <summary>
+            Prints <see cref="T:VM.Register"/> values to the <see cref="T:System.Console"/>
+            </summary>
+        </member>
+        <member name="M:VM.Processor.ViewMemoryAt(System.UInt16,System.Int32)">
+            <summary>
+            Prints <see cref="T:VM.Memory"/> values to the <see cref="T:System.Console"/>.
+            </summary>
+            <param name="address">First <see cref="T:VM.Memory"/> address to print.</param>
+            <param name="count">Number of bytes to print.</param>
+        </member>
+        <member name="M:VM.Processor.GetRegister(VM.Register)">
+            <summary>
+            Gets value of <see cref="T:VM.Register"/>.
+            </summary>
+            <param name="register"><see cref="T:VM.Register"/> to get value from.</param>
+            <returns>value of the <see cref="T:VM.Register"/></returns>
+        </member>
+        <member name="M:VM.Processor.Step">
+            <summary>
+            Fetches and executes the next <see cref="T:VM.Instruction"/>.
+            </summary>
+        </member>
+        <member name="T:VM.Register">
+            <summary>
+            Virtual Machine <see cref="T:VM.Processor"/> register identifiers
+            </summary>
+        </member>
+        <member name="F:VM.Register.IP">
+            <summary>
+            Instruction Pointer
+            </summary>
+        </member>
+        <member name="F:VM.Register.ACC">
+            <summary>
+            Accumulator
+            </summary>
+        </member>
+        <member name="F:VM.Register.R1">
+            <summary>
+            Register #1
+            </summary>
+        </member>
+        <member name="F:VM.Register.R2">
+            <summary>
+            Register #2
+            </summary>
+        </member>
+        <member name="F:VM.Register.R3">
+            <summary>
+            Register #3
+            </summary>
+        </member>
+        <member name="F:VM.Register.R4">
+            <summary>
+            Register #4
+            </summary>
+        </member>
+        <member name="F:VM.Register.R5">
+            <summary>
+            Register #5
+            </summary>
+        </member>
+        <member name="F:VM.Register.R6">
+            <summary>
+            Register #6
+            </summary>
+        </member>
+        <member name="F:VM.Register.R7">
+            <summary>
+            Register #7
+            </summary>
+        </member>
+        <member name="F:VM.Register.R8">
+            <summary>
+            Register #8
+            </summary>
+        </member>
+        <member name="F:VM.Register.SP">
+            <summary>
+            Stack Pointer
+            </summary>
+        </member>
+        <member name="F:VM.Register.FP">
+            <summary>
+            Frame Pointer
+            </summary>
+        </member>
+    </members>
+</doc>

@@ -5,4 +5,12 @@
     <TargetFramework>netcoreapp2.1</TargetFramework>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <DocumentationFile>C:\Users\h2obo\workspace\csharp\16-Bit-Virtual-Machine\VM\VM.xml</DocumentationFile>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DocumentationFile>C:\Users\h2obo\workspace\csharp\16-Bit-Virtual-Machine\VM\VM.xml</DocumentationFile>
+  </PropertyGroup>
+
 </Project>

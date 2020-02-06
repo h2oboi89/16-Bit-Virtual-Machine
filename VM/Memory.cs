@@ -75,13 +75,13 @@ namespace VM
         /// Used by <see cref="WriteU8(byte)"/> and <see cref="WriteU16(ushort)"/>.
         /// Automatically increments each time one of those methods is called.
         /// </summary>
-        public int Address { get; set; }
+        internal int Address { get; set; }
 
         /// <summary>
         /// Writes the specifed <see cref="byte"/> to current memory location as specifed by <see cref="Address"/>.
         /// </summary>
         /// <param name="value">Value to write to memory.</param>
-        public void WriteU8(byte value)
+        internal void WriteU8(byte value)
         {
             memory[Address++] = value;
         }
@@ -90,7 +90,7 @@ namespace VM
         /// Writes the specifed <see cref="ushort"/> to current memory location as specifed by <see cref="Address"/>.
         /// </summary>
         /// <param name="value">Value to write to memory.</param>
-        public void WriteU16(ushort value)
+        internal void WriteU16(ushort value)
         {
             foreach (var b in Utility.GetBytes(value))
             {

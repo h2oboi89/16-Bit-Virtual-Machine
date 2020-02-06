@@ -9,9 +9,20 @@
             this.memory = memory;
         }
 
-        private void WriteInstruction(Instruction instruction)
+        public int Address
         {
-            memory.WriteU8((byte)instruction);
+            get { return memory.Address; }
+            set { memory.Address = value; }
+        }
+
+        public void WriteU8(byte value)
+        {
+            memory.WriteU8(value);
+        }
+
+        public void WriteU16(ushort value)
+        {
+            memory.WriteU16(value);
         }
 
         private void WriteRegister(Register register)
@@ -19,9 +30,9 @@
             memory.WriteU8((byte)register);
         }
 
-        public void WriteMemory(Instruction instruction)
+        public void WriteInstruction(Instruction instruction)
         {
-            WriteInstruction(instruction);
+            WriteU8((byte)instruction);
         }
 
         public void WriteMemory(Instruction instruction, ushort value)
@@ -30,28 +41,28 @@
             memory.WriteU16(value);
         }
 
-        public void WriteMemory(Instruction instruction, ushort value, Register register)
+        public void WriteInstruction(Instruction instruction, ushort value, Register register)
         {
             WriteInstruction(instruction);
             memory.WriteU16(value);
             WriteRegister(register);
         }
 
-        public void WriteMemory(Instruction instruction, Register register1, Register register2)
+        public void WriteInstruction(Instruction instruction, Register register1, Register register2)
         {
             WriteInstruction(instruction);
             WriteRegister(register1);
             WriteRegister(register2);
         }
 
-        public void WriteMemory(Instruction instruction, Register register, ushort value)
+        public void WriteInstruction(Instruction instruction, Register register, ushort value)
         {
             WriteInstruction(instruction);
             WriteRegister(register);
             memory.WriteU16(value);
         }
 
-        public void WriteMemory(Instruction instruction, ushort value1, ushort value2)
+        public void WriteInstruction(Instruction instruction, ushort value1, ushort value2)
         {
             WriteInstruction(instruction);
             memory.WriteU16(value1);

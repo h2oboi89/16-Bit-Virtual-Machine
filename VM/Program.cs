@@ -50,8 +50,8 @@ namespace VM
             flasher.WriteMemory(Instruction.PSH_LIT, 0x2222);
             flasher.WriteMemory(Instruction.PSH_LIT, 0x1111);
 
-            flasher.WriteMemory(Instruction.MOV_LIT_REG, 0x1234, Register.R1);
-            flasher.WriteMemory(Instruction.MOV_LIT_REG, 0x5678, Register.R2);
+            flasher.WriteInstruction(Instruction.MOV_LIT_REG, 0x1234, Register.R1);
+            flasher.WriteInstruction(Instruction.MOV_LIT_REG, 0x5678, Register.R2);
 
             flasher.WriteMemory(Instruction.PSH_LIT, 0x0000);
 
@@ -65,10 +65,10 @@ namespace VM
             flasher.WriteMemory(Instruction.PSH_LIT, 0x0304);
             flasher.WriteMemory(Instruction.PSH_LIT, 0x0506);
 
-            flasher.WriteMemory(Instruction.MOV_LIT_REG, 0x0708, Register.R1);
-            flasher.WriteMemory(Instruction.MOV_LIT_REG, 0x090a, Register.R8);
+            flasher.WriteInstruction(Instruction.MOV_LIT_REG, 0x0708, Register.R1);
+            flasher.WriteInstruction(Instruction.MOV_LIT_REG, 0x090a, Register.R8);
 
-            flasher.WriteMemory(Instruction.RET);
+            flasher.WriteInstruction(Instruction.RET);
         }
     }
 }

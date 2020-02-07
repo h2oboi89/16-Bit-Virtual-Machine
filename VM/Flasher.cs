@@ -35,7 +35,13 @@
             WriteU8((byte)instruction);
         }
 
-        public void WriteMemory(Instruction instruction, ushort value)
+        public void WriteInstruction(Instruction instruction, Register register)
+        {
+            WriteInstruction(instruction);
+            WriteRegister(register);
+        }
+
+        public void WriteInstruction(Instruction instruction, ushort value)
         {
             WriteInstruction(instruction);
             memory.WriteU16(value);

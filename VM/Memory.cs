@@ -22,7 +22,7 @@ namespace VM
         /// <summary>
         /// Highest available writeable address
         /// </summary>
-        public int MaxAddress { get { return memory.Length - 1; } }
+        public ushort MaxAddress { get { return (ushort)(memory.Length - 1); } }
 
         #region data type methods (U8, U16)
         /// <summary>
@@ -30,7 +30,7 @@ namespace VM
         /// </summary>
         /// <param name="address">Address to retrieve from.</param>
         /// <returns>Data at memory address.</returns>
-        public byte GetU8(int address)
+        public byte GetU8(ushort address)
         {
             return memory[address];
         }
@@ -40,7 +40,7 @@ namespace VM
         /// </summary>
         /// <param name="address">Address to store at.</param>
         /// <param name="value">Data to store.</param>
-        public void SetU8(int address, byte value)
+        public void SetU8(ushort address, byte value)
         {
             memory[address] = value;
         }
@@ -50,7 +50,7 @@ namespace VM
         /// </summary>
         /// <param name="address">Address to retrieve from.</param>
         /// <returns>Data at memory address.</returns>
-        public ushort GetU16(int address)
+        public ushort GetU16(ushort address)
         {
             return (ushort)((memory[address] << 8) | memory[address + 1]);
         }
@@ -60,7 +60,7 @@ namespace VM
         /// </summary>
         /// <param name="address">Address to store at.</param>
         /// <param name="value">Data to store.</param>
-        public void SetU16(int address, ushort value)
+        public void SetU16(ushort address, ushort value)
         {
             foreach (var b in Utility.GetBytes(value))
             {

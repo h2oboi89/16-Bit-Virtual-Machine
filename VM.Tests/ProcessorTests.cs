@@ -1,4 +1,5 @@
-﻿using NUnit.Framework;
+﻿#pragma warning disable CA1822 // Mark members as static
+using NUnit.Framework;
 
 namespace VM.Tests
 {
@@ -167,3 +168,4 @@ namespace VM.Tests
         // invalid memory accesses
     }
 }
+#pragma warning restore CA1822 // Mark members as static

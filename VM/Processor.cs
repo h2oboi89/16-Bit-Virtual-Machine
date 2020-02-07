@@ -64,12 +64,12 @@ namespace VM
         /// <returns>value of the <see cref="Register"/></returns>
         public ushort GetRegister(Register register)
         {
-            return registers.GetU16((int)register * DATA_SIZE);
+            return registers.GetU16((ushort)((byte)register * DATA_SIZE));
         }
 
         private void SetRegister(Register register, ushort value)
         {
-            registers.SetU16((int)register * DATA_SIZE, value);
+            registers.SetU16((ushort)((byte)register * DATA_SIZE), value);
         }
 
         private byte Fetch()

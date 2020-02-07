@@ -46,24 +46,24 @@ namespace VM
             var flasher = new Flasher(memory);
 
             // Main Program
-            flasher.WriteMemory(Instruction.PSH_LIT, 0x3333);
-            flasher.WriteMemory(Instruction.PSH_LIT, 0x2222);
-            flasher.WriteMemory(Instruction.PSH_LIT, 0x1111);
+            flasher.WriteInstruction(Instruction.PSH_LIT, 0x3333);
+            flasher.WriteInstruction(Instruction.PSH_LIT, 0x2222);
+            flasher.WriteInstruction(Instruction.PSH_LIT, 0x1111);
 
             flasher.WriteInstruction(Instruction.MOV_LIT_REG, 0x1234, Register.R1);
             flasher.WriteInstruction(Instruction.MOV_LIT_REG, 0x5678, Register.R2);
 
-            flasher.WriteMemory(Instruction.PSH_LIT, 0x0000);
+            flasher.WriteInstruction(Instruction.PSH_LIT, (ushort)0x0000);
 
-            flasher.WriteMemory(Instruction.CAL_LIT, subroutineAddress);
-            flasher.WriteMemory(Instruction.PSH_LIT, 0x4444);
+            flasher.WriteInstruction(Instruction.CAL_LIT, subroutineAddress);
+            flasher.WriteInstruction(Instruction.PSH_LIT, 0x4444);
 
             // Subroutine
             memory.Address = subroutineAddress;
 
-            flasher.WriteMemory(Instruction.PSH_LIT, 0x0102);
-            flasher.WriteMemory(Instruction.PSH_LIT, 0x0304);
-            flasher.WriteMemory(Instruction.PSH_LIT, 0x0506);
+            flasher.WriteInstruction(Instruction.PSH_LIT, 0x0102);
+            flasher.WriteInstruction(Instruction.PSH_LIT, 0x0304);
+            flasher.WriteInstruction(Instruction.PSH_LIT, 0x0506);
 
             flasher.WriteInstruction(Instruction.MOV_LIT_REG, 0x0708, Register.R1);
             flasher.WriteInstruction(Instruction.MOV_LIT_REG, 0x090a, Register.R8);

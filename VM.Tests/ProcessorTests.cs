@@ -16,6 +16,11 @@ namespace VM.Tests
             processor = new Processor(memory);
         }
 
+        private void AssertThatIpRegisterIsEqualTo(ushort value)
+        {
+            Assert.That(processor.GetRegister(Register.IP), Is.EqualTo(value));
+        }
+
         [Test]
         public void Processor_Initializes_WithSpecifiedValues()
         {
@@ -42,7 +47,7 @@ namespace VM.Tests
 
             processor.Step();
 
-            Assert.That(processor.GetRegister(Register.IP), Is.EqualTo(4));
+            AssertThatIpRegisterIsEqualTo(4);
             Assert.That(processor.GetRegister(Register.R1), Is.EqualTo(0x1234));
         }
 
@@ -55,7 +60,7 @@ namespace VM.Tests
             processor.Step();
             processor.Step();
 
-            Assert.That(processor.GetRegister(Register.IP), Is.EqualTo(7));
+            AssertThatIpRegisterIsEqualTo(7);
             Assert.That(processor.GetRegister(Register.R2), Is.EqualTo(0x1234));
         }
 
@@ -68,7 +73,7 @@ namespace VM.Tests
             processor.Step();
             processor.Step();
 
-            Assert.That(processor.GetRegister(Register.IP), Is.EqualTo(8));
+            AssertThatIpRegisterIsEqualTo(8);
             Assert.That(memory.GetU16(0x0010), Is.EqualTo(0x1234));
         }
 
@@ -81,7 +86,7 @@ namespace VM.Tests
 
             processor.Step();
 
-            Assert.That(processor.GetRegister(Register.IP), Is.EqualTo(4));
+            AssertThatIpRegisterIsEqualTo(4);
             Assert.That(processor.GetRegister(Register.R1), Is.EqualTo(0x1234));
         }
 
@@ -96,44 +101,68 @@ namespace VM.Tests
             processor.Step();
             processor.Step();
 
-            Assert.That(processor.GetRegister(Register.IP), Is.EqualTo(11));
+            AssertThatIpRegisterIsEqualTo(11);
             Assert.That(processor.GetRegister(Register.ACC), Is.EqualTo(0x1234));
         }
 
         [Test]
         public void JumpNotEqual_DoesNothingIfEqual()
         {
-            var answer = 42;
-            Assert.That(answer, Is.EqualTo(42), "Some useful error message");
+            flasher.WriteInstruction(Instruction.JMP_NOT_EQ, (ushort)0x0000, 0x10);
+
+            processor.Step();
+
+            AssertThatIpRegisterIsEqualTo(5);
         }
 
         [Test]
         public void JumpNotEqual_ChangesIpRegisterIfNotEqual()
         {
-            var answer = 42;
-            Assert.That(answer, Is.EqualTo(42), "Some useful error message");
+            flasher.WriteInstruction(Instruction.JMP_NOT_EQ, 0x0001, 0x10);
+
+            processor.Step();
+
+            AssertThatIpRegisterIsEqualTo(0x10);
         }
 
         [Test]
         public void PushLiteral_PutsLiteralOnStack()
         {
-            var answer = 42;
-            Assert.That(answer, Is.EqualTo(42), "Some useful error message");
+            flasher.WriteInstruction(Instruction.PSH_LIT, 0x1234);
+
+            processor.Step();
+
+            AssertThatIpRegisterIsEqualTo(3);
+            Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(memory.MaxAddress - 2 * Processor.DATA_SIZE));
+            Assert.That(memory.GetU16((ushort)(memory.MaxAddress - Processor.DATA_SIZE)), Is.EqualTo(0x1234));
         }
 
         [Test]
         public void PushRegister_PutsRegisterContentsOnStack()
         {
-            var answer = 42;
-            Assert.That(answer, Is.EqualTo(42), "Some useful error message");
+            flasher.WriteInstruction(Instruction.MOV_LIT_REG, 0x1234, Register.R1);
+            flasher.WriteInstruction(Instruction.PSH_REG, Register.R1);
+
+            processor.Step();
+            processor.Step();
+
+            AssertThatIpRegisterIsEqualTo(6);
+            Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(memory.MaxAddress - 2 * Processor.DATA_SIZE));
+            Assert.That(memory.GetU16((ushort)(memory.MaxAddress - Processor.DATA_SIZE)), Is.EqualTo(0x1234));
         }
 
         [Test]
-        public void Pop_RemovesTopValueFromStack()
+        public void Pop_RemovesValueFromStackAndPutsItInRegister()
         {
-            // Push multiple values and then pop them all
-            var answer = 42;
-            Assert.That(answer, Is.EqualTo(42), "Some useful error message");
+            flasher.WriteInstruction(Instruction.PSH_LIT, 0x1234);
+            flasher.WriteInstruction(Instruction.POP, Register.R1);
+
+            processor.Step();
+            processor.Step();
+
+            AssertThatIpRegisterIsEqualTo(5);
+            Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(memory.MaxAddress - Processor.DATA_SIZE));
+            Assert.That(processor.GetRegister(Register.R1), Is.EqualTo(0x1234));
         }
 
         // pop with empty stack?

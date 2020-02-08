@@ -5,7 +5,7 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{0205CEF5-FBF3-4BB6-828E-9AEA54F6294A}</ProjectGuid>
-    <OutputType>Exe</OutputType>
+    <OutputType>Library</OutputType>
     <RootNamespace>VM</RootNamespace>
     <AssemblyName>VM</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
@@ -36,7 +36,8 @@
     <DocumentationFile>bin\Release\VM.xml</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup>
-    <StartupObject>VM.Program</StartupObject>
+    <StartupObject>
+    </StartupObject>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />

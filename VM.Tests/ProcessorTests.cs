@@ -17,16 +17,16 @@ namespace VM.Tests
             processor = new Processor(memory);
         }
 
-        private void AssertThatIpRegisterIsEqualTo(ushort value)
-        {
-            Assert.That(processor.GetRegister(Register.IP), Is.EqualTo(value));
-        }
-
         [Test]
         public void Processor_Initializes_WithSpecifiedValues()
         {
             Assert.That(processor.GetRegister(Register.IP), Is.Zero);
+            Assert.That(processor.GetRegister(Register.RA), Is.Zero);
             Assert.That(processor.GetRegister(Register.ACC), Is.Zero);
+            Assert.That(processor.GetRegister(Register.FLG), Is.Zero);
+
+            Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(memory.MaxAddress - Processor.DATA_SIZE));
+            Assert.That(processor.GetRegister(Register.FP), Is.EqualTo(memory.MaxAddress - Processor.DATA_SIZE));
 
             Assert.That(processor.GetRegister(Register.R1), Is.Zero);
             Assert.That(processor.GetRegister(Register.R2), Is.Zero);
@@ -37,8 +37,40 @@ namespace VM.Tests
             Assert.That(processor.GetRegister(Register.R7), Is.Zero);
             Assert.That(processor.GetRegister(Register.R8), Is.Zero);
 
-            Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(memory.MaxAddress - Processor.DATA_SIZE));
-            Assert.That(processor.GetRegister(Register.FP), Is.EqualTo(memory.MaxAddress - Processor.DATA_SIZE));
+            Assert.That(processor.GetRegister(Register.T1), Is.Zero);
+            Assert.That(processor.GetRegister(Register.T2), Is.Zero);
+            Assert.That(processor.GetRegister(Register.T3), Is.Zero);
+            Assert.That(processor.GetRegister(Register.T4), Is.Zero);
+            Assert.That(processor.GetRegister(Register.T5), Is.Zero);
+            Assert.That(processor.GetRegister(Register.T6), Is.Zero);
+            Assert.That(processor.GetRegister(Register.T7), Is.Zero);
+            Assert.That(processor.GetRegister(Register.T8), Is.Zero);
+        }
+
+        [Test]
+        public void LDV_LoadsValueIntoRegister()
+        {
+            flasher.WriteInstruction(Instruction.LDV, 0x1234, Register.R1);
+
+            processor.Step();
+
+            Assert.That(processor.GetRegister(Register.IP), Is.EqualTo(4));
+
+            Assert.That(processor.GetRegister(Register.R1), Is.EqualTo(0x1234));
+        }
+
+        [Test]
+        public void STV_StoresValueIntoMemory()
+        {
+            flasher.WriteInstruction(Instruction.STV, 0x1234, 0x10);
+
+            Assert.That(memory.GetU16(0x10), Is.Zero);
+
+            processor.Step();
+
+            Assert.That(processor.GetRegister(Register.IP), Is.EqualTo(5));
+
+            Assert.That(memory.GetU16(0x10), Is.EqualTo(0x1234));
         }
     }
 }

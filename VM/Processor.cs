@@ -36,28 +36,6 @@ namespace VM
         }
 
         /// <summary>
-        /// Prints <see cref="Register"/> values to the <see cref="Console"/>
-        /// </summary>
-        public void Debug()
-        {
-            foreach (var register in (Register[])Enum.GetValues(typeof(Register)))
-            {
-                Console.WriteLine($"{register.ToString().PadLeft(3, ' ')}: {Utility.FormatU16(GetRegister(register))}");
-            }
-            Console.WriteLine();
-        }
-
-        /// <summary>
-        /// Prints <see cref="Memory"/> values to the <see cref="Console"/>.
-        /// </summary>
-        /// <param name="address">First <see cref="Memory"/> address to print.</param>
-        /// <param name="count">Number of bytes to print.</param>
-        public void ViewMemoryAt(ushort address, int count = 8)
-        {
-            Console.WriteLine($"{Utility.FormatU16(address)}: {string.Join(" ", memory.Skip(address).Take(count).Select(x => Utility.FormatU8(x)))}");
-        }
-
-        /// <summary>
         /// Gets value of <see cref="Register"/>.
         /// </summary>
         /// <param name="register"><see cref="Register"/> to get value from.</param>
@@ -99,9 +77,23 @@ namespace VM
 
         private void Execute(Instruction instruction)
         {
+            ushort value;
+
             switch (instruction)
             {
-                // TODO: execute each instruction
+                case Instruction.LDV:
+                    value = FetchU16();
+                    var register = FetchRegister();
+
+                    SetRegister(register, value);
+                    return;
+
+                case Instruction.STV:
+                    value = FetchU16();
+                    var address = FetchU16();
+
+                    memory.SetU16(address, value);
+                    return;
             }
         }
 

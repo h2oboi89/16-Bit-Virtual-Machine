@@ -5,6 +5,7 @@
     /// </summary>
     public enum Register : byte
     {
+        #region System Registers
         /// <summary>
         /// Instruction Pointer. 
         /// Address of next <see cref="Instruction"/> to be executed.
@@ -55,44 +56,91 @@
         /// </summary>
         FLG,
         /// <summary>
-        /// Register #1
-        /// </summary>
-        R1,
-        /// <summary>
-        /// Register #2
-        /// </summary>
-        R2,
-        /// <summary>
-        /// Register #3
-        /// </summary>
-        R3,
-        /// <summary>
-        /// Register #4
-        /// </summary>
-        R4,
-        /// <summary>
-        /// Register #5
-        /// </summary>
-        R5,
-        /// <summary>
-        /// Register #6
-        /// </summary>
-        R6,
-        /// <summary>
-        /// Register #7
-        /// </summary>
-        R7,
-        /// <summary>
-        /// Register #8
-        /// </summary>
-        R8,
-        /// <summary>
         /// Stack Pointer
         /// </summary>
         SP,
         /// <summary>
         /// Frame Pointer
         /// </summary>
-        FP
+        FP,
+        #endregion
+
+        #region General Purpose Registers
+        /// <summary>
+        /// General purpose register.
+        /// </summary>
+        R1,
+        /// <summary>
+        /// General purpose register.
+        /// </summary>
+        R2,
+        /// <summary>
+        /// General purpose register.
+        /// </summary>
+        R3,
+        /// <summary>
+        /// General purpose register.
+        /// </summary>
+        R4,
+        /// <summary>
+        /// General purpose register.
+        /// </summary>
+        R5,
+        /// <summary>
+        /// General purpose register.
+        /// </summary>
+        R6,
+        /// <summary>
+        /// General purpose register.
+        /// </summary>
+        R7,
+        /// <summary>
+        /// General purpose register.
+        /// </summary>
+        R8,
+        #endregion
+
+        #region Temporary Registers
+        /// <summary>
+        /// General purpose register.
+        /// Not preserved during subroutines.
+        /// </summary>
+        T1,
+        /// <summary>
+        /// General purpose register.
+        /// Not preserved during subroutines.
+        /// </summary>
+        T2,
+        /// <summary>
+        /// General purpose register.
+        /// Not preserved during subroutines.
+        /// </summary>
+        T3,
+        /// <summary>
+        /// General purpose register.
+        /// Not preserved during subroutines.
+        /// </summary>
+        T4,
+        /// <summary>
+        /// General purpose register.
+        /// Not preserved during subroutines.
+        /// </summary>
+        T5,
+        /// <summary>
+        /// General purpose register.
+        /// Not preserved during subroutines.
+        /// </summary>
+        T6,
+        /// <summary>
+        /// General purpose register.
+        /// Not preserved during subroutines.
+        /// </summary>
+        T7,
+        /// <summary>
+        /// General purpose register.
+        /// Not preserved during subroutines.
+        /// </summary>
+        T8
+        #endregion
     }
 }

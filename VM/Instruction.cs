@@ -3,7 +3,7 @@
     /// <summary>
     /// Instruction Opcodes for the Virtual Machine
     /// </summary>
-    public enum Instruction : byte
+    public enum Instruction
     {
         #region Register Instructions
         /// <summary>

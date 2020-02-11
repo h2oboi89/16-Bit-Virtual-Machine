@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 
 namespace VM
@@ -16,6 +17,11 @@ namespace VM
         /// <param name="sizeInBytes">Size of memory in bytes.</param>
         public Memory(int sizeInBytes)
         {
+            if (sizeInBytes < 0 || sizeInBytes > ushort.MaxValue + 1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(sizeInBytes), "Must be in range [0x0000, 0x10000]");
+            }
+
             memory = new byte[sizeInBytes];
         }
 
@@ -23,6 +29,16 @@ namespace VM
         /// Highest available writeable address
         /// </summary>
         public ushort MaxAddress { get { return (ushort)(memory.Length - 1); } }
+
+        private bool ValidAddress(ushort address, int size) => address + size <= MaxAddress;
+
+        private IndexOutOfRangeException MemoryException(ushort address)
+        {
+            return new IndexOutOfRangeException(
+                $"Invalid memory address {Utility.FormatU16(address)}. " +
+                $"Valid Range: [{Utility.FormatU16(0)}, {Utility.FormatU16(MaxAddress)}]"
+                );
+        }
 
         #region data type methods (U8, U16)
         /// <summary>
@@ -32,6 +48,10 @@ namespace VM
         /// <returns>Data at memory address.</returns>
         public byte GetU8(ushort address)
         {
+            if (!ValidAddress(address, sizeof(byte))) {
+                throw MemoryException(address);
+            }
+
             return memory[address];
         }
 
@@ -42,6 +62,11 @@ namespace VM
         /// <param name="value">Data to store.</param>
         public void SetU8(ushort address, byte value)
         {
+            if (!ValidAddress(address, sizeof(byte)))
+            {
+                throw MemoryException(address);
+            }
+
             memory[address] = value;
         }
 
@@ -52,6 +77,11 @@ namespace VM
         /// <returns>Data at memory address.</returns>
         public ushort GetU16(ushort address)
         {
+            if (!ValidAddress(address, sizeof(ushort)))
+            {
+                throw MemoryException(address);
+            }
+
             return (ushort)((memory[address] << 8) | memory[address + 1]);
         }
 
@@ -118,7 +148,7 @@ namespace VM
         /// <returns>An <see cref="IEnumerator"/> for the <see cref="Memory"/>.</returns>
         IEnumerator IEnumerable.GetEnumerator()
         {
-            return memory.GetEnumerator();
+            return GetEnumerator();
         }
         #endregion
     }

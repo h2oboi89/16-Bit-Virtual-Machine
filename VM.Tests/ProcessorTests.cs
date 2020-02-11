@@ -12,11 +12,12 @@ namespace VM.Tests
         [SetUp]
         public void Setup()
         {
-            memory = new Memory(256);
+            memory = new Memory(0x100);
             flasher = new Flasher(memory);
             processor = new Processor(memory);
         }
 
+        #region Instructions
         [Test]
         public void Processor_Initializes_WithSpecifiedValues()
         {
@@ -25,8 +26,8 @@ namespace VM.Tests
             Assert.That(processor.GetRegister(Register.ACC), Is.Zero);
             Assert.That(processor.GetRegister(Register.FLG), Is.Zero);
 
-            Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(memory.MaxAddress - Processor.DATA_SIZE));
-            Assert.That(processor.GetRegister(Register.FP), Is.EqualTo(memory.MaxAddress - Processor.DATA_SIZE));
+            Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(memory.MaxAddress - Processor.DATASIZE));
+            Assert.That(processor.GetRegister(Register.FP), Is.EqualTo(memory.MaxAddress - Processor.DATASIZE));
 
             Assert.That(processor.GetRegister(Register.R1), Is.Zero);
             Assert.That(processor.GetRegister(Register.R2), Is.Zero);
@@ -72,6 +73,7 @@ namespace VM.Tests
 
             Assert.That(memory.GetU16(0x10), Is.EqualTo(0x1234));
         }
+        #endregion
     }
 }
 #pragma warning restore CA1822 // Mark members as static

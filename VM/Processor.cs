@@ -6,7 +6,7 @@ namespace VM
     /// <summary>
     /// Central Processing Unit of the Virtual Machine
     /// </summary>
-    public class Processor
+    public sealed class Processor
     {
         private readonly Memory memory;
 
@@ -17,7 +17,7 @@ namespace VM
         /// <summary>
         /// Size of <see cref="Register"/>s and Literals.
         /// </summary>
-        public const int DATA_SIZE = sizeof(ushort);
+        public const int DATASIZE = sizeof(ushort);
 
         /// <summary>
         /// Creates a new <see cref="Processor"/> with the specified <see cref="Memory"/>
@@ -25,12 +25,17 @@ namespace VM
         /// <param name="memory"><see cref="Memory"/> that this <see cref="Processor"/> can utilize.</param>
         public Processor(Memory memory)
         {
+            if (memory == null)
+            {
+                throw new ArgumentNullException(nameof(memory));
+            }
+            
             this.memory = memory;
 
-            registers = new Memory(Enum.GetValues(typeof(Register)).Length * DATA_SIZE);
+            registers = new Memory((ushort)((Enum.GetValues(typeof(Register)).Length + 1) * DATASIZE));
 
-            SetRegister(Register.SP, (ushort)(memory.MaxAddress - DATA_SIZE));
-            SetRegister(Register.FP, (ushort)(memory.MaxAddress - DATA_SIZE));
+            SetRegister(Register.SP, (ushort)(memory.MaxAddress - DATASIZE));
+            SetRegister(Register.FP, (ushort)(memory.MaxAddress - DATASIZE));
 
             stackFrameSize = 0;
         }
@@ -42,12 +47,12 @@ namespace VM
         /// <returns>value of the <see cref="Register"/></returns>
         public ushort GetRegister(Register register)
         {
-            return registers.GetU16((ushort)((byte)register * DATA_SIZE));
+            return registers.GetU16((ushort)((byte)register * DATASIZE));
         }
 
         private void SetRegister(Register register, ushort value)
         {
-            registers.SetU16((ushort)((byte)register * DATA_SIZE), value);
+            registers.SetU16((ushort)((byte)register * DATASIZE), value);
         }
 
         private byte FetchU8()

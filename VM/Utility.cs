@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Globalization;
 
 namespace VM
 {
@@ -6,12 +8,12 @@ namespace VM
     {
         public static string FormatU8(byte value)
         {
-            return FormatDateType(value.ToString("X"), sizeof(byte));
+            return FormatDateType(value.ToString("X", CultureInfo.InvariantCulture), sizeof(byte));
         }
 
         public static string FormatU16(ushort value)
         {
-            return FormatDateType(value.ToString("X"), sizeof(ushort));
+            return FormatDateType(value.ToString("X", CultureInfo.InvariantCulture), sizeof(ushort));
         }
 
         private static string FormatDateType(string hexValue, int size)

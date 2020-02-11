@@ -25,12 +25,7 @@ namespace VM
         /// <param name="memory"><see cref="Memory"/> that this <see cref="Processor"/> can utilize.</param>
         public Processor(Memory memory)
         {
-            if (memory == null)
-            {
-                throw new ArgumentNullException(nameof(memory));
-            }
-            
-            this.memory = memory;
+            this.memory = memory ?? throw new ArgumentNullException(nameof(memory));
 
             registers = new Memory((ushort)((Enum.GetValues(typeof(Register)).Length + 1) * DATASIZE));
 

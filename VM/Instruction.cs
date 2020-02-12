@@ -6,7 +6,8 @@
     public enum Instruction
     {
         /// <summary>
-        /// No Operation. Place holder instruction.
+        /// No Operation.
+        /// Does nothing aside from increment the <see cref="Register.PC"/>.
         /// Arguments: NONE.
         /// </summary>
         NOP,
@@ -31,38 +32,50 @@
 
         #region Load Instructions
         /// <summary>
+        /// Load Value into Register.
         /// Load value into <see cref="Register"/>.
         /// Arguments: Value (<see cref="ushort"/>), Destination (<see cref="Register"/>).
         /// </summary>
-        LDV,
+        LDVR,
         /// <summary>
+        /// Load value at Address into Register
         /// Load value from <see cref="Memory"/> into <see cref="Register"/>.
         /// Arguments: Address (<see cref="ushort"/>), Destination (<see cref="Register"/>).
         /// </summary>
-        LDA,
+        LDAR,
         /// <summary>
+        /// Load value at address in Register into Register.
         /// Load value from <see cref="Memory"/> pointed to by <see cref="Register"/> into another <see cref="Register"/>.
         /// Arguments: Address (<see cref="Register"/>), Destination (<see cref="Register"/>).
         /// </summary>
-        LDR,
+        LDRR,
         #endregion
 
         #region Store Instructions
         /// <summary>
-        /// Store value into <see cref="Memory"/>.
+        /// Store Value at Address.
+        /// Store value into <see cref="Memory"/> at address.
         /// Arguments: Value (<see cref="ushort"/>), Address (<see cref="ushort"/>).
         /// </summary>
-        STV,
+        STVA,
         /// <summary>
+        /// Store Value at address in Register.
+        /// Store value into <see cref="Memory"/> pointed to by <see cref="Register"/>.
+        /// Arguments: Value (<see cref="ushort"/>), Address (<see cref="Register"/>).
+        /// </summary>
+        STVR,
+        /// <summary>
+        /// Store value in Register at Address.
         /// Store value from <see cref="Register"/> into <see cref="Memory"/>.
         /// Arguments: Source (<see cref="Register"/>), Address (<see cref="ushort"/>).
         /// </summary>
-        STA,
+        STRA,
         /// <summary>
+        /// Store value in Register at address in Register.
         /// Store value from <see cref="Register"/> into <see cref="Memory"/> pointed to by <see cref="Register"/>.
         /// Arguments: Source (<see cref="Register"/>), Address (<see cref="Register"/>).
         /// </summary>
-        STR,
+        STRR,
         #endregion
 
         #region Arithmetic Instructions
@@ -110,23 +123,46 @@
         /// </summary>
         XOR,
         /// <summary>
-        /// Shift Register Left by specified amount. Maximum is 15. Result is stored in <see cref="Register.ACC"/> (Register &lt;&lt; Value).
+        /// Shift Register Left.
+        /// Shift value in register left by specified amount (Maximum is 15).
+        /// Result is stored in <see cref="Register.ACC"/> (Register &lt;&lt; Value).
         /// Arguments: Register (<see cref="Register"/>), Value (<see cref="byte"/>).
         /// </summary>
         SRL,
         /// <summary>
-        /// Shift Register Right by specified amount. Maximum is 15. Result is stored in <see cref="Register.ACC"/> (Register &gt;&gt; Value).
+        /// Shift Register Left Register
+        /// Shift value in register left by specified amount in register (Maximum is 15).
+        /// Result is stored in <see cref="Register.ACC"/> (Register &lt;&lt; Value).
+        /// Arguments: Register (<see cref="Register"/>), Value (<see cref="byte"/>).
+        /// </summary>
+        SRLR,
+        /// <summary>
+        /// Shift Register Right.
+        /// Shift value in register right by specified amount (Maximum is 15).
+        /// Result is stored in <see cref="Register.ACC"/> (Register &lt;&lt; Value).
         /// Arguments: Register (<see cref="Register"/>), Value (<see cref="byte"/>).
         /// </summary>
         SRR,
+        /// <summary>
+        /// Shift Register Right Register
+        /// Shift value in register right by specified amount in register (Maximum is 15).
+        /// Result is stored in <see cref="Register.ACC"/> (Register &lt;&lt; Value).
+        /// Arguments: Register (<see cref="Register"/>), Value (<see cref="byte"/>).
+        /// </summary>
+        SRRR,
         #endregion
 
         #region Subroutine Instructions
         /// <summary>
-        /// Call subroutine.
+        /// Call subroutine at address.
+        /// Argumemnts: Address (<see cref="ushort"/>.
+        /// </summary>
+        CALL,
+        /// <summary>
+        /// Call subroutine at address in Register.
         /// Arguments: Address (<see cref="Register"/>).
         /// </summary>
-        CAL,
+        CALLR,
         /// <summary>
         /// Return from subroutine.
         /// Arguments: NONE
@@ -139,12 +175,12 @@
         /// Jump to address.
         /// Arguments: Address (<see cref="ushort"/>).
         /// </summary>
-        JMP,
+        JUMP,
         /// <summary>
         /// Jump to address specified by <see cref="Register"/>.
         /// Arguments: Address (<see cref="Register"/>).
         /// </summary>
-        JMPR,
+        JUMPR,
         #endregion
 
         #region Logic Instructions
@@ -155,35 +191,77 @@
         /// </summary>
         CMP,
         /// <summary>
-        /// Jump if Less Than. Jumps to address pointed to by <see cref="Register"/> if <see cref="Register.FLAG"/> Less Than bit is set.
-        /// Arguments: Address (<see cref="Register"/>).
+        /// Jump if Less Than.
+        /// Jumps to address if <see cref="Flag.LESSTHAN"/> is set.
+        /// Arguments: Address (<see cref="ushort"/>).
         /// </summary>
         JLT,
         /// <summary>
-        /// Jump if Greater Than. Jumps to address pointed to by <see cref="Register"/> if <see cref="Register.FLAG"/> Greater Than bit is set.
+        /// Jump if Less Than.
+        /// Jumps to address pointed to by <see cref="Register"/> if <see cref="Flag.LESSTHAN"/> is set.
         /// Arguments: Address (<see cref="Register"/>).
+        /// </summary>
+        JLTR,
+        /// <summary>
+        /// Jump if Greater Than.
+        /// Jumps to address if <see cref="Flag.GREATERTHAN"/> is set.
+        /// Arguments: Address (<see cref="ushort"/>).
         /// </summary>
         JGT,
         /// <summary>
-        /// Jump if Equal. Jumps to address pointed to by <see cref="Register"/> if <see cref="Register.FLAG"/> Equal bit is set.
+        /// Jump if Greater Than.
+        /// Jumps to address pointed to by <see cref="Register"/> if <see cref="Flag.GREATERTHAN"/> is set.
         /// Arguments: Address (<see cref="Register"/>).
+        /// </summary>
+        JGTR,
+        /// <summary>
+        /// Jump if Equal.
+        /// Jumps to address if <see cref="Flag.EQUAL"/> is set.
+        /// Arguments: Address (<see cref="ushort"/>).
         /// </summary>
         JE,
         /// <summary>
-        /// Jump if Not Equal. Jumps to address pointed to by <see cref="Register"/> if <see cref="Register.FLAG"/> Equal bit is not set.
+        /// Jump if Equal.
+        /// Jumps to address pointed to by <see cref="Register"/> if <see cref="Flag.EQUAL"/> is set.
         /// Arguments: Address (<see cref="Register"/>).
+        /// </summary>
+        JER,
+        /// <summary>
+        /// Jump if Not Equal.
+        /// Jumps to address if <see cref="Flag.EQUAL"/> is not set.
+        /// Arguments: Address (<see cref="ushort"/>).
         /// </summary>
         JNE,
         /// <summary>
-        /// Jump if Zero. Jumps to address pointed to by <see cref="Register"/> if <see cref="Register.FLAG"/> Zero bit is set.
+        /// Jump if Not Equal.
+        /// Jumps to address pointed to by <see cref="Register"/> if <see cref="Flag.EQUAL"/> is not set.
         /// Arguments: Address (<see cref="Register"/>).
+        /// </summary>
+        JNER,
+        /// <summary>
+        /// Jump if Zero.
+        /// Jumps to address if <see cref="Flag.ZERO"/> is set.
+        /// Arguments: Address (<see cref="ushort"/>).
         /// </summary>
         JZ,
         /// <summary>
-        /// Jump if Not Zero. Jumps to address pointed to by <see cref="Register"/> if <see cref="Register.FLAG"/> Zero bit not is set.
+        /// Jump if Zero.
+        /// Jumps to address pointed to by <see cref="Register"/> if <see cref="Flag.ZERO"/> is set.
         /// Arguments: Address (<see cref="Register"/>).
         /// </summary>
+        JZR,
+        /// <summary>
+        /// Jump if Not Zero.
+        /// Jumps to address if <see cref="Flag.ZERO"/> not is set.
+        /// Arguments: Address (<see cref="ushort"/>).
+        /// </summary>
         JNZ,
+        /// <summary>
+        /// Jump if Not Zero.
+        /// Jumps to address pointed to by <see cref="Register"/> if <see cref="Flag.ZERO"/> not is set.
+        /// Arguments: Address (<see cref="Register"/>).
+        /// </summary>
+        JNZR,
         #endregion
 
         #region Stack Instructions
@@ -205,12 +283,7 @@
         PEEK,
         #endregion
 
-        #region System Instructions
-        /// <summary>
-        /// Perform system call.
-        /// Arguments: ???
-        /// </summary>
-        SYS,
+        #region Processor Instructions
         /// <summary>
         /// Program Halt.
         /// Arguments: NONE.
@@ -220,7 +293,7 @@
         /// Resets <see cref="Processor"/> back to initial state.
         /// Arguments: NONE.
         /// </summary>
-        RESET        
+        RESET
         #endregion
     }
 }

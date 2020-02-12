@@ -208,14 +208,14 @@ namespace VM
                     SetRegister(register, value);
                     return;
 
-                case Instruction.LDV:
+                case Instruction.LDVR:
                     value = FetchU16();
                     destination = FetchRegister();
 
                     SetRegister(destination, value);
                     return;
 
-                case Instruction.STV:
+                case Instruction.STVA:
                     value = FetchU16();
                     var address = FetchU16();
 

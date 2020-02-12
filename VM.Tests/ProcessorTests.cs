@@ -71,7 +71,7 @@ namespace VM.Tests
             {
                 flasher.Address = 0;
 
-                flasher.WriteInstruction(Instruction.LDV, 0x1234, register);
+                flasher.WriteInstruction(Instruction.LDVR, 0x1234, register);
 
                 Assert.That(() => processor.Step(), Throws.InvalidOperationException
                         .With.Message.EqualTo($"{Enum.GetName(typeof(Register), register)} register cannot be modified directly by code."));
@@ -119,7 +119,7 @@ namespace VM.Tests
         [Test]
         public void MOVE_MovesValueFromRegisterAToRegisterB()
         {
-            flasher.WriteInstruction(Instruction.LDV, 0x1234, Register.R1);
+            flasher.WriteInstruction(Instruction.LDVR, 0x1234, Register.R1);
             flasher.WriteInstruction(Instruction.MOVE, Register.R1, Register.R2);
 
             processor.Step();
@@ -133,7 +133,7 @@ namespace VM.Tests
         [Test]
         public void INC_IncrementsRegisterValue()
         {
-            flasher.WriteInstruction(Instruction.LDV, 0x1234, Register.R1);
+            flasher.WriteInstruction(Instruction.LDVR, 0x1234, Register.R1);
             flasher.WriteInstruction(Instruction.INC, Register.R1);
 
             processor.Step();
@@ -148,7 +148,7 @@ namespace VM.Tests
         [Test]
         public void INC_Overflow_WrapsAround()
         {
-            flasher.WriteInstruction(Instruction.LDV, ushort.MaxValue, Register.R1);
+            flasher.WriteInstruction(Instruction.LDVR, ushort.MaxValue, Register.R1);
             flasher.WriteInstruction(Instruction.INC, Register.R1);
 
             processor.Step();
@@ -163,7 +163,7 @@ namespace VM.Tests
         [Test]
         public void DEC_decrementsRegisterValue()
         {
-            flasher.WriteInstruction(Instruction.LDV, 0x1234, Register.R1);
+            flasher.WriteInstruction(Instruction.LDVR, 0x1234, Register.R1);
             flasher.WriteInstruction(Instruction.DEC, Register.R1);
 
             processor.Step();
@@ -178,7 +178,7 @@ namespace VM.Tests
         [Test]
         public void DEC_Underflow_WrapsAround()
         {
-            flasher.WriteInstruction(Instruction.LDV, ushort.MinValue, Register.R1);
+            flasher.WriteInstruction(Instruction.LDVR, ushort.MinValue, Register.R1);
             flasher.WriteInstruction(Instruction.DEC, Register.R1);
 
             processor.Step();
@@ -191,9 +191,9 @@ namespace VM.Tests
         }
 
         [Test]
-        public void LDV_LoadsValueIntoRegister()
+        public void LDVR_LoadsValueIntoRegister()
         {
-            flasher.WriteInstruction(Instruction.LDV, 0x1234, Register.R1);
+            flasher.WriteInstruction(Instruction.LDVR, 0x1234, Register.R1);
 
             processor.Step();
 
@@ -203,9 +203,9 @@ namespace VM.Tests
         }
 
         [Test]
-        public void STV_StoresValueIntoMemory()
+        public void STVA_StoresValueIntoMemory()
         {
-            flasher.WriteInstruction(Instruction.STV, 0x1234, 0x10);
+            flasher.WriteInstruction(Instruction.STVA, 0x1234, 0x10);
 
             Assert.That(memory.GetU16(0x10), Is.Zero);
 

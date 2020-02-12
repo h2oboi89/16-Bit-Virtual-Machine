@@ -175,7 +175,7 @@ namespace VM.Tests
             ExecuteProgram();
 
             Assert.That(processor.GetRegister(Register.R1), Is.EqualTo(0x1235));
-            Assert.That(processor.GetFlag(Flag.OVERFLOW), Is.False);
+            Assert.That(processor.IsSet(Flag.OVERFLOW), Is.False);
         }
 
         [Test]
@@ -187,7 +187,7 @@ namespace VM.Tests
             ExecuteProgram();
 
             Assert.That(processor.GetRegister(Register.R1), Is.EqualTo(ushort.MinValue));
-            Assert.That(processor.GetFlag(Flag.OVERFLOW), Is.True);
+            Assert.That(processor.IsSet(Flag.OVERFLOW), Is.True);
         }
 
         [Test]
@@ -199,7 +199,7 @@ namespace VM.Tests
             ExecuteProgram();
 
             Assert.That(processor.GetRegister(Register.R1), Is.EqualTo(0x1233));
-            Assert.That(processor.GetFlag(Flag.UNDERFLOW), Is.False);
+            Assert.That(processor.IsSet(Flag.UNDERFLOW), Is.False);
         }
 
         [Test]
@@ -211,7 +211,7 @@ namespace VM.Tests
             ExecuteProgram();
 
             Assert.That(processor.GetRegister(Register.R1), Is.EqualTo(ushort.MaxValue));
-            Assert.That(processor.GetFlag(Flag.UNDERFLOW), Is.True);
+            Assert.That(processor.IsSet(Flag.UNDERFLOW), Is.True);
         }
 
         [Test]

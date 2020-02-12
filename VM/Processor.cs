@@ -65,7 +65,7 @@ namespace VM
 
         private void ValidateRegister(Register register)
         {
-            if (!Enum.IsDefined(typeof(Register), register))
+            if (!register.IsValid())
             {
                 ResetAndThrow(new InvalidOperationException($"Unknown register {Utility.FormatU8((byte)register)}."));
             }
@@ -73,7 +73,7 @@ namespace VM
 
         private void ValidateInstruction(Instruction instruction)
         {
-            if (!Enum.IsDefined(typeof(Instruction), instruction))
+            if (!instruction.IsValid())
             {
                 ResetAndThrow(new InvalidOperationException($"Unknown instruction {Utility.FormatU8((byte)instruction)}."));
             }
@@ -91,16 +91,11 @@ namespace VM
             return registers.GetU16((ushort)((byte)register * DATASIZE));
         }
 
-        private static string GetRegisterName(Register register)
-        {
-            return Enum.GetName(typeof(Register), register);
-        }
-
         private void SetRegister(Register register, ushort value, bool direct = true)
         {
             if (register.IsPrivate() && direct)
             {
-                ResetAndThrow(new InvalidOperationException($"{GetRegisterName(register)} register cannot be modified directly by code."));
+                ResetAndThrow(new InvalidOperationException($"{register.Name()} register cannot be modified directly by code."));
             }
 
             registers.SetU16((ushort)((byte)register * DATASIZE), value);
@@ -137,33 +132,32 @@ namespace VM
 
         private void SetFlag(Flag flag)
         {
-            var currentValue = GetRegister(Register.FLAG);
-            var mask = (ushort)(0x0001 << (ushort)flag);
+            var value = GetRegister(Register.FLAG);
 
-            var value = (ushort)(currentValue | mask);
+            value = flag.Set(value);
+
             SetRegister(Register.FLAG, value, false);
         }
 
         private void ClearFlag(Flag flag)
         {
-            var currentValue = GetRegister(Register.FLAG);
-            var mask = (ushort)~(1 << (ushort)flag);
+            var value = GetRegister(Register.FLAG);
 
-            var value = (ushort)(currentValue & mask);
+            value = flag.Clear(value);
+
             SetRegister(Register.FLAG, value, false);
         }
 
         /// <summary>
-        /// Gets <see cref="Flag"/> value.
+        /// Determines if <see cref="Flag"/> is set.
         /// </summary>
-        /// <param name="flag"><see cref="Flag"/> to get.</param>
+        /// <param name="flag"><see cref="Flag"/> to check.</param>
         /// <returns>True if <see cref="Flag"/> is set; otherwise false.</returns>
-        public bool GetFlag(Flag flag)
+        public bool IsSet(Flag flag)
         {
             var value = GetRegister(Register.FLAG);
-            var flagValue = (value >> (ushort)flag) & 0x0001;
 
-            return flagValue != 0;
+            return flag.IsSet(value);
         }
 
         private void ClearFlags()

@@ -1,6 +1,5 @@
 ﻿using NUnit.Framework;
 using System;
-using System.Linq;
 
 namespace VM.Tests
 {
@@ -93,6 +92,27 @@ namespace VM.Tests
                 memory.SetU16(address, value);
 
                 Assert.That(memory.GetU16(address), Is.EqualTo(value));
+            }
+        }
+
+        [Test]
+        public void Clear_ErasesAllValues()
+        {
+            for (ushort i = 0; i < memory.MaxAddress; i++)
+            {
+                memory.SetU8(i, 0xff);
+            }
+
+            for (ushort i = 0; i < memory.MaxAddress; i++)
+            {
+                Assert.That(memory.GetU8(i), Is.Not.Zero);
+            }
+
+            memory.Clear();
+
+            for (ushort i = 0; i < memory.MaxAddress; i++)
+            {
+                Assert.That(memory.GetU8(i), Is.Zero);
             }
         }
     }

@@ -134,6 +134,19 @@
         }
 
         /// <summary>
+        /// Writes an <see cref="Instruction"/>, <see cref="Register"/>, and <see cref="byte"/> to memory.
+        /// </summary>
+        /// <param name="instruction"><see cref="Instruction"/> to write to memory.</param>
+        /// <param name="register"><see cref="Register"/> to write to memory.</param>
+        /// <param name="value">Value to write to memory.</param>
+        public void WriteInstruction(Instruction instruction, Register register, byte value)
+        {
+            WriteInstruction(instruction);
+            WriteRegister(register);
+            memory.WriteU8(value);
+        }
+
+        /// <summary>
         /// Writes an <see cref="Instruction"/> and two <see cref="ushort"/>s to memory.
         /// </summary>
         /// <param name="instruction"><see cref="Instruction"/> to write to memory.</param>

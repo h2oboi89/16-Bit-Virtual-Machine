@@ -133,7 +133,7 @@
         /// Shift Register Left Register
         /// Shift value in register left by specified amount in register (Maximum is 15).
         /// Result is stored in <see cref="Register.ACC"/> (Register &lt;&lt; Value).
-        /// Arguments: Register (<see cref="Register"/>), Value (<see cref="byte"/>).
+        /// Arguments: Register (<see cref="Register"/>), Value (<see cref="Register"/>).
         /// </summary>
         SRLR,
         /// <summary>
@@ -147,7 +147,7 @@
         /// Shift Register Right Register
         /// Shift value in register right by specified amount in register (Maximum is 15).
         /// Result is stored in <see cref="Register.ACC"/> (Register &lt;&lt; Value).
-        /// Arguments: Register (<see cref="Register"/>), Value (<see cref="byte"/>).
+        /// Arguments: Register (<see cref="Register"/>), Value (<see cref="Register"/>).
         /// </summary>
         SRRR,
         #endregion

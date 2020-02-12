@@ -48,14 +48,20 @@ namespace VM.Tests
             flasher.Address = 0;
         }
 
+        private void Reset()
+        {
+            flasher.WriteInstruction(Instruction.RESET);
+            processor.Step();
+            flasher.Address = 0;
+        }
+
         [Test]
         public void Constructor_NullMemory_ThrowsException()
         {
             Assert.That(() => new Processor(null), Throws.ArgumentNullException);
         }
 
-        [Test]
-        public void Constructor_InitializesRegisters()
+        private void AssertProcessorIsInInitialState()
         {
             Assert.That(processor.GetRegister(Register.PC), Is.Zero);
             Assert.That(processor.GetRegister(Register.RA), Is.Zero);
@@ -82,6 +88,12 @@ namespace VM.Tests
             Assert.That(processor.GetRegister(Register.T6), Is.Zero);
             Assert.That(processor.GetRegister(Register.T7), Is.Zero);
             Assert.That(processor.GetRegister(Register.T8), Is.Zero);
+        }
+
+        [Test]
+        public void Constructor_InitializesRegisters()
+        {
+            AssertProcessorIsInInitialState();
         }
 
         [Test]
@@ -340,6 +352,128 @@ namespace VM.Tests
             ExecuteProgram();
 
             Assert.That(processor.GetRegister(Register.ACC), Is.EqualTo(0xaa55));
+        }
+
+        [Test]
+        public void SRL_ShiftsRegisterLeftByAmount()
+        {
+            for (byte i = 0; i < 16; i++)
+            {
+                Reset();
+
+                flasher.WriteInstruction(Instruction.LDVR, 0x0001, Register.R1);
+                flasher.WriteInstruction(Instruction.SRL, Register.R1, i);
+
+                ExecuteProgram();
+
+                Assert.That(processor.GetRegister(Register.ACC), Is.EqualTo(0x0001 << i));
+            }
+        }
+
+        [Test]
+        public void SRL_ExcessiveShift_ZeroesOutRegister()
+        {
+            flasher.WriteInstruction(Instruction.LDVR, 0x0001, Register.R1);
+            flasher.WriteInstruction(Instruction.SRL, Register.R1, 16);
+
+            ExecuteProgram();
+
+            Assert.That(processor.GetRegister(Register.ACC), Is.Zero);
+        }
+
+        [Test]
+        public void SRLR_ShiftsRegisterLeftByAmountInRegister()
+        {
+            for (byte i = 0; i < 16; i++)
+            {
+                Reset();
+
+                flasher.WriteInstruction(Instruction.LDVR, 0x0001, Register.R1);
+                flasher.WriteInstruction(Instruction.LDVR, i, Register.R2);
+                flasher.WriteInstruction(Instruction.SRLR, Register.R1, Register.R2);
+
+                ExecuteProgram();
+
+                Assert.That(processor.GetRegister(Register.ACC), Is.EqualTo(0x0001 << i));
+            }
+        }
+
+        [Test]
+        public void SRLR_ExcessiveShift_ZeroesOutRegister()
+        {
+            flasher.WriteInstruction(Instruction.LDVR, 0x0001, Register.R1);
+            flasher.WriteInstruction(Instruction.LDVR, 16, Register.R2);
+            flasher.WriteInstruction(Instruction.SRLR, Register.R1, Register.R2);
+
+            ExecuteProgram();
+
+            Assert.That(processor.GetRegister(Register.ACC), Is.Zero);
+        }
+
+        [Test]
+        public void SRR_ShiftsRegisterRightByAmount()
+        {
+            for (byte i = 0; i < 16; i++)
+            {
+                Reset();
+
+                flasher.WriteInstruction(Instruction.LDVR, 0x8000, Register.R1);
+                flasher.WriteInstruction(Instruction.SRR, Register.R1, i);
+
+                ExecuteProgram();
+
+                Assert.That(processor.GetRegister(Register.ACC), Is.EqualTo(0x8000 >> i));
+            }
+        }
+
+        [Test]
+        public void SRR_ExcessiveShift_ZeroesOutRegister()
+        {
+            flasher.WriteInstruction(Instruction.LDVR, 0x8000, Register.R1);
+            flasher.WriteInstruction(Instruction.SRR, Register.R1, 16);
+
+            ExecuteProgram();
+
+            Assert.That(processor.GetRegister(Register.ACC), Is.Zero);
+        }
+
+        [Test]
+        public void SRRR_ShiftsRegisterLeftByAmountInRegister()
+        {
+            for (byte i = 0; i < 16; i++)
+            {
+                Reset();
+
+                flasher.WriteInstruction(Instruction.LDVR, 0x8000, Register.R1);
+                flasher.WriteInstruction(Instruction.LDVR, i, Register.R2);
+                flasher.WriteInstruction(Instruction.SRRR, Register.R1, Register.R2);
+
+                ExecuteProgram();
+
+                Assert.That(processor.GetRegister(Register.ACC), Is.EqualTo(0x8000 >> i));
+            }
+        }
+
+        [Test]
+        public void SRRR_ExcessiveShift_ZeroesOutRegister()
+        {
+            flasher.WriteInstruction(Instruction.LDVR, 0x8000, Register.R1);
+            flasher.WriteInstruction(Instruction.LDVR, 16, Register.R2);
+            flasher.WriteInstruction(Instruction.SRRR, Register.R1, Register.R2);
+
+            ExecuteProgram();
+
+            Assert.That(processor.GetRegister(Register.ACC), Is.Zero);
+        }
+
+        [Test]
+        public void RESET_ResetsProcessorToBeginningOfProgram()
+        {
+            flasher.WriteInstruction(Instruction.RESET);
+
+            processor.Step();
+
+            AssertProcessorIsInInitialState();
         }
 
         [Test]

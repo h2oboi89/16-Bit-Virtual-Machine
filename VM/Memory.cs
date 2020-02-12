@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections;
-using System.Collections.Generic;
 
 namespace VM
 {
@@ -40,6 +38,15 @@ namespace VM
                 );
         }
 
+        /// <summary>
+        /// Erases all memory contents back to default (zero).
+        /// </summary>
+        public void Clear()
+        {
+            Address = 0;
+            Array.Clear(memory, 0, memory.Length);
+        }
+
         #region data type methods (U8, U16)
         /// <summary>
         /// Retrieves a <see cref="byte"/> from memory at the specified location.
@@ -48,7 +55,8 @@ namespace VM
         /// <returns>Data at memory address.</returns>
         public byte GetU8(ushort address)
         {
-            if (!ValidAddress(address, sizeof(byte))) {
+            if (!ValidAddress(address, sizeof(byte)))
+            {
                 throw MemoryException(address);
             }
 

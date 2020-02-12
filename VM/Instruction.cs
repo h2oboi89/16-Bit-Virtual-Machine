@@ -10,7 +10,7 @@
         /// Does nothing aside from increment the <see cref="Register.PC"/>.
         /// Arguments: NONE.
         /// </summary>
-        NOP = 0,
+        NOP = default(ushort),
 
         #region Register Instructions
         /// <summary>

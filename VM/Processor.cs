@@ -75,9 +75,9 @@ namespace VM
             return Enum.GetName(typeof(Register), register);
         }
 
-        private void SetRegister(Register register, ushort value, bool code = true)
+        private void SetRegister(Register register, ushort value, bool direct = true)
         {
-            if (register.IsPrivate() && code)
+            if (register.IsPrivate() && direct)
             {
                 ResetAndThrow(new InvalidOperationException($"{GetRegisterName(register)} register cannot be modified directly by code."));
             }
@@ -155,11 +155,18 @@ namespace VM
             ValidateInstruction(instruction);
 
             ushort value;
+            ushort valueA;
+            ushort valueB;
+
+            ushort result;
+
             ushort address;
-            ushort currentValue;
+
             Register register;
             Register source;
             Register destination;
+            Register registerA;
+            Register registerB;
 
             // FUTURE: break up into Decode and Execute blocks
             switch (instruction)
@@ -182,15 +189,15 @@ namespace VM
                     ClearFlag(Flag.UNDERFLOW);
                     ClearFlag(Flag.OVERFLOW);
 
-                    currentValue = GetRegister(register);
-                    value = (ushort)(currentValue + 1);
+                    value = GetRegister(register);
+                    result = (ushort)(value + 1);
 
-                    if (currentValue > value)
+                    if (value > result)
                     {
                         SetFlag(Flag.OVERFLOW);
                     }
 
-                    SetRegister(register, value);
+                    SetRegister(register, result);
                     return;
 
                 case Instruction.DEC:
@@ -199,15 +206,15 @@ namespace VM
                     ClearFlag(Flag.UNDERFLOW);
                     ClearFlag(Flag.OVERFLOW);
 
-                    currentValue = GetRegister(register);
-                    value = (ushort)(currentValue - 1);
+                    value = GetRegister(register);
+                    result = (ushort)(value - 1);
 
-                    if (currentValue < value)
+                    if (value < result)
                     {
                         SetFlag(Flag.UNDERFLOW);
                     }
 
-                    SetRegister(register, value);
+                    SetRegister(register, result);
                     return;
 
                 case Instruction.LDVR:
@@ -269,6 +276,54 @@ namespace VM
                     address = GetRegister(destination);
 
                     memory.SetU16(address, value);
+                    return;
+
+                // TODO: Arithmetic Instructions
+
+                case Instruction.AND:
+                    registerA = FetchRegister();
+                    registerB = FetchRegister();
+
+                    valueA = GetRegister(registerA);
+                    valueB = GetRegister(registerB);
+
+                    result = (ushort)(valueA & valueB);
+
+                    SetRegister(Register.ACC, result, false);
+                    return;
+
+                case Instruction.OR:
+                    registerA = FetchRegister();
+                    registerB = FetchRegister();
+
+                    valueA = GetRegister(registerA);
+                    valueB = GetRegister(registerB);
+
+                    result = (ushort)(valueA | valueB);
+
+                    SetRegister(Register.ACC, result, false);
+                    return;
+
+                case Instruction.NOT:
+                    register = FetchRegister();
+
+                    value = GetRegister(register);
+
+                    result = (ushort)~value;
+
+                    SetRegister(Register.ACC, result, false);
+                    return;
+
+                case Instruction.XOR:
+                    registerA = FetchRegister();
+                    registerB = FetchRegister();
+
+                    valueA = GetRegister(registerA);
+                    valueB = GetRegister(registerB);
+
+                    result = (ushort)(valueA ^ valueB);
+
+                    SetRegister(Register.ACC, result, false);
                     return;
             }
         }

@@ -296,6 +296,53 @@ namespace VM.Tests
         }
 
         [Test]
+        public void AND_BinaryAndOfTwoRegisterValues()
+        {
+            flasher.WriteInstruction(Instruction.LDVR, 0x00ff, Register.R1);
+            flasher.WriteInstruction(Instruction.LDVR, 0xaaaa, Register.R2);
+            flasher.WriteInstruction(Instruction.AND, Register.R1, Register.R2);
+
+            ExecuteProgram();
+
+            Assert.That(processor.GetRegister(Register.ACC), Is.EqualTo(0x00aa));
+        }
+
+        [Test]
+        public void OR_BinaryOrOfTwoRegisterValues()
+        {
+            flasher.WriteInstruction(Instruction.LDVR, 0x0055, Register.R1);
+            flasher.WriteInstruction(Instruction.LDVR, 0xaaaa, Register.R2);
+            flasher.WriteInstruction(Instruction.OR, Register.R1, Register.R2);
+
+            ExecuteProgram();
+
+            Assert.That(processor.GetRegister(Register.ACC), Is.EqualTo(0xaaff));
+        }
+
+        [Test]
+        public void NOT_BinaryNotOfRegisterValue()
+        {
+            flasher.WriteInstruction(Instruction.LDVR, 0xaaaa, Register.R1);
+            flasher.WriteInstruction(Instruction.NOT, Register.R1);
+
+            ExecuteProgram();
+
+            Assert.That(processor.GetRegister(Register.ACC), Is.EqualTo(0x5555));
+        }
+
+        [Test]
+        public void XOR_BinaryXorOfTwoRegisterValues()
+        {
+            flasher.WriteInstruction(Instruction.LDVR, 0x00ff, Register.R1);
+            flasher.WriteInstruction(Instruction.LDVR, 0xaaaa, Register.R2);
+            flasher.WriteInstruction(Instruction.XOR, Register.R1, Register.R2);
+
+            ExecuteProgram();
+
+            Assert.That(processor.GetRegister(Register.ACC), Is.EqualTo(0xaa55));
+        }
+
+        [Test]
         public void InvalidInstruction_ResetsAndThrowsException()
         {
             flasher.WriteInstruction((Instruction)0xff);

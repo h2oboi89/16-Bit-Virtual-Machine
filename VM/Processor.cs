@@ -159,18 +159,21 @@ namespace VM
             ushort value;
             ushort currentValue;
             Register register;
+            Register source;
+            Register destination;
 
+            // FUTURE: break up into Decode and Execute blocks
             switch (instruction)
             {
                 case Instruction.NOP:
                     return;
 
                 case Instruction.MOVE:
-                    var regA = FetchRegister();
-                    var regB = FetchRegister();
+                    source = FetchRegister();
+                    destination = FetchRegister();
 
-                    value = GetRegister(regA);
-                    SetRegister(regB, value);
+                    value = GetRegister(source);
+                    SetRegister(destination, value);
                     return;
 
                 case Instruction.INC:
@@ -196,7 +199,7 @@ namespace VM
                     ClearFlag(Flag.OVERFLOW);
 
                     currentValue = GetRegister(register);
-                    value = (ushort)(GetRegister(register) - 1);
+                    value = (ushort)(currentValue - 1);
 
                     if (currentValue < value)
                     {
@@ -207,9 +210,9 @@ namespace VM
 
                 case Instruction.LDV:
                     value = FetchU16();
-                    register = FetchRegister();
+                    destination = FetchRegister();
 
-                    SetRegister(register, value);
+                    SetRegister(destination, value);
                     return;
 
                 case Instruction.STV:

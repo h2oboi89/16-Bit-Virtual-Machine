@@ -95,20 +95,5 @@ namespace VM.Tests
                 Assert.That(memory.GetU16(address), Is.EqualTo(value));
             }
         }
-
-        [Test]
-        public void Memory_IsEnumerable()
-        {
-            for (byte i = 0; i < 10; i++)
-            {
-                memory.SetU8(i, i);
-            }
-
-            var v = 0;
-            foreach (var b in memory.Take(10))
-            {
-                Assert.That(b, Is.EqualTo(v++));
-            }
-        }
     }
 }

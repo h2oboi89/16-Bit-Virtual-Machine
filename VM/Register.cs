@@ -7,10 +7,10 @@
     {
         #region System Registers
         /// <summary>
-        /// Instruction Pointer. 
-        /// Address of next <see cref="Instruction"/> to be executed.
+        /// Program Counter. 
+        /// Address of next value to fetch from memory.
         /// </summary>
-        IP,
+        PC,
         /// <summary>
         /// Return Address.
         /// Address that execution will resume at following <see cref="Instruction.RET"/>.
@@ -23,38 +23,8 @@
         ACC,
         /// <summary>
         /// Flag register.
-        /// <list type="bullet">
-        ///     <item>
-        ///         <term>0</term>
-        ///         <description>zero</description>
-        ///     </item>
-        ///     <item>
-        ///         <term>1</term>
-        ///         <description>less than</description>
-        ///     </item>
-        ///     <item>
-        ///         <term>2</term>
-        ///         <description>greater than</description>
-        ///     </item>
-        ///     <item>
-        ///         <term>3</term>
-        ///         <description>equal</description>
-        ///     </item>
-        ///     <item>
-        ///         <term>4</term>
-        ///         <description>negative</description>
-        ///     </item>
-        ///     <item>
-        ///         <term>5</term>
-        ///         <description>overflow</description>
-        ///     </item>
-        ///     <item>
-        ///         <term>6</term>
-        ///         <description>carry</description>
-        ///     </item>
-        /// </list>
         /// </summary>
-        FLG,
+        FLAG,
         /// <summary>
         /// Stack Pointer
         /// </summary>

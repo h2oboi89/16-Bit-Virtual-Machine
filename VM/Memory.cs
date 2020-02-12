@@ -7,7 +7,7 @@ namespace VM
     /// <summary>
     /// Represents a block of memory in the Virtual Machine
     /// </summary>
-    public class Memory : IEnumerable<byte>
+    public class Memory
     {
         private readonly byte[] memory;
 
@@ -126,29 +126,6 @@ namespace VM
             {
                 WriteU8(b);
             }
-        }
-        #endregion
-
-        #region IEnumerable implementation
-        /// <summary>
-        /// Returns an enumerator that iterates through the <see cref="Memory"/>.
-        /// </summary>
-        /// <returns>An enumerator for the <see cref="Memory"/></returns>
-        public IEnumerator<byte> GetEnumerator()
-        {
-            foreach (var value in memory)
-            {
-                yield return value;
-            }
-        }
-
-        /// <summary>
-        /// Returns an <see cref="IEnumerator"/> for the <see cref="Memory"/>
-        /// </summary>
-        /// <returns>An <see cref="IEnumerator"/> for the <see cref="Memory"/>.</returns>
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
         }
         #endregion
     }

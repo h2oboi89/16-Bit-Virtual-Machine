@@ -5,6 +5,12 @@
     /// </summary>
     public enum Instruction
     {
+        /// <summary>
+        /// No Operation. Place holder instruction.
+        /// Arguments: NONE.
+        /// </summary>
+        NOP,
+
         #region Register Instructions
         /// <summary>
         /// Move value between <see cref="Register"/>s. 
@@ -144,37 +150,37 @@
         #region Logic Instructions
         /// <summary>
         /// Compare values in <see cref="Register"/>s with each other (A &lt;cmp&gt; B).
-        /// Sets bits in <see cref="Register.FLG"/> that get used by the various Jump <see cref="Instruction"/>s.
+        /// Sets bits in <see cref="Register.FLAG"/> that get used by the various Jump <see cref="Instruction"/>s.
         /// Arguments: A (<see cref="Register"/>), B (<see cref="Register"/>).
         /// </summary>
         CMP,
         /// <summary>
-        /// Jump if Less Than. Jumps to address pointed to by <see cref="Register"/> if <see cref="Register.FLG"/> Less Than bit is set.
+        /// Jump if Less Than. Jumps to address pointed to by <see cref="Register"/> if <see cref="Register.FLAG"/> Less Than bit is set.
         /// Arguments: Address (<see cref="Register"/>).
         /// </summary>
         JLT,
         /// <summary>
-        /// Jump if Greater Than. Jumps to address pointed to by <see cref="Register"/> if <see cref="Register.FLG"/> Greater Than bit is set.
+        /// Jump if Greater Than. Jumps to address pointed to by <see cref="Register"/> if <see cref="Register.FLAG"/> Greater Than bit is set.
         /// Arguments: Address (<see cref="Register"/>).
         /// </summary>
         JGT,
         /// <summary>
-        /// Jump if Equal. Jumps to address pointed to by <see cref="Register"/> if <see cref="Register.FLG"/> Equal bit is set.
+        /// Jump if Equal. Jumps to address pointed to by <see cref="Register"/> if <see cref="Register.FLAG"/> Equal bit is set.
         /// Arguments: Address (<see cref="Register"/>).
         /// </summary>
         JE,
         /// <summary>
-        /// Jump if Not Equal. Jumps to address pointed to by <see cref="Register"/> if <see cref="Register.FLG"/> Equal bit is not set.
+        /// Jump if Not Equal. Jumps to address pointed to by <see cref="Register"/> if <see cref="Register.FLAG"/> Equal bit is not set.
         /// Arguments: Address (<see cref="Register"/>).
         /// </summary>
         JNE,
         /// <summary>
-        /// Jump if Zero. Jumps to address pointed to by <see cref="Register"/> if <see cref="Register.FLG"/> Zero bit is set.
+        /// Jump if Zero. Jumps to address pointed to by <see cref="Register"/> if <see cref="Register.FLAG"/> Zero bit is set.
         /// Arguments: Address (<see cref="Register"/>).
         /// </summary>
         JZ,
         /// <summary>
-        /// Jump if Not Zero. Jumps to address pointed to by <see cref="Register"/> if <see cref="Register.FLG"/> Zero bit not is set.
+        /// Jump if Not Zero. Jumps to address pointed to by <see cref="Register"/> if <see cref="Register.FLAG"/> Zero bit not is set.
         /// Arguments: Address (<see cref="Register"/>).
         /// </summary>
         JNZ,
@@ -209,7 +215,12 @@
         /// Program Halt.
         /// Arguments: NONE.
         /// </summary>
-        HALT
+        HALT,
+        /// <summary>
+        /// Resets <see cref="Processor"/> back to initial state.
+        /// Arguments: NONE.
+        /// </summary>
+        RESET        
         #endregion
     }
 }

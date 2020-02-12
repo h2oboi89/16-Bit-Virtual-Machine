@@ -1,5 +1,6 @@
 ﻿#pragma warning disable CA1822 // Mark members as static
 using NUnit.Framework;
+using System;
 
 namespace VM.Tests
 {
@@ -59,7 +60,7 @@ namespace VM.Tests
         }
 
         [Test]
-        public void ModifyingPrivateRegistersDirectly_ThrowsExceptionAndResetsProcessor()
+        public void ModifyingPrivateRegistersDirectly_ResetsAndThrowsException()
         {
             var privateRegisters = new Register[]
             {
@@ -73,10 +74,34 @@ namespace VM.Tests
                 flasher.WriteInstruction(Instruction.LDV, 0x1234, register);
 
                 Assert.That(() => processor.Step(), Throws.InvalidOperationException
-                        .With.Message.EqualTo($"{register} cannot be modified directly by code."));
+                        .With.Message.EqualTo($"{Enum.GetName(typeof(Register), register)} register cannot be modified directly by code."));
 
                 Assert.That(processor.GetRegister(Register.PC), Is.Zero);
             }
+        }
+
+        [Test]
+        public void InvalidRegisterInInstruction_ResetsAndThrowsException()
+        {
+            flasher.WriteInstruction(Instruction.INC, (Register)0xff);
+
+            Assert.That(() => processor.Step(), Throws.InvalidOperationException
+                       .With.Message.EqualTo($"Unknown register 0xFF."));
+
+            Assert.That(processor.GetRegister(Register.PC), Is.Zero);
+        }
+
+        [Test]
+        public void GetRegister_InvalidRegister_ResetsAndThrowsException()
+        {
+            processor.Step();
+
+            Assert.That(processor.GetRegister(Register.PC), Is.Not.Zero);
+
+            Assert.That(() => processor.GetRegister((Register)0xff), Throws.InvalidOperationException
+                       .With.Message.EqualTo($"Unknown register 0xFF."));
+
+            Assert.That(processor.GetRegister(Register.PC), Is.Zero);
         }
 
         #region Instructions
@@ -189,6 +214,17 @@ namespace VM.Tests
             AssertPCIsAtEndOfProgram();
 
             Assert.That(memory.GetU16(0x10), Is.EqualTo(0x1234));
+        }
+
+        [Test]
+        public void InvalidInstruction_ResetsAndThrowsException()
+        {
+            flasher.WriteInstruction((Instruction)0xff);
+
+            Assert.That(() => processor.Step(), Throws.InvalidOperationException
+                        .With.Message.EqualTo($"Unknown instruction 0xFF."));
+
+            Assert.That(processor.GetRegister(Register.PC), Is.Zero);
         }
         #endregion
     }

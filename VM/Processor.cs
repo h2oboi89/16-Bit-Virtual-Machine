@@ -44,6 +44,22 @@ namespace VM
             throw exception;
         }
 
+        private void ValidateRegister(Register register)
+        {
+            if (!Enum.IsDefined(typeof(Register), register))
+            {
+                ResetAndThrow(new InvalidOperationException($"Unknown register {Utility.FormatU8((byte)register)}."));
+            }
+        }
+
+        private void ValidateInstruction(Instruction instruction)
+        {
+            if (!Enum.IsDefined(typeof(Instruction), instruction))
+            {
+                ResetAndThrow(new InvalidOperationException($"Unknown instruction {Utility.FormatU8((byte)instruction)}."));
+            }
+        }
+
         /// <summary>
         /// Gets value of <see cref="Register"/>.
         /// </summary>
@@ -51,14 +67,21 @@ namespace VM
         /// <returns>value of the <see cref="Register"/></returns>
         public ushort GetRegister(Register register)
         {
+            ValidateRegister(register);
+
             return registers.GetU16((ushort)((byte)register * DATASIZE));
+        }
+
+        private static string GetRegisterName(Register register)
+        {
+            return Enum.GetName(typeof(Register), register);
         }
 
         private void SetRegister(Register register, ushort value, bool code = true)
         {
             if (register.IsPrivate() && code)
             {
-                ResetAndThrow(new InvalidOperationException($"{register} cannot be modified directly by code."));
+                ResetAndThrow(new InvalidOperationException($"{GetRegisterName(register)} register cannot be modified directly by code."));
             }
 
             registers.SetU16((ushort)((byte)register * DATASIZE), value);
@@ -76,7 +99,11 @@ namespace VM
 
         private Register FetchRegister()
         {
-            return (Register)FetchU8();
+            var register = (Register)FetchU8();
+
+            ValidateRegister(register);
+
+            return register;
         }
 
         private ushort FetchU16()
@@ -126,7 +153,9 @@ namespace VM
         }
 
         private void Execute(Instruction instruction)
-        {            
+        {
+            ValidateInstruction(instruction);
+
             ushort value;
             ushort currentValue;
             Register register;

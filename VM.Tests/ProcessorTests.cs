@@ -141,6 +141,8 @@ namespace VM.Tests
             Assert.That(processor.GetRegister(Register.PC), Is.Zero);
         }
 
+        // TODO: invalid memory access throws exception
+
         #region Instructions
         [Test]
         public void NOP_DoesNothing()

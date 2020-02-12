@@ -1,3 +1,5 @@
+SHELL := C:\Windows\System32\cmd.exe
+
 PACKAGE_ROOT := $(shell echo $(USERPROFILE))\.nuget\packages
 COMPILER := msbuild
 

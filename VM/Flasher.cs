@@ -14,6 +14,7 @@
         public Flasher(Memory memory)
         {
             this.memory = memory;
+            Address = 0;
         }
 
         /// <summary>
@@ -22,8 +23,17 @@
         public int Address
         {
             get { return memory.Address; }
-            set { memory.Address = value; }
+            set
+            {
+                InstructionCount = 0;
+                memory.Address = value;
+            }
         }
+
+        /// <summary>
+        /// Number of <see cref="Instruction"/>s that were written to memory since <see cref="Address"/> was set.
+        /// </summary>
+        public int InstructionCount { get; private set; }
 
         /// <summary>
         /// Writes a U8 to memory.
@@ -58,6 +68,7 @@
         /// <param name="instruction">Identifier to write to memory.</param>
         public void WriteInstruction(Instruction instruction)
         {
+            InstructionCount++;
             WriteU8((byte)instruction);
         }
 

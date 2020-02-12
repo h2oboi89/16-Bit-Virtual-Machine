@@ -18,9 +18,34 @@ namespace VM.Tests
             processor = new Processor(memory);
         }
 
+        private void ExecuteProgram()
+        {
+            for (var i = 0; i < flasher.InstructionCount; i++)
+            {
+                processor.Step();
+            }
+
+            AssertPCIsAtEndOfProgram();
+        }
+
         private void AssertPCIsAtEndOfProgram()
         {
             Assert.That(processor.GetRegister(Register.PC), Is.EqualTo(flasher.Address));
+        }
+
+        /// <summary>
+        /// Writes values to <see cref="Memory"/> and resets <see cref="Flasher.Address"/> to 0.
+        /// Should be called before all program instructions are written to allow <see cref="AssertPCIsAtEndOfProgram"/> to function.
+        /// </summary>
+        /// <param name="address">Location in memory to store value</param>
+        /// <param name="value">Value to store in memory.</param>
+        private void WriteValueToMemory(ushort address, ushort value)
+        {
+            flasher.Address = address;
+
+            flasher.WriteU16(value);
+
+            flasher.Address = 0;
         }
 
         [Test]
@@ -30,7 +55,7 @@ namespace VM.Tests
         }
 
         [Test]
-        public void Processor_Initializes_WithSpecifiedValues()
+        public void Constructor_InitializesRegisters()
         {
             Assert.That(processor.GetRegister(Register.PC), Is.Zero);
             Assert.That(processor.GetRegister(Register.RA), Is.Zero);
@@ -122,10 +147,7 @@ namespace VM.Tests
             flasher.WriteInstruction(Instruction.LDVR, 0x1234, Register.R1);
             flasher.WriteInstruction(Instruction.MOVE, Register.R1, Register.R2);
 
-            processor.Step();
-            processor.Step();
-
-            AssertPCIsAtEndOfProgram();
+            ExecuteProgram();
 
             Assert.That(processor.GetRegister(Register.R2), Is.EqualTo(0x1234));
         }
@@ -136,10 +158,7 @@ namespace VM.Tests
             flasher.WriteInstruction(Instruction.LDVR, 0x1234, Register.R1);
             flasher.WriteInstruction(Instruction.INC, Register.R1);
 
-            processor.Step();
-            processor.Step();
-
-            AssertPCIsAtEndOfProgram();
+            ExecuteProgram();
 
             Assert.That(processor.GetRegister(Register.R1), Is.EqualTo(0x1235));
             Assert.That(processor.GetFlag(Flag.OVERFLOW), Is.False);
@@ -151,10 +170,7 @@ namespace VM.Tests
             flasher.WriteInstruction(Instruction.LDVR, ushort.MaxValue, Register.R1);
             flasher.WriteInstruction(Instruction.INC, Register.R1);
 
-            processor.Step();
-            processor.Step();
-
-            AssertPCIsAtEndOfProgram();
+            ExecuteProgram();
 
             Assert.That(processor.GetRegister(Register.R1), Is.EqualTo(ushort.MinValue));
             Assert.That(processor.GetFlag(Flag.OVERFLOW), Is.True);
@@ -166,10 +182,7 @@ namespace VM.Tests
             flasher.WriteInstruction(Instruction.LDVR, 0x1234, Register.R1);
             flasher.WriteInstruction(Instruction.DEC, Register.R1);
 
-            processor.Step();
-            processor.Step();
-
-            AssertPCIsAtEndOfProgram();
+            ExecuteProgram();
 
             Assert.That(processor.GetRegister(Register.R1), Is.EqualTo(0x1233));
             Assert.That(processor.GetFlag(Flag.UNDERFLOW), Is.False);
@@ -181,10 +194,7 @@ namespace VM.Tests
             flasher.WriteInstruction(Instruction.LDVR, ushort.MinValue, Register.R1);
             flasher.WriteInstruction(Instruction.DEC, Register.R1);
 
-            processor.Step();
-            processor.Step();
-
-            AssertPCIsAtEndOfProgram();
+            ExecuteProgram();
 
             Assert.That(processor.GetRegister(Register.R1), Is.EqualTo(ushort.MaxValue));
             Assert.That(processor.GetFlag(Flag.UNDERFLOW), Is.True);
@@ -195,25 +205,94 @@ namespace VM.Tests
         {
             flasher.WriteInstruction(Instruction.LDVR, 0x1234, Register.R1);
 
-            processor.Step();
-
-            AssertPCIsAtEndOfProgram();
+            ExecuteProgram();
 
             Assert.That(processor.GetRegister(Register.R1), Is.EqualTo(0x1234));
         }
 
         [Test]
-        public void STVA_StoresValueIntoMemory()
+        public void LDAR_LoadsValueFromAddressIntoRegister()
         {
-            flasher.WriteInstruction(Instruction.STVA, 0x1234, 0x10);
+            ushort address = 0x10;
 
-            Assert.That(memory.GetU16(0x10), Is.Zero);
+            WriteValueToMemory(address, 0x1234);
 
-            processor.Step();
+            flasher.WriteInstruction(Instruction.LDAR, address, Register.R1);
 
-            AssertPCIsAtEndOfProgram();
+            ExecuteProgram();
 
-            Assert.That(memory.GetU16(0x10), Is.EqualTo(0x1234));
+            Assert.That(processor.GetRegister(Register.R1), Is.EqualTo(0x1234));
+        }
+
+        [Test]
+        public void LDRR_LoadsValueFromAddressInRegisterIntoRegister()
+        {
+            ushort address = 0x10;
+
+            WriteValueToMemory(address, 0x1234);
+
+            flasher.WriteInstruction(Instruction.LDVR, address, Register.R1);
+            flasher.WriteInstruction(Instruction.LDRR, Register.R1, Register.R2);
+
+            ExecuteProgram();
+
+            Assert.That(processor.GetRegister(Register.R2), Is.EqualTo(0x1234));
+        }
+
+        [Test]
+        public void STVA_StoresValueAtAddress()
+        {
+            ushort address = 0x10;
+
+            flasher.WriteInstruction(Instruction.STVA, 0x1234, address);
+
+            Assert.That(memory.GetU16(address), Is.Zero);
+
+            ExecuteProgram();
+
+            Assert.That(memory.GetU16(address), Is.EqualTo(0x1234));
+        }
+
+        [Test]
+        public void STVR_StoresValueAtAddressInRegister()
+        {
+            ushort address = 0x10;
+
+            flasher.WriteInstruction(Instruction.LDVR, address, Register.R1);
+            flasher.WriteInstruction(Instruction.STVR, 0x1234, Register.R1);
+
+            Assert.That(memory.GetU16(address), Is.Zero);
+
+            ExecuteProgram();
+
+            Assert.That(memory.GetU16(address), Is.EqualTo(0x1234));
+        }
+
+        [Test]
+        public void STRA_StoresValueInRegisterAtAddress()
+        {
+            ushort address = 0x10;
+
+            flasher.WriteInstruction(Instruction.LDVR, 0x1234, Register.R1);
+            flasher.WriteInstruction(Instruction.STRA, Register.R1, address);
+
+            ExecuteProgram();
+
+            Assert.That(memory.GetU16(address), Is.EqualTo(0x1234));
+        }
+
+        [Test]
+        public void STRR_StoresValueInRegisterAtAddressInRegister()
+        {
+            ushort address = 0x10;
+
+            flasher.WriteInstruction(Instruction.LDVR, 0x1234, Register.R1);
+            flasher.WriteInstruction(Instruction.LDVR, address, Register.R2);
+            flasher.WriteInstruction(Instruction.STRR, Register.R1, Register.R2);
+
+            ExecuteProgram();
+
+            Assert.That(memory.GetU16(address), Is.EqualTo(0x1234));
         }
 
         [Test]

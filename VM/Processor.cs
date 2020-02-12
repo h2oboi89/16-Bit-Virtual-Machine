@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace VM
 {
@@ -157,6 +155,7 @@ namespace VM
             ValidateInstruction(instruction);
 
             ushort value;
+            ushort address;
             ushort currentValue;
             Register register;
             Register source;
@@ -173,6 +172,7 @@ namespace VM
                     destination = FetchRegister();
 
                     value = GetRegister(source);
+
                     SetRegister(destination, value);
                     return;
 
@@ -189,6 +189,7 @@ namespace VM
                     {
                         SetFlag(Flag.OVERFLOW);
                     }
+
                     SetRegister(register, value);
                     return;
 
@@ -205,6 +206,7 @@ namespace VM
                     {
                         SetFlag(Flag.UNDERFLOW);
                     }
+
                     SetRegister(register, value);
                     return;
 
@@ -215,9 +217,56 @@ namespace VM
                     SetRegister(destination, value);
                     return;
 
+                case Instruction.LDAR:
+                    address = FetchU16();
+                    destination = FetchRegister();
+
+                    value = memory.GetU16(address);
+
+                    SetRegister(destination, value);
+                    return;
+
+                case Instruction.LDRR:
+                    source = FetchRegister();
+                    destination = FetchRegister();
+
+                    address = GetRegister(source);
+                    value = memory.GetU16(address);
+
+                    SetRegister(destination, value);
+                    return;
+
                 case Instruction.STVA:
                     value = FetchU16();
-                    var address = FetchU16();
+                    address = FetchU16();
+
+                    memory.SetU16(address, value);
+                    return;
+
+                case Instruction.STVR:
+                    value = FetchU16();
+                    destination = FetchRegister();
+
+                    address = GetRegister(destination);
+
+                    memory.SetU16(address, value);
+                    return;
+
+                case Instruction.STRA:
+                    source = FetchRegister();
+                    address = FetchU16();
+
+                    value = GetRegister(source);
+
+                    memory.SetU16(address, value);
+                    return;
+
+                case Instruction.STRR:
+                    source = FetchRegister();
+                    destination = FetchRegister();
+
+                    value = GetRegister(source);
+                    address = GetRegister(destination);
 
                     memory.SetU16(address, value);
                     return;

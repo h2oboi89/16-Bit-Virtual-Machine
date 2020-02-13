@@ -10,6 +10,10 @@
         /// </summary>
         ZERO,
         /// <summary>
+        /// Set if result of last arithmetic operation resulted in a carry.
+        /// </summary>
+        CARRY,
+        /// <summary>
         /// Set if result of last <see cref="Instruction.CMP"/> was that A &lt; B.
         /// </summary>
         LESSTHAN,
@@ -20,22 +24,6 @@
         /// <summary>
         /// Set if result of last <see cref="Instruction.CMP"/> was that A == B.
         /// </summary>
-        EQUAL,
-        /// <summary>
-        /// Set if result of last arithmetic operation was less than 0.
-        /// </summary>
-        NEGATIVE,
-        /// <summary>
-        /// Set if result of last arithmetic operation resulted in overflow.
-        /// </summary>
-        OVERFLOW,
-        /// <summary>
-        /// Set if result of last arithmetic operation resulted in underflow.
-        /// </summary>
-        UNDERFLOW,
-        /// <summary>
-        /// Set if result of last arithmetic operation resulted in a carry.
-        /// </summary>
-        CARRY
+        EQUAL
     }
 }

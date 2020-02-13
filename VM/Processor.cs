@@ -11,14 +11,14 @@ namespace VM
 
         private readonly Memory registers;
 
-        private Instruction instruction;
-
         #region Utility variables for storing references during decode and execution
         private ushort value;
         private ushort valueA;
         private ushort valueB;
 
-        private byte shiftAmount;
+        private uint temp;
+
+        private byte shiftAmount; 
 
         private ushort result;
 
@@ -42,6 +42,7 @@ namespace VM
         /// <param name="memory"><see cref="Memory"/> that this <see cref="Processor"/> can utilize.</param>
         public Processor(Memory memory)
         {
+            // TODO: memory map? (program, static data, dynamic data, stack, IO) 
             this.memory = memory ?? throw new ArgumentNullException(nameof(memory));
 
             registers = new Memory((ushort)((Enum.GetValues(typeof(Register)).Length + 1) * DATASIZE));
@@ -130,6 +131,18 @@ namespace VM
             return value;
         }
 
+        private void Store(ushort address, ushort value)
+        {
+            try
+            {
+                memory.SetU16(address, value);
+            }
+            catch (IndexOutOfRangeException exception)
+            {
+                ResetAndThrow(exception);
+            }
+        }
+
         private void SetFlag(Flag flag)
         {
             var value = GetRegister(Register.FLAG);
@@ -160,57 +173,106 @@ namespace VM
             return flag.IsSet(value);
         }
 
-        private void ClearFlags()
+        private void ClearFlags(Instruction instruction)
         {
-            SetRegister(Register.FLAG, 0, false);
+            switch (instruction)
+            {
+                case Instruction.INC:
+                case Instruction.DEC:
+                case Instruction.ADD:
+                case Instruction.SUB:
+                case Instruction.MUL:
+                case Instruction.DIV:
+                    ClearFlag(Flag.ZERO);
+                    ClearFlag(Flag.CARRY);
+                    break;
+                case Instruction.CMP:
+                    ClearFlag(Flag.LESSTHAN);
+                    ClearFlag(Flag.GREATERTHAN);
+                    ClearFlag(Flag.EQUAL);
+                    break;
+            }
         }
 
-        private void Fetch()
+        private void SetFlags(Instruction instruction)
         {
-            instruction = (Instruction)FetchU8();
+            if (temp > ushort.MaxValue)
+            {
+                switch (instruction)
+                {
+                    case Instruction.INC:
+                    case Instruction.DEC:
+                    case Instruction.ADD:
+                    case Instruction.MUL:
+                    case Instruction.SUB:
+                        SetFlag(Flag.CARRY);
+                        break;
+                }
+            }
+
+            if (result == 0)
+            {
+                switch (instruction)
+                {
+                    case Instruction.INC:
+                    case Instruction.DEC:
+                    case Instruction.ADD:
+                    case Instruction.SUB:
+                    case Instruction.MUL:
+                    case Instruction.DIV:
+                        SetFlag(Flag.ZERO);
+                        break;
+                }
+            }
+        }
+
+        private Instruction Fetch()
+        {
+            var instruction = (Instruction)FetchU8();
 
             ValidateInstruction(instruction);
+
+            return instruction;
         }
 
-        private void Decode()
+        private void Decode(Instruction instruction)
         {
+            ClearFlags(instruction);
+
             switch (instruction)
             {
                 case Instruction.NOP:
                 case Instruction.RET:
                 case Instruction.RESET:
                 case Instruction.HALT:
-                    return;
+                    break;
 
                 case Instruction.MOVE:
                     source = FetchRegister();
                     destination = FetchRegister();
 
                     value = GetRegister(source);
-                    return;
+                    break;
 
                 case Instruction.INC:
                 case Instruction.DEC:
                     register = FetchRegister();
 
-                    ClearFlag(Flag.UNDERFLOW);
-                    ClearFlag(Flag.OVERFLOW);
-                    // TODO: Other flags?
-
-                    value = GetRegister(register);
-                    return;
+                    valueA = GetRegister(register);
+                    valueB = 1;
+                    break;
 
                 case Instruction.LDVR:
                     value = FetchU16();
                     destination = FetchRegister();
-                    return;
+                    break;
 
                 case Instruction.LDAR:
                     address = FetchU16();
                     destination = FetchRegister();
 
                     value = memory.GetU16(address);
-                    return;
+                    break;
 
                 case Instruction.LDRR:
                     source = FetchRegister();
@@ -218,26 +280,26 @@ namespace VM
 
                     address = GetRegister(source);
                     value = memory.GetU16(address);
-                    return;
+                    break;
 
                 case Instruction.STVA:
                     value = FetchU16();
                     address = FetchU16();
-                    return;
+                    break;
 
                 case Instruction.STVR:
                     value = FetchU16();
                     destination = FetchRegister();
 
                     address = GetRegister(destination);
-                    return;
+                    break;
 
                 case Instruction.STRA:
                     source = FetchRegister();
                     address = FetchU16();
 
                     value = GetRegister(source);
-                    return;
+                    break;
 
                 case Instruction.STRR:
                     source = FetchRegister();
@@ -245,10 +307,12 @@ namespace VM
 
                     value = GetRegister(source);
                     address = GetRegister(destination);
-                    return;
+                    break;
 
-                // TODO: Arithmetic Instructions
-
+                case Instruction.ADD:
+                case Instruction.SUB:
+                case Instruction.MUL:
+                case Instruction.DIV:
                 case Instruction.AND:
                 case Instruction.OR:
                 case Instruction.XOR:
@@ -257,13 +321,15 @@ namespace VM
 
                     valueA = GetRegister(registerA);
                     valueB = GetRegister(registerB);
-                    return;
+
+                    register = Register.ACC;
+                    break;
 
                 case Instruction.NOT:
                     register = FetchRegister();
 
                     value = GetRegister(register);
-                    return;
+                    break;
 
                 case Instruction.SRL:
                 case Instruction.SRR:
@@ -271,7 +337,7 @@ namespace VM
                     shiftAmount = FetchU8();
 
                     value = GetRegister(register);
-                    return;
+                    break;
 
                 case Instruction.SRLR:
                 case Instruction.SRRR:
@@ -280,7 +346,7 @@ namespace VM
 
                     value = GetRegister(registerA);
                     shiftAmount = (byte)GetRegister(registerB);
-                    return;
+                    break;
 
                     // TODO: Subroutine instructions
 
@@ -292,90 +358,103 @@ namespace VM
             }
         }
 
-        private void Execute()
+        private void Execute(Instruction instruction)
         {
             switch (instruction)
             {
                 case Instruction.NOP:
-                    return;
+                    break;
 
                 case Instruction.MOVE:
                 case Instruction.LDVR:
                 case Instruction.LDAR:
                 case Instruction.LDRR:
                     SetRegister(destination, value);
-                    return;
-
-                case Instruction.INC:
-                    result = (ushort)(value + 1);
-
-                    if (value > result)
-                    {
-                        SetFlag(Flag.OVERFLOW);
-                    }
-                    // TODO: Other flags?
-
-                    SetRegister(register, result);
-                    return;
-
-                case Instruction.DEC:
-                    result = (ushort)(value - 1);
-
-                    if (value < result)
-                    {
-                        SetFlag(Flag.UNDERFLOW);
-                    }
-                    // TODO: Other flags?
-
-                    SetRegister(register, result);
-                    return;
+                    break;
 
                 case Instruction.STVA:
                 case Instruction.STVR:
                 case Instruction.STRA:
                 case Instruction.STRR:
-                    memory.SetU16(address, value);
-                    return;
+                    Store(address, value);
+                    break;
 
-                // TODO: Arithmetic Instructions
+                case Instruction.INC:
+                case Instruction.ADD:
+                    temp = (uint)(valueA + valueB);
+
+                    result = (ushort)(temp);
+
+                    SetRegister(register, result, false);
+                    break;
+
+                case Instruction.DEC:
+                case Instruction.SUB:
+                    temp = (uint)(valueA - valueB);
+
+                    result = (ushort)temp;
+
+                    SetRegister(register, result, false);
+                    break;
+
+                case Instruction.MUL:
+                    temp = (uint)(valueA * valueB);
+
+                    result = (ushort)temp;
+
+                    SetRegister(register, result, false);
+                    break;
+
+                case Instruction.DIV:
+                    if (valueB == 0)
+                    {
+                        ResetAndThrow(new DivideByZeroException());
+                    }
+
+                    temp = (uint)(valueA / valueB);
+
+                    result = (ushort)temp;
+
+                    SetRegister(register, result, false);
+                    break;
 
                 case Instruction.AND:
                     result = (ushort)(valueA & valueB);
 
-                    SetRegister(Register.ACC, result, false);
-                    return;
+                    SetRegister(register, result, false);
+                    break;
 
                 case Instruction.OR:
                     result = (ushort)(valueA | valueB);
 
-                    SetRegister(Register.ACC, result, false);
-                    return;
+                    SetRegister(register, result, false);
+                    break;
+
+                case Instruction.XOR:
+                    result = (ushort)(valueA ^ valueB);
+
+                    SetRegister(register, result, false);
+                    break;
 
                 case Instruction.NOT:
                     result = (ushort)~value;
 
                     SetRegister(Register.ACC, result, false);
-                    return;
-
-                case Instruction.XOR:
-                    result = (ushort)(valueA ^ valueB);
-
-                    SetRegister(Register.ACC, result, false);
-                    return;
+                    break;
 
                 case Instruction.SRL:
                 case Instruction.SRLR:
                     result = (ushort)(value << shiftAmount);
 
                     SetRegister(Register.ACC, result, false);
-                    return;
+                    break;
 
                 case Instruction.SRR:
                 case Instruction.SRRR:
                     result = (ushort)(value >> shiftAmount);
 
                     SetRegister(Register.ACC, result, false);
-                    return;
+                    break;
 
                 // TODO: Subroutine instructions
 
@@ -389,8 +468,10 @@ namespace VM
 
                 case Instruction.RESET:
                     Reset();
-                    return;
+                    break;
             }
+
+            SetFlags(instruction);
         }
 
         /// <summary>
@@ -398,9 +479,9 @@ namespace VM
         /// </summary>
         public void Step()
         {
-            Fetch();
-            Decode();
-            Execute();
+            var instruction = Fetch();
+            Decode(instruction);
+            Execute(instruction);
         }
     }
 }

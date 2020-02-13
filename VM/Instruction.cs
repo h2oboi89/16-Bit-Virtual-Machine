@@ -101,7 +101,7 @@
         DIV,
         #endregion
 
-        #region Binary Instructions
+        #region Bitwise Instructions
         /// <summary>
         /// Performs bitwise and on two <see cref="Register"/>s and stores value in <see cref="Register.ACC"/> (A &amp; B).
         /// Arguments: A (<see cref="Register"/>), B (<see cref="Register"/>).
@@ -113,15 +113,15 @@
         /// </summary>
         OR,
         /// <summary>
-        /// Performs bitwise not on <see cref="Register"/>s and stores value in <see cref="Register.ACC"/> (~A).
-        /// Arguments: A (<see cref="Register"/>).
-        /// </summary>
-        NOT,
-        /// <summary>
         /// Performs bitwise and on two <see cref="Register"/>s and stores value in <see cref="Register.ACC"/> (A (+) B).
         /// Arguments: A (<see cref="Register"/>), B (<see cref="Register"/>).
         /// </summary>
         XOR,
+        /// <summary>
+        /// Performs bitwise not on <see cref="Register"/>s and stores value in <see cref="Register.ACC"/> (~A).
+        /// Arguments: A (<see cref="Register"/>).
+        /// </summary>
+        NOT,
         /// <summary>
         /// Shift Register Left.
         /// Shift value in register left by specified amount (Maximum is 15).

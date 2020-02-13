@@ -10,20 +10,20 @@
         /// </summary>
         ZERO,
         /// <summary>
-        /// Set if result of last arithmetic operation resulted in a carry.
-        /// </summary>
-        CARRY,
-        /// <summary>
         /// Set if result of last <see cref="Instruction.CMP"/> was that A &lt; B.
         /// </summary>
         LESSTHAN,
+        /// <summary>
+        /// Set if result of last <see cref="Instruction.CMP"/> was that A == B.
+        /// </summary>
+        EQUAL,
         /// <summary>
         /// Set if result of last <see cref="Instruction.CMP"/> was that A &gt; B.
         /// </summary>
         GREATERTHAN,
         /// <summary>
-        /// Set if result of last <see cref="Instruction.CMP"/> was that A == B.
+        /// Set if result of last arithmetic operation resulted in a carry.
         /// </summary>
-        EQUAL
+        CARRY
     }
 }

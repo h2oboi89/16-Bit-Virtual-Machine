@@ -18,7 +18,7 @@ namespace VM
 
         private uint temp;
 
-        private byte shiftAmount; 
+        private byte shiftAmount;
 
         private ushort result;
 
@@ -143,6 +143,7 @@ namespace VM
             }
         }
 
+        #region Flags
         private void SetFlag(Flag flag)
         {
             var value = GetRegister(Register.FLAG);
@@ -187,6 +188,7 @@ namespace VM
                     ClearFlag(Flag.CARRY);
                     break;
                 case Instruction.CMP:
+                    ClearFlag(Flag.ZERO);
                     ClearFlag(Flag.LESSTHAN);
                     ClearFlag(Flag.GREATERTHAN);
                     ClearFlag(Flag.EQUAL);
@@ -224,7 +226,29 @@ namespace VM
                         break;
                 }
             }
+
+            if (instruction == Instruction.CMP)
+            {
+                if (valueA == 0)
+                {
+                    SetFlag(Flag.ZERO);
+                }
+
+                if (valueA < valueB)
+                {
+                    SetFlag(Flag.LESSTHAN);
+                }
+                else if (valueA == valueB)
+                {
+                    SetFlag(Flag.EQUAL);
+                }
+                else if (valueA > valueB)
+                {
+                    SetFlag(Flag.GREATERTHAN);
+                }
+            }
         }
+        #endregion
 
         private Instruction Fetch()
         {
@@ -237,8 +261,6 @@ namespace VM
 
         private void Decode(Instruction instruction)
         {
-            ClearFlags(instruction);
-
             switch (instruction)
             {
                 case Instruction.NOP:
@@ -316,6 +338,7 @@ namespace VM
                 case Instruction.AND:
                 case Instruction.OR:
                 case Instruction.XOR:
+                case Instruction.CMP:
                     registerA = FetchRegister();
                     registerB = FetchRegister();
 
@@ -363,6 +386,7 @@ namespace VM
             switch (instruction)
             {
                 case Instruction.NOP:
+                case Instruction.CMP:
                     break;
 
                 case Instruction.MOVE:
@@ -470,8 +494,6 @@ namespace VM
                     Reset();
                     break;
             }
-
-            SetFlags(instruction);
         }
 
         /// <summary>
@@ -481,7 +503,9 @@ namespace VM
         {
             var instruction = Fetch();
             Decode(instruction);
+            ClearFlags(instruction);
             Execute(instruction);
+            SetFlags(instruction);
         }
     }
 }

@@ -653,6 +653,66 @@ namespace VM.Tests
 
         // TODO: Jump instructions
 
+        [Test]
+        public void CMP_AIsZero_SetsZeroFlag()
+        {
+            flasher.WriteInstruction(Instruction.LDVR, (ushort)0x0000, Register.R1);
+            flasher.WriteInstruction(Instruction.LDVR, (ushort)0x0000, Register.R2);
+            flasher.WriteInstruction(Instruction.CMP, Register.R1, Register.R2);
+
+            ExecuteProgram();
+
+            Assert.That(processor.IsSet(Flag.ZERO), Is.True);
+            Assert.That(processor.IsSet(Flag.LESSTHAN), Is.False);
+            Assert.That(processor.IsSet(Flag.EQUAL), Is.True);
+            Assert.That(processor.IsSet(Flag.GREATERTHAN), Is.False);
+        }
+
+        [Test]
+        public void CMP_LessThan_SetsLessThanFlag()
+        {
+            flasher.WriteInstruction(Instruction.LDVR, 0x1234, Register.R1);
+            flasher.WriteInstruction(Instruction.LDVR, 0x4321, Register.R2);
+            flasher.WriteInstruction(Instruction.CMP, Register.R1, Register.R2);
+
+            ExecuteProgram();
+
+            Assert.That(processor.IsSet(Flag.ZERO), Is.False);
+            Assert.That(processor.IsSet(Flag.LESSTHAN), Is.True);
+            Assert.That(processor.IsSet(Flag.EQUAL), Is.False);
+            Assert.That(processor.IsSet(Flag.GREATERTHAN), Is.False);
+        }
+
+        [Test]
+        public void CMP_EqualTo_SetsEqualFlag()
+        {
+            flasher.WriteInstruction(Instruction.LDVR, 0x1234, Register.R1);
+            flasher.WriteInstruction(Instruction.LDVR, 0x1234, Register.R2);
+            flasher.WriteInstruction(Instruction.CMP, Register.R1, Register.R2);
+
+            ExecuteProgram();
+
+            Assert.That(processor.IsSet(Flag.ZERO), Is.False);
+            Assert.That(processor.IsSet(Flag.LESSTHAN), Is.False);
+            Assert.That(processor.IsSet(Flag.EQUAL), Is.True);
+            Assert.That(processor.IsSet(Flag.GREATERTHAN), Is.False);
+        }
+
+        [Test]
+        public void CMP_GreaterThan_SetsGreaterThanFlag()
+        {
+            flasher.WriteInstruction(Instruction.LDVR, 0x4321, Register.R1);
+            flasher.WriteInstruction(Instruction.LDVR, 0x1234, Register.R2);
+            flasher.WriteInstruction(Instruction.CMP, Register.R1, Register.R2);
+
+            ExecuteProgram();
+
+            Assert.That(processor.IsSet(Flag.ZERO), Is.False);
+            Assert.That(processor.IsSet(Flag.LESSTHAN), Is.False);
+            Assert.That(processor.IsSet(Flag.EQUAL), Is.False);
+            Assert.That(processor.IsSet(Flag.GREATERTHAN), Is.True);
+        }
+
         // TODO: Logic instructions
 
         // TODO: Stack instructions

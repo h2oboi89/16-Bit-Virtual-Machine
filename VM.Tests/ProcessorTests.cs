@@ -671,26 +671,12 @@ namespace VM.Tests
         }
 
         [Test]
-        public void CMP_AIsZero_SetsZeroFlag()
-        {
-            SetupCmpInstruction(0x0000, 0x0000);
-
-            ExecuteProgram();
-
-            Assert.That(processor.IsSet(Flag.ZERO), Is.True);
-            Assert.That(processor.IsSet(Flag.LESSTHAN), Is.False);
-            Assert.That(processor.IsSet(Flag.EQUAL), Is.True);
-            Assert.That(processor.IsSet(Flag.GREATERTHAN), Is.False);
-        }
-
-        [Test]
         public void CMP_LessThan_SetsLessThanFlag()
         {
             SetupCmpInstruction(0x1234, 0x4321);
 
             ExecuteProgram();
 
-            Assert.That(processor.IsSet(Flag.ZERO), Is.False);
             Assert.That(processor.IsSet(Flag.LESSTHAN), Is.True);
             Assert.That(processor.IsSet(Flag.EQUAL), Is.False);
             Assert.That(processor.IsSet(Flag.GREATERTHAN), Is.False);
@@ -703,7 +689,6 @@ namespace VM.Tests
 
             ExecuteProgram();
 
-            Assert.That(processor.IsSet(Flag.ZERO), Is.False);
             Assert.That(processor.IsSet(Flag.LESSTHAN), Is.False);
             Assert.That(processor.IsSet(Flag.EQUAL), Is.True);
             Assert.That(processor.IsSet(Flag.GREATERTHAN), Is.False);
@@ -716,10 +701,31 @@ namespace VM.Tests
 
             ExecuteProgram();
 
-            Assert.That(processor.IsSet(Flag.ZERO), Is.False);
             Assert.That(processor.IsSet(Flag.LESSTHAN), Is.False);
             Assert.That(processor.IsSet(Flag.EQUAL), Is.False);
             Assert.That(processor.IsSet(Flag.GREATERTHAN), Is.True);
+        }
+
+        [Test]
+        public void CMPZ_Zero_SetsZeroFlag()
+        {
+            flasher.WriteInstruction(Instruction.LDVR, (ushort)0x0000, Register.R1);
+            flasher.WriteInstruction(Instruction.CMPZ, Register.R1);
+
+            ExecuteProgram();
+
+            Assert.That(processor.IsSet(Flag.ZERO), Is.True);
+        }
+
+        [Test]
+        public void CMPZ_NotZero_DoesNothing()
+        {
+            flasher.WriteInstruction(Instruction.LDVR, 0xffff, Register.R1);
+            flasher.WriteInstruction(Instruction.CMPZ, Register.R1);
+
+            ExecuteProgram();
+
+            Assert.That(processor.IsSet(Flag.ZERO), Is.False);
         }
 
         [Test]
@@ -870,6 +876,90 @@ namespace VM.Tests
             SetupCmpInstruction(0x1234, 0x1234);
             flasher.WriteInstruction(Instruction.LDVR, 0x008f, Register.R3);
             flasher.WriteInstruction(Instruction.JNER, Register.R3);
+
+            ExecuteProgram();
+        }
+
+        [Test]
+        public void JZ_ZeroFlagIsSet_ChangesPC()
+        {
+            flasher.WriteInstruction(Instruction.LDVR, (ushort)0x0000, Register.R1);
+            flasher.WriteInstruction(Instruction.CMPZ, Register.R1);
+            flasher.WriteInstruction(Instruction.JZ, 0x008f);
+
+            ExecuteProgram(0x008f);
+        }
+
+        [Test]
+        public void JZ_ZeroFlagIsNotSet_ChangesPC()
+        {
+            flasher.WriteInstruction(Instruction.LDVR, 0xffff, Register.R1);
+            flasher.WriteInstruction(Instruction.CMPZ, Register.R1);
+            flasher.WriteInstruction(Instruction.JZ, 0x008f);
+
+            ExecuteProgram();
+        }
+
+        [Test]
+        public void JZR_ZeroFlagIsSet_ChangesPC()
+        {
+            flasher.WriteInstruction(Instruction.LDVR, (ushort)0x0000, Register.R1);
+            flasher.WriteInstruction(Instruction.CMPZ, Register.R1);
+            flasher.WriteInstruction(Instruction.LDVR, 0x008f, Register.R3);
+            flasher.WriteInstruction(Instruction.JZR, Register.R3);
+
+            ExecuteProgram(0x008f);
+        }
+
+        [Test]
+        public void JZR_ZeroFlagIsNotSet_ChangesPC()
+        {
+            flasher.WriteInstruction(Instruction.LDVR, 0xffff, Register.R1);
+            flasher.WriteInstruction(Instruction.CMPZ, Register.R1);
+            flasher.WriteInstruction(Instruction.LDVR, 0x008f, Register.R3);
+            flasher.WriteInstruction(Instruction.JZR, Register.R3);
+
+            ExecuteProgram();
+        }
+
+        [Test]
+        public void JNZ_ZeroFlagIsNotSet_ChangesPC()
+        {
+            flasher.WriteInstruction(Instruction.LDVR, 0xffff, Register.R1);
+            flasher.WriteInstruction(Instruction.CMPZ, Register.R1);
+            flasher.WriteInstruction(Instruction.JNZ, 0x008f);
+
+            ExecuteProgram(0x008f);
+        }
+
+        [Test]
+        public void JNZ_ZeroFlagIsSet_DoesNothing()
+        {
+            flasher.WriteInstruction(Instruction.LDVR, (ushort)0x0000, Register.R1);
+            flasher.WriteInstruction(Instruction.CMPZ, Register.R1);
+            flasher.WriteInstruction(Instruction.JNZ, 0x008f);
+
+            ExecuteProgram();
+        }
+
+        [Test]
+        public void JNZR_ZeroFlagIsNotSet_ChangesPC()
+        {
+            flasher.WriteInstruction(Instruction.LDVR, 0xffff, Register.R1);
+            flasher.WriteInstruction(Instruction.CMPZ, Register.R1);
+            flasher.WriteInstruction(Instruction.LDVR, 0x008f, Register.R3);
+            flasher.WriteInstruction(Instruction.JNZR, Register.R3);
+
+            ExecuteProgram(0x008f);
+        }
+
+        [Test]
+        public void JNZR_ZeroFlagIsSet_DoesNothing()
+        {
+            flasher.WriteInstruction(Instruction.LDVR, (ushort)0x0000, Register.R1);
+            flasher.WriteInstruction(Instruction.CMPZ, Register.R1);
+            flasher.WriteInstruction(Instruction.LDVR, 0x008f, Register.R3);
+            flasher.WriteInstruction(Instruction.JNZR, Register.R3);
 
             ExecuteProgram();
         }

@@ -189,53 +189,65 @@ namespace VM
                     ClearFlag(Flag.ZERO);
                     ClearFlag(Flag.CARRY);
                     break;
+
                 case Instruction.CMP:
-                    ClearFlag(Flag.ZERO);
                     ClearFlag(Flag.LESSTHAN);
                     ClearFlag(Flag.GREATERTHAN);
                     ClearFlag(Flag.EQUAL);
                     break;
+
+                case Instruction.CMPZ:
+                    ClearFlag(Flag.ZERO);
+                    break;
+            }
+        }
+
+        private static bool IsCarryInstruction(Instruction instruction)
+        {
+            switch (instruction)
+            {
+                case Instruction.INC:
+                case Instruction.DEC:
+                case Instruction.ADD:
+                case Instruction.MUL:
+                case Instruction.SUB:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        private static bool IsZeroInstruction(Instruction instruction)
+        {
+            switch (instruction)
+            {
+                case Instruction.INC:
+                case Instruction.DEC:
+                case Instruction.ADD:
+                case Instruction.SUB:
+                case Instruction.MUL:
+                case Instruction.DIV:
+                case Instruction.CMPZ:
+                    return true;
+                default:
+                    return false;
             }
         }
 
         private void SetFlags(Instruction instruction)
         {
-            if (temp > ushort.MaxValue)
+            if (temp > ushort.MaxValue && IsCarryInstruction(instruction))
             {
-                switch (instruction)
-                {
-                    case Instruction.INC:
-                    case Instruction.DEC:
-                    case Instruction.ADD:
-                    case Instruction.MUL:
-                    case Instruction.SUB:
-                        SetFlag(Flag.CARRY);
-                        break;
-                }
+                SetFlag(Flag.CARRY);
             }
 
-            if (result == 0)
+            if (result == 0 && IsZeroInstruction(instruction))
             {
-                switch (instruction)
-                {
-                    case Instruction.INC:
-                    case Instruction.DEC:
-                    case Instruction.ADD:
-                    case Instruction.SUB:
-                    case Instruction.MUL:
-                    case Instruction.DIV:
-                        SetFlag(Flag.ZERO);
-                        break;
-                }
+                SetFlag(Flag.ZERO);
             }
 
             if (instruction == Instruction.CMP)
             {
-                if (valueA == 0)
-                {
-                    SetFlag(Flag.ZERO);
-                }
-
                 if (valueA < valueB)
                 {
                     SetFlag(Flag.LESSTHAN);
@@ -377,10 +389,18 @@ namespace VM
 
                 // TODO: Jump instructions
 
+                case Instruction.CMPZ:
+                    register = FetchRegister();
+
+                    result = GetRegister(register);
+                    break;
+
                 case Instruction.JLT:
                 case Instruction.JGT:
                 case Instruction.JE:
                 case Instruction.JNE:
+                case Instruction.JZ:
+                case Instruction.JNZ:
                     address = FetchU16();
                     break;
 
@@ -388,20 +408,20 @@ namespace VM
                 case Instruction.JGTR:
                 case Instruction.JER:
                 case Instruction.JNER:
+                case Instruction.JZR:
+                case Instruction.JNZR:
                     register = FetchRegister();
 
                     address = GetRegister(register);
                     break;
 
-                    // TODO: Logic instructions
-
                     // TODO: Stack instructions
             }
 
-            SetFlagForLogicalJumps(instruction);
+            SetFlagToCheckForLogicalJumps(instruction);
         }
 
-        private void SetFlagForLogicalJumps(Instruction instruction)
+        private void SetFlagToCheckForLogicalJumps(Instruction instruction)
         {
             switch (instruction)
             {
@@ -417,7 +437,16 @@ namespace VM
 
                 case Instruction.JE:
                 case Instruction.JER:
+                case Instruction.JNE:
+                case Instruction.JNER:
                     flag = Flag.EQUAL;
+                    break;
+
+                case Instruction.JZ:
+                case Instruction.JZR:
+                case Instruction.JNZ:
+                case Instruction.JNZR:
+                    flag = Flag.ZERO;
                     break;
             }
         }
@@ -428,6 +457,7 @@ namespace VM
             {
                 case Instruction.NOP:
                 case Instruction.CMP:
+                case Instruction.CMPZ:
                     break;
 
                 case Instruction.MOVE:
@@ -525,14 +555,14 @@ namespace VM
 
                 // TODO: Jump instructions
 
-                // TODO: Logic instructions
-
                 case Instruction.JLT:
                 case Instruction.JLTR:
                 case Instruction.JGT:
                 case Instruction.JGTR:
                 case Instruction.JE:
                 case Instruction.JER:
+                case Instruction.JZ:
+                case Instruction.JZR:
                     if (IsSet(flag))
                     {
                         SetRegister(Register.PC, address, false);
@@ -541,7 +571,9 @@ namespace VM
 
                 case Instruction.JNE:
                 case Instruction.JNER:
-                    if (!IsSet(Flag.EQUAL))
+                case Instruction.JNZ:
+                case Instruction.JNZR:
+                    if (!IsSet(flag))
                     {
                         SetRegister(Register.PC, address, false);
                     }

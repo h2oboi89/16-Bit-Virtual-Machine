@@ -186,10 +186,16 @@
         #region Logic Instructions
         /// <summary>
         /// Compare values in <see cref="Register"/>s with each other (A &lt;cmp&gt; B).
-        /// Sets bits in <see cref="Register.FLAG"/> that get used by the various Jump <see cref="Instruction"/>s.
+        /// Sets bits in <see cref="Register.FLAG"/> that get used by the various Logical Jump <see cref="Instruction"/>s.
         /// Arguments: A (<see cref="Register"/>), B (<see cref="Register"/>).
         /// </summary>
         CMP,
+        /// <summary>
+        /// Compare value in <see cref="Register"/> against zero.
+        /// Sets bits in <see cref="Register.FLAG"/> that get used by the various Logical Jump <see cref="Instruction"/>s.
+        /// Arguments: A (<see cref="Register"/>).
+        /// </summary>
+        CMPZ,
         /// <summary>
         /// Jump if Less Than.
         /// Jumps to address if <see cref="Flag.LESSTHAN"/> is set.

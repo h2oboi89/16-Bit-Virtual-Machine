@@ -113,7 +113,7 @@ namespace VM
         /// Used by <see cref="WriteU8(byte)"/> and <see cref="WriteU16(ushort)"/>.
         /// Automatically increments each time one of those methods is called.
         /// </summary>
-        internal int Address { get; set; }
+        internal ushort Address { get; set; }
 
         /// <summary>
         /// Writes the specifed <see cref="byte"/> to current memory location as specifed by <see cref="Address"/>.

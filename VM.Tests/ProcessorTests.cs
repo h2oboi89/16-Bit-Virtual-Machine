@@ -18,24 +18,29 @@ namespace VM.Tests
             processor = new Processor(memory);
         }
 
-        private void ExecuteProgram()
+        /// <summary>
+        /// Executes program and asserts that PC is at correct value.
+        /// If <paramref name="expectedAddress"/> is not specified then <see cref="Flasher.Address"/> is used.
+        /// </summary>
+        /// <param name="expectedAddress">Optional expected PC value.</param>
+        private void ExecuteProgram(ushort? expectedAddress = null)
         {
+            if (expectedAddress == null)
+            {
+                expectedAddress = flasher.Address;
+            }
+
             for (var i = 0; i < flasher.InstructionCount; i++)
             {
                 processor.Step();
             }
 
-            AssertPCIsAtEndOfProgram();
-        }
-
-        private void AssertPCIsAtEndOfProgram()
-        {
-            Assert.That(processor.GetRegister(Register.PC), Is.EqualTo(flasher.Address));
+            Assert.That(processor.GetRegister(Register.PC), Is.EqualTo(expectedAddress.Value));
         }
 
         /// <summary>
         /// Writes values to <see cref="Memory"/> and resets <see cref="Flasher.Address"/> to 0.
-        /// Should be called before all program instructions are written to allow <see cref="AssertPCIsAtEndOfProgram"/> to function.
+        /// Should be called before all program instructions are written to allow <see cref="AssertPCIsAtExpectedAddress"/> to function.
         /// </summary>
         /// <param name="address">Location in memory to store value</param>
         /// <param name="value">Value to store in memory.</param>
@@ -653,12 +658,22 @@ namespace VM.Tests
 
         // TODO: Jump instructions
 
+        /// <summary>
+        /// Flashes instruction to load values into registers and perform <see cref="Instruction.CMP"/>.
+        /// </summary>
+        /// <param name="valueA">Value for <see cref="Register.R1"/></param>
+        /// <param name="valueB">Value for <see cref="Register.R2"/></param>
+        private void SetupCmpInstruction(ushort valueA, ushort valueB)
+        {
+            flasher.WriteInstruction(Instruction.LDVR, valueA, Register.R1);
+            flasher.WriteInstruction(Instruction.LDVR, valueB, Register.R2);
+            flasher.WriteInstruction(Instruction.CMP, Register.R1, Register.R2);
+        }
+
         [Test]
         public void CMP_AIsZero_SetsZeroFlag()
         {
-            flasher.WriteInstruction(Instruction.LDVR, (ushort)0x0000, Register.R1);
-            flasher.WriteInstruction(Instruction.LDVR, (ushort)0x0000, Register.R2);
-            flasher.WriteInstruction(Instruction.CMP, Register.R1, Register.R2);
+            SetupCmpInstruction(0x0000, 0x0000);
 
             ExecuteProgram();
 
@@ -671,9 +686,7 @@ namespace VM.Tests
         [Test]
         public void CMP_LessThan_SetsLessThanFlag()
         {
-            flasher.WriteInstruction(Instruction.LDVR, 0x1234, Register.R1);
-            flasher.WriteInstruction(Instruction.LDVR, 0x4321, Register.R2);
-            flasher.WriteInstruction(Instruction.CMP, Register.R1, Register.R2);
+            SetupCmpInstruction(0x1234, 0x4321);
 
             ExecuteProgram();
 
@@ -686,9 +699,7 @@ namespace VM.Tests
         [Test]
         public void CMP_EqualTo_SetsEqualFlag()
         {
-            flasher.WriteInstruction(Instruction.LDVR, 0x1234, Register.R1);
-            flasher.WriteInstruction(Instruction.LDVR, 0x1234, Register.R2);
-            flasher.WriteInstruction(Instruction.CMP, Register.R1, Register.R2);
+            SetupCmpInstruction(0x1234, 0x1234);
 
             ExecuteProgram();
 
@@ -701,9 +712,7 @@ namespace VM.Tests
         [Test]
         public void CMP_GreaterThan_SetsGreaterThanFlag()
         {
-            flasher.WriteInstruction(Instruction.LDVR, 0x4321, Register.R1);
-            flasher.WriteInstruction(Instruction.LDVR, 0x1234, Register.R2);
-            flasher.WriteInstruction(Instruction.CMP, Register.R1, Register.R2);
+            SetupCmpInstruction(0x4321, 0x1234);
 
             ExecuteProgram();
 
@@ -711,6 +720,158 @@ namespace VM.Tests
             Assert.That(processor.IsSet(Flag.LESSTHAN), Is.False);
             Assert.That(processor.IsSet(Flag.EQUAL), Is.False);
             Assert.That(processor.IsSet(Flag.GREATERTHAN), Is.True);
+        }
+
+        [Test]
+        public void JLT_LessThanFlagIsSet_ChangesPC()
+        {
+            SetupCmpInstruction(0x1234, 0x4321);
+            flasher.WriteInstruction(Instruction.JLT, 0x008f);
+
+            ExecuteProgram(0x008f);
+        }
+
+        [Test]
+        public void JLT_LessThanFlagIsNotSet_DoesNothing()
+        {
+            SetupCmpInstruction(0x4321, 0x1234);
+            flasher.WriteInstruction(Instruction.JLT, 0x008f);
+
+            ExecuteProgram();
+        }
+
+        [Test]
+        public void JLTR_LessThanFlagIsSet_ChangesPC()
+        {
+            SetupCmpInstruction(0x1234, 0x4321);
+            flasher.WriteInstruction(Instruction.LDVR, 0x008f, Register.R3);
+            flasher.WriteInstruction(Instruction.JLTR, Register.R3);
+
+            ExecuteProgram(0x008f);
+        }
+
+        [Test]
+        public void JLTR_LessThanFlagIsNotSet_DoesNothing()
+        {
+            SetupCmpInstruction(0x4321, 0x1234);
+            flasher.WriteInstruction(Instruction.LDVR, 0x008f, Register.R3);
+            flasher.WriteInstruction(Instruction.JLTR, Register.R3);
+
+            ExecuteProgram();
+        }
+
+        [Test]
+        public void JGT_GreaterThanFlagIsSet_ChangesPC()
+        {
+            SetupCmpInstruction(0x4321, 0x1234);
+            flasher.WriteInstruction(Instruction.JGT, 0x008f);
+
+            ExecuteProgram(0x008f);
+        }
+
+        [Test]
+        public void JGT_GreaterThanFlagIsNotSet_ChangesPC()
+        {
+            SetupCmpInstruction(0x1234, 0x4321);
+            flasher.WriteInstruction(Instruction.JGT, 0x008f);
+
+            ExecuteProgram();
+        }
+
+        [Test]
+        public void JGTR_GreaterThanFlagIsSet_ChangesPC()
+        {
+            SetupCmpInstruction(0x4321, 0x1234);
+            flasher.WriteInstruction(Instruction.LDVR, 0x008f, Register.R3);
+            flasher.WriteInstruction(Instruction.JGTR, Register.R3);
+
+            ExecuteProgram(0x008f);
+        }
+
+        [Test]
+        public void JGTR_GreaterThanFlagIsNotSet_DoesNothing()
+        {
+            SetupCmpInstruction(0x1234, 0x4321);
+            flasher.WriteInstruction(Instruction.LDVR, 0x008f, Register.R3);
+            flasher.WriteInstruction(Instruction.JGTR, Register.R3);
+
+            ExecuteProgram();
+        }
+
+        [Test]
+        public void JE_EqualFlagIsSet_ChangesPC()
+        {
+            SetupCmpInstruction(0x1234, 0x1234);
+            flasher.WriteInstruction(Instruction.JE, 0x008f);
+
+            ExecuteProgram(0x008f);
+        }
+
+        [Test]
+        public void JE_EqualFlagIsNotSet_DoesNothing()
+        {
+            SetupCmpInstruction(0x1234, 0x4321);
+            flasher.WriteInstruction(Instruction.JE, 0x008f);
+
+            ExecuteProgram();
+        }
+
+        [Test]
+        public void JER_EqualFlagIsSet_ChangesPC()
+        {
+            SetupCmpInstruction(0x1234, 0x1234);
+            flasher.WriteInstruction(Instruction.LDVR, 0x008f, Register.R3);
+            flasher.WriteInstruction(Instruction.JER, Register.R3);
+
+            ExecuteProgram(0x008f);
+        }
+
+        [Test]
+        public void JER_EqualFlagIsNotSet_DoesNothing()
+        {
+            SetupCmpInstruction(0x1234, 0x4321);
+            flasher.WriteInstruction(Instruction.LDVR, 0x008f, Register.R3);
+            flasher.WriteInstruction(Instruction.JER, Register.R3);
+
+            ExecuteProgram();
+        }
+
+        [Test]
+        public void JNE_EqualFlagIsNotSet_ChangesPC()
+        {
+            SetupCmpInstruction(0x1234, 0x4321);
+            flasher.WriteInstruction(Instruction.JNE, 0x008f);
+
+            ExecuteProgram(0x008f);
+        }
+
+        [Test]
+        public void JNE_EqualFlagIsSet_DoesNothing()
+        {
+            SetupCmpInstruction(0x1234, 0x1234);
+            flasher.WriteInstruction(Instruction.JNE, 0x008f);
+
+            ExecuteProgram();
+        }
+
+        [Test]
+        public void JNER_EqualFlagIsNotSet_ChangesPC()
+        {
+            SetupCmpInstruction(0x1234, 0x4321);
+            flasher.WriteInstruction(Instruction.LDVR, 0x008f, Register.R3);
+            flasher.WriteInstruction(Instruction.JNER, Register.R3);
+
+            ExecuteProgram(0x008f);
+        }
+
+        [Test]
+        public void JNER_EqualFlagIsSet_DoesNothing()
+        {
+            SetupCmpInstruction(0x1234, 0x1234);
+            flasher.WriteInstruction(Instruction.LDVR, 0x008f, Register.R3);
+            flasher.WriteInstruction(Instruction.JNER, Register.R3);
+
+            ExecuteProgram();
         }
 
         // TODO: Logic instructions

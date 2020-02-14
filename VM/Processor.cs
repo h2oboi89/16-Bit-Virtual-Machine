@@ -29,6 +29,8 @@ namespace VM
         private Register destination;
         private Register registerA;
         private Register registerB;
+
+        private Flag flag;
         #endregion
 
         /// <summary>
@@ -371,13 +373,52 @@ namespace VM
                     shiftAmount = (byte)GetRegister(registerB);
                     break;
 
-                    // TODO: Subroutine instructions
+                // TODO: Subroutine instructions
 
-                    // TODO: Jump instructions
+                // TODO: Jump instructions
+
+                case Instruction.JLT:
+                case Instruction.JGT:
+                case Instruction.JE:
+                case Instruction.JNE:
+                    address = FetchU16();
+                    break;
+
+                case Instruction.JLTR:
+                case Instruction.JGTR:
+                case Instruction.JER:
+                case Instruction.JNER:
+                    register = FetchRegister();
+
+                    address = GetRegister(register);
+                    break;
 
                     // TODO: Logic instructions
 
                     // TODO: Stack instructions
+            }
+
+            SetFlagForLogicalJumps(instruction);
+        }
+
+        private void SetFlagForLogicalJumps(Instruction instruction)
+        {
+            switch (instruction)
+            {
+                case Instruction.JLT:
+                case Instruction.JLTR:
+                    flag = Flag.LESSTHAN;
+                    break;
+
+                case Instruction.JGT:
+                case Instruction.JGTR:
+                    flag = Flag.GREATERTHAN;
+                    break;
+
+                case Instruction.JE:
+                case Instruction.JER:
+                    flag = Flag.EQUAL;
+                    break;
             }
         }
 
@@ -485,6 +526,26 @@ namespace VM
                 // TODO: Jump instructions
 
                 // TODO: Logic instructions
+
+                case Instruction.JLT:
+                case Instruction.JLTR:
+                case Instruction.JGT:
+                case Instruction.JGTR:
+                case Instruction.JE:
+                case Instruction.JER:
+                    if (IsSet(flag))
+                    {
+                        SetRegister(Register.PC, address, false);
+                    }
+                    break;
+
+                case Instruction.JNE:
+                case Instruction.JNER:
+                    if (!IsSet(Flag.EQUAL))
+                    {
+                        SetRegister(Register.PC, address, false);
+                    }
+                    break;
 
                 // TODO: Stack instructions
 

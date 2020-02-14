@@ -20,7 +20,7 @@
         /// <summary>
         /// Next address in memory that will be written to.
         /// </summary>
-        public int Address
+        public ushort Address
         {
             get { return memory.Address; }
             set

@@ -60,6 +60,19 @@ namespace VM.Tests
             flasher.Address = 0;
         }
 
+        private void SetupBinaryInstruction(Instruction instruction, ushort valueA, ushort valueB)
+        {
+            flasher.WriteInstruction(Instruction.LDVR, valueA, Register.R1);
+            flasher.WriteInstruction(Instruction.LDVR, valueB, Register.R2);
+            flasher.WriteInstruction(instruction, Register.R1, Register.R2);
+        }
+
+        private void AssertZeroValueAndFlag(Register register = Register.ACC)
+        {
+            Assert.That(processor.GetRegister(register), Is.Zero);
+            Assert.That(processor.IsSet(Flag.ZERO), Is.True);
+        }
+
         [Test]
         public void Constructor_NullMemory_ThrowsException()
         {
@@ -193,16 +206,15 @@ namespace VM.Tests
         }
 
         [Test]
-        public void INC_Overflow_WrapsAndSetsCarryAndZeroFlags()
+        public void INC_Overflow_WrapsAndSetsZeroAndCarryFlags()
         {
-            flasher.WriteInstruction(Instruction.LDVR, ushort.MaxValue, Register.R1);
+            flasher.WriteInstruction(Instruction.LDVR, 0xffff, Register.R1);
             flasher.WriteInstruction(Instruction.INC, Register.R1);
 
             ExecuteProgram();
 
-            Assert.That(processor.GetRegister(Register.R1), Is.EqualTo(ushort.MinValue));
+            AssertZeroValueAndFlag(Register.R1);
             Assert.That(processor.IsSet(Flag.CARRY), Is.True);
-            Assert.That(processor.IsSet(Flag.ZERO), Is.True);
         }
 
         [Test]
@@ -220,12 +232,12 @@ namespace VM.Tests
         [Test]
         public void DEC_Underflow_WrapsAndSetsCarryFlag()
         {
-            flasher.WriteInstruction(Instruction.LDVR, ushort.MinValue, Register.R1);
+            flasher.WriteInstruction(Instruction.LDVR, (ushort)0x0000, Register.R1);
             flasher.WriteInstruction(Instruction.DEC, Register.R1);
 
             ExecuteProgram();
 
-            Assert.That(processor.GetRegister(Register.R1), Is.EqualTo(ushort.MaxValue));
+            Assert.That(processor.GetRegister(Register.R1), Is.EqualTo(0xffff));
             Assert.That(processor.IsSet(Flag.CARRY), Is.True);
         }
 
@@ -237,8 +249,7 @@ namespace VM.Tests
 
             ExecuteProgram();
 
-            Assert.That(processor.GetRegister(Register.R1), Is.Zero);
-            Assert.That(processor.IsSet(Flag.ZERO), Is.True);
+            AssertZeroValueAndFlag(Register.R1);
         }
 
         [Test]
@@ -339,9 +350,7 @@ namespace VM.Tests
         [Test]
         public void ADD_AdditionOfTwoRegisterValues()
         {
-            flasher.WriteInstruction(Instruction.LDVR, 0x1200, Register.R1);
-            flasher.WriteInstruction(Instruction.LDVR, 0x0034, Register.R2);
-            flasher.WriteInstruction(Instruction.ADD, Register.R1, Register.R2);
+            SetupBinaryInstruction(Instruction.ADD, 0x1200, 0x0034);
 
             ExecuteProgram();
 
@@ -352,9 +361,7 @@ namespace VM.Tests
         [Test]
         public void ADD_Overflow_WrapsAndSetsCarryFlag()
         {
-            flasher.WriteInstruction(Instruction.LDVR, 0xff00, Register.R1);
-            flasher.WriteInstruction(Instruction.LDVR, 0x1000, Register.R2);
-            flasher.WriteInstruction(Instruction.ADD, Register.R1, Register.R2);
+            SetupBinaryInstruction(Instruction.ADD, 0xff00, 0x1000);
 
             ExecuteProgram();
 
@@ -363,25 +370,20 @@ namespace VM.Tests
         }
 
         [Test]
-        public void ADD_ZeroResult_SetsCarryAndZeroFlag()
+        public void ADD_ZeroResult_SetsZeroAndCarryFlags()
         {
-            flasher.WriteInstruction(Instruction.LDVR, 0xff00, Register.R1);
-            flasher.WriteInstruction(Instruction.LDVR, 0x0100, Register.R2);
-            flasher.WriteInstruction(Instruction.ADD, Register.R1, Register.R2);
+            SetupBinaryInstruction(Instruction.ADD, 0xff00, 0x0100);
 
             ExecuteProgram();
 
-            Assert.That(processor.GetRegister(Register.ACC), Is.Zero);
+            AssertZeroValueAndFlag();
             Assert.That(processor.IsSet(Flag.CARRY), Is.True);
-            Assert.That(processor.IsSet(Flag.ZERO), Is.True);
         }
 
         [Test]
         public void SUB_SubtractionOfTwoRegisterValues()
         {
-            flasher.WriteInstruction(Instruction.LDVR, 0x1200, Register.R1);
-            flasher.WriteInstruction(Instruction.LDVR, 0x0034, Register.R2);
-            flasher.WriteInstruction(Instruction.SUB, Register.R1, Register.R2);
+            SetupBinaryInstruction(Instruction.SUB, 0x1200, 0x0034);
 
             ExecuteProgram();
 
@@ -392,9 +394,7 @@ namespace VM.Tests
         [Test]
         public void SUB_Underflow_WrapsAndSetsCarryFlag()
         {
-            flasher.WriteInstruction(Instruction.LDVR, 0x1000, Register.R1);
-            flasher.WriteInstruction(Instruction.LDVR, 0xff00, Register.R2);
-            flasher.WriteInstruction(Instruction.SUB, Register.R1, Register.R2);
+            SetupBinaryInstruction(Instruction.SUB, 0x1000, 0xff00);
 
             ExecuteProgram();
 
@@ -405,22 +405,17 @@ namespace VM.Tests
         [Test]
         public void SUB_ZeroResult_SetsZeroFlag()
         {
-            flasher.WriteInstruction(Instruction.LDVR, 0x1234, Register.R1);
-            flasher.WriteInstruction(Instruction.LDVR, 0x1234, Register.R2);
-            flasher.WriteInstruction(Instruction.SUB, Register.R1, Register.R2);
+            SetupBinaryInstruction(Instruction.SUB, 0x1234, 0x1234);
 
             ExecuteProgram();
 
-            Assert.That(processor.GetRegister(Register.ACC), Is.Zero);
-            Assert.That(processor.IsSet(Flag.ZERO), Is.True);
+            AssertZeroValueAndFlag();
         }
 
         [Test]
         public void MUL_MultiplicationOfTwoRegisterValues()
         {
-            flasher.WriteInstruction(Instruction.LDVR, 0x00f0, Register.R1);
-            flasher.WriteInstruction(Instruction.LDVR, 0x00f0, Register.R2);
-            flasher.WriteInstruction(Instruction.MUL, Register.R1, Register.R2);
+            SetupBinaryInstruction(Instruction.MUL, 0x00f0, 0x00f0);
 
             ExecuteProgram();
 
@@ -431,9 +426,7 @@ namespace VM.Tests
         [Test]
         public void MUL_Overflow_WrapsAndSetsCarryFlag()
         {
-            flasher.WriteInstruction(Instruction.LDVR, 0x1234, Register.R1);
-            flasher.WriteInstruction(Instruction.LDVR, 0xffff, Register.R2);
-            flasher.WriteInstruction(Instruction.MUL, Register.R1, Register.R2);
+            SetupBinaryInstruction(Instruction.MUL, 0x1234, 0xffff);
 
             ExecuteProgram();
 
@@ -444,22 +437,17 @@ namespace VM.Tests
         [Test]
         public void MUL_ZeroResult_SetsZeroFlag()
         {
-            flasher.WriteInstruction(Instruction.LDVR, 0x1234, Register.R1);
-            flasher.WriteInstruction(Instruction.LDVR, (ushort)0x0000, Register.R2);
-            flasher.WriteInstruction(Instruction.MUL, Register.R1, Register.R2);
+            SetupBinaryInstruction(Instruction.MUL, 0x1234, 0x0000);
 
             ExecuteProgram();
 
-            Assert.That(processor.GetRegister(Register.ACC), Is.Zero);
-            Assert.That(processor.IsSet(Flag.ZERO), Is.True);
+            AssertZeroValueAndFlag();
         }
 
         [Test]
         public void DIV_DivisionOfTwoRegisterValues()
         {
-            flasher.WriteInstruction(Instruction.LDVR, 0x0040, Register.R1);
-            flasher.WriteInstruction(Instruction.LDVR, 0x0002, Register.R2);
-            flasher.WriteInstruction(Instruction.DIV, Register.R1, Register.R2);
+            SetupBinaryInstruction(Instruction.DIV, 0x0040, 0x0002);
 
             ExecuteProgram();
 
@@ -470,9 +458,7 @@ namespace VM.Tests
         [Test]
         public void DIV_ByZero_ResetsAndThrowsException()
         {
-            flasher.WriteInstruction(Instruction.LDVR, 0x1234, Register.R1);
-            flasher.WriteInstruction(Instruction.LDVR, (ushort)0x0000, Register.R2);
-            flasher.WriteInstruction(Instruction.DIV, Register.R1, Register.R2);
+            SetupBinaryInstruction(Instruction.DIV, 0x1234, 0x0000);
 
             processor.Step();
             processor.Step();
@@ -485,22 +471,17 @@ namespace VM.Tests
         [Test]
         public void DIV_ZeroResult_SetsZeroFlag()
         {
-            flasher.WriteInstruction(Instruction.LDVR, 0x0001, Register.R1);
-            flasher.WriteInstruction(Instruction.LDVR, 0xffff, Register.R2);
-            flasher.WriteInstruction(Instruction.DIV, Register.R1, Register.R2);
+            SetupBinaryInstruction(Instruction.DIV, 0x0001, 0xffff);
 
             ExecuteProgram();
 
-            Assert.That(processor.GetRegister(Register.ACC), Is.Zero);
-            Assert.That(processor.IsSet(Flag.ZERO), Is.True);
+            AssertZeroValueAndFlag();
         }
 
         [Test]
         public void AND_BinaryAndOfTwoRegisterValues()
         {
-            flasher.WriteInstruction(Instruction.LDVR, 0x00ff, Register.R1);
-            flasher.WriteInstruction(Instruction.LDVR, 0xaaaa, Register.R2);
-            flasher.WriteInstruction(Instruction.AND, Register.R1, Register.R2);
+            SetupBinaryInstruction(Instruction.AND, 0x00ff, 0xaaaa);
 
             ExecuteProgram();
 
@@ -508,11 +489,19 @@ namespace VM.Tests
         }
 
         [Test]
+        public void AND_ZeroResult_SetsZeroFlag()
+        {
+            SetupBinaryInstruction(Instruction.AND, 0x00ff, 0xff00);
+
+            ExecuteProgram();
+
+            AssertZeroValueAndFlag();
+        }
+
+        [Test]
         public void OR_BinaryOrOfTwoRegisterValues()
         {
-            flasher.WriteInstruction(Instruction.LDVR, 0x0055, Register.R1);
-            flasher.WriteInstruction(Instruction.LDVR, 0xaaaa, Register.R2);
-            flasher.WriteInstruction(Instruction.OR, Register.R1, Register.R2);
+            SetupBinaryInstruction(Instruction.OR, 0x0055, 0xaaaa);
 
             ExecuteProgram();
 
@@ -520,15 +509,33 @@ namespace VM.Tests
         }
 
         [Test]
+        public void OR_ZeroResult_SetsZeroFlag()
+        {
+            SetupBinaryInstruction(Instruction.OR, 0x0000, 0x0000);
+
+            ExecuteProgram();
+
+            AssertZeroValueAndFlag();
+        }
+
+        [Test]
         public void XOR_BinaryXorOfTwoRegisterValues()
         {
-            flasher.WriteInstruction(Instruction.LDVR, 0x00ff, Register.R1);
-            flasher.WriteInstruction(Instruction.LDVR, 0xaaaa, Register.R2);
-            flasher.WriteInstruction(Instruction.XOR, Register.R1, Register.R2);
+            SetupBinaryInstruction(Instruction.XOR, 0x00ff, 0xaaaa);
 
             ExecuteProgram();
 
             Assert.That(processor.GetRegister(Register.ACC), Is.EqualTo(0xaa55));
+        }
+
+        [Test]
+        public void XOR_ZeroResult_SetsZeroFlag()
+        {
+            SetupBinaryInstruction(Instruction.XOR, 0x00ff, 0x00ff);
+
+            ExecuteProgram();
+
+            AssertZeroValueAndFlag();
         }
 
         [Test]
@@ -540,6 +547,17 @@ namespace VM.Tests
             ExecuteProgram();
 
             Assert.That(processor.GetRegister(Register.ACC), Is.EqualTo(0x5555));
+        }
+
+        [Test]
+        public void NOT_ZeroResult_SetsZeroFlag()
+        {
+            flasher.WriteInstruction(Instruction.LDVR, 0xffff, Register.R1);
+            flasher.WriteInstruction(Instruction.NOT, Register.R1);
+
+            ExecuteProgram();
+
+            AssertZeroValueAndFlag();
         }
 
         [Test]
@@ -566,7 +584,7 @@ namespace VM.Tests
 
             ExecuteProgram();
 
-            Assert.That(processor.GetRegister(Register.ACC), Is.Zero);
+            AssertZeroValueAndFlag();
         }
 
         [Test]
@@ -595,7 +613,7 @@ namespace VM.Tests
 
             ExecuteProgram();
 
-            Assert.That(processor.GetRegister(Register.ACC), Is.Zero);
+            AssertZeroValueAndFlag();
         }
 
         [Test]
@@ -622,7 +640,7 @@ namespace VM.Tests
 
             ExecuteProgram();
 
-            Assert.That(processor.GetRegister(Register.ACC), Is.Zero);
+            AssertZeroValueAndFlag();
         }
 
         [Test]
@@ -651,29 +669,32 @@ namespace VM.Tests
 
             ExecuteProgram();
 
-            Assert.That(processor.GetRegister(Register.ACC), Is.Zero);
+            AssertZeroValueAndFlag();
         }
 
         // TODO: Subroutine instructions
 
-        // TODO: Jump instructions
-
-        /// <summary>
-        /// Flashes instruction to load values into registers and perform <see cref="Instruction.CMP"/>.
-        /// </summary>
-        /// <param name="valueA">Value for <see cref="Register.R1"/></param>
-        /// <param name="valueB">Value for <see cref="Register.R2"/></param>
-        private void SetupCmpInstruction(ushort valueA, ushort valueB)
+        [Test]
+        public void JUMP_DoesUnconditionalJumpUsingAddress()
         {
-            flasher.WriteInstruction(Instruction.LDVR, valueA, Register.R1);
-            flasher.WriteInstruction(Instruction.LDVR, valueB, Register.R2);
-            flasher.WriteInstruction(Instruction.CMP, Register.R1, Register.R2);
+            flasher.WriteInstruction(Instruction.JUMP, 0x1234);
+
+            ExecuteProgram(0x1234);
+        }
+
+        [Test]
+        public void JUMPR_DoesUnconditionalJumpUsingRegisterValue()
+        {
+            flasher.WriteInstruction(Instruction.LDVR, 0x1234, Register.R1);
+            flasher.WriteInstruction(Instruction.JUMPR, Register.R1);
+
+            ExecuteProgram(0x1234);
         }
 
         [Test]
         public void CMP_LessThan_SetsLessThanFlag()
         {
-            SetupCmpInstruction(0x1234, 0x4321);
+            SetupBinaryInstruction(Instruction.CMP, 0x1234, 0x4321);
 
             ExecuteProgram();
 
@@ -685,7 +706,7 @@ namespace VM.Tests
         [Test]
         public void CMP_EqualTo_SetsEqualFlag()
         {
-            SetupCmpInstruction(0x1234, 0x1234);
+            SetupBinaryInstruction(Instruction.CMP, 0x1234, 0x1234);
 
             ExecuteProgram();
 
@@ -697,7 +718,7 @@ namespace VM.Tests
         [Test]
         public void CMP_GreaterThan_SetsGreaterThanFlag()
         {
-            SetupCmpInstruction(0x4321, 0x1234);
+            SetupBinaryInstruction(Instruction.CMP, 0x4321, 0x1234);
 
             ExecuteProgram();
 
@@ -731,7 +752,7 @@ namespace VM.Tests
         [Test]
         public void JLT_LessThanFlagIsSet_ChangesPC()
         {
-            SetupCmpInstruction(0x1234, 0x4321);
+            SetupBinaryInstruction(Instruction.CMP, 0x1234, 0x4321);
             flasher.WriteInstruction(Instruction.JLT, 0x008f);
 
             ExecuteProgram(0x008f);
@@ -740,7 +761,7 @@ namespace VM.Tests
         [Test]
         public void JLT_LessThanFlagIsNotSet_DoesNothing()
         {
-            SetupCmpInstruction(0x4321, 0x1234);
+            SetupBinaryInstruction(Instruction.CMP, 0x4321, 0x1234);
             flasher.WriteInstruction(Instruction.JLT, 0x008f);
 
             ExecuteProgram();
@@ -749,7 +770,7 @@ namespace VM.Tests
         [Test]
         public void JLTR_LessThanFlagIsSet_ChangesPC()
         {
-            SetupCmpInstruction(0x1234, 0x4321);
+            SetupBinaryInstruction(Instruction.CMP, 0x1234, 0x4321);
             flasher.WriteInstruction(Instruction.LDVR, 0x008f, Register.R3);
             flasher.WriteInstruction(Instruction.JLTR, Register.R3);
 
@@ -759,7 +780,7 @@ namespace VM.Tests
         [Test]
         public void JLTR_LessThanFlagIsNotSet_DoesNothing()
         {
-            SetupCmpInstruction(0x4321, 0x1234);
+            SetupBinaryInstruction(Instruction.CMP, 0x4321, 0x1234);
             flasher.WriteInstruction(Instruction.LDVR, 0x008f, Register.R3);
             flasher.WriteInstruction(Instruction.JLTR, Register.R3);
 
@@ -769,7 +790,7 @@ namespace VM.Tests
         [Test]
         public void JGT_GreaterThanFlagIsSet_ChangesPC()
         {
-            SetupCmpInstruction(0x4321, 0x1234);
+            SetupBinaryInstruction(Instruction.CMP, 0x4321, 0x1234);
             flasher.WriteInstruction(Instruction.JGT, 0x008f);
 
             ExecuteProgram(0x008f);
@@ -778,7 +799,7 @@ namespace VM.Tests
         [Test]
         public void JGT_GreaterThanFlagIsNotSet_ChangesPC()
         {
-            SetupCmpInstruction(0x1234, 0x4321);
+            SetupBinaryInstruction(Instruction.CMP, 0x1234, 0x4321);
             flasher.WriteInstruction(Instruction.JGT, 0x008f);
 
             ExecuteProgram();
@@ -787,7 +808,7 @@ namespace VM.Tests
         [Test]
         public void JGTR_GreaterThanFlagIsSet_ChangesPC()
         {
-            SetupCmpInstruction(0x4321, 0x1234);
+            SetupBinaryInstruction(Instruction.CMP, 0x4321, 0x1234);
             flasher.WriteInstruction(Instruction.LDVR, 0x008f, Register.R3);
             flasher.WriteInstruction(Instruction.JGTR, Register.R3);
 
@@ -797,7 +818,7 @@ namespace VM.Tests
         [Test]
         public void JGTR_GreaterThanFlagIsNotSet_DoesNothing()
         {
-            SetupCmpInstruction(0x1234, 0x4321);
+            SetupBinaryInstruction(Instruction.CMP, 0x1234, 0x4321);
             flasher.WriteInstruction(Instruction.LDVR, 0x008f, Register.R3);
             flasher.WriteInstruction(Instruction.JGTR, Register.R3);
 
@@ -807,7 +828,7 @@ namespace VM.Tests
         [Test]
         public void JE_EqualFlagIsSet_ChangesPC()
         {
-            SetupCmpInstruction(0x1234, 0x1234);
+            SetupBinaryInstruction(Instruction.CMP, 0x1234, 0x1234);
             flasher.WriteInstruction(Instruction.JE, 0x008f);
 
             ExecuteProgram(0x008f);
@@ -816,7 +837,7 @@ namespace VM.Tests
         [Test]
         public void JE_EqualFlagIsNotSet_DoesNothing()
         {
-            SetupCmpInstruction(0x1234, 0x4321);
+            SetupBinaryInstruction(Instruction.CMP, 0x1234, 0x4321);
             flasher.WriteInstruction(Instruction.JE, 0x008f);
 
             ExecuteProgram();
@@ -825,7 +846,7 @@ namespace VM.Tests
         [Test]
         public void JER_EqualFlagIsSet_ChangesPC()
         {
-            SetupCmpInstruction(0x1234, 0x1234);
+            SetupBinaryInstruction(Instruction.CMP, 0x1234, 0x1234);
             flasher.WriteInstruction(Instruction.LDVR, 0x008f, Register.R3);
             flasher.WriteInstruction(Instruction.JER, Register.R3);
 
@@ -835,7 +856,7 @@ namespace VM.Tests
         [Test]
         public void JER_EqualFlagIsNotSet_DoesNothing()
         {
-            SetupCmpInstruction(0x1234, 0x4321);
+            SetupBinaryInstruction(Instruction.CMP, 0x1234, 0x4321);
             flasher.WriteInstruction(Instruction.LDVR, 0x008f, Register.R3);
             flasher.WriteInstruction(Instruction.JER, Register.R3);
 
@@ -845,7 +866,7 @@ namespace VM.Tests
         [Test]
         public void JNE_EqualFlagIsNotSet_ChangesPC()
         {
-            SetupCmpInstruction(0x1234, 0x4321);
+            SetupBinaryInstruction(Instruction.CMP, 0x1234, 0x4321);
             flasher.WriteInstruction(Instruction.JNE, 0x008f);
 
             ExecuteProgram(0x008f);
@@ -854,7 +875,7 @@ namespace VM.Tests
         [Test]
         public void JNE_EqualFlagIsSet_DoesNothing()
         {
-            SetupCmpInstruction(0x1234, 0x1234);
+            SetupBinaryInstruction(Instruction.CMP, 0x1234, 0x1234);
             flasher.WriteInstruction(Instruction.JNE, 0x008f);
 
             ExecuteProgram();
@@ -863,7 +884,7 @@ namespace VM.Tests
         [Test]
         public void JNER_EqualFlagIsNotSet_ChangesPC()
         {
-            SetupCmpInstruction(0x1234, 0x4321);
+            SetupBinaryInstruction(Instruction.CMP, 0x1234, 0x4321);
             flasher.WriteInstruction(Instruction.LDVR, 0x008f, Register.R3);
             flasher.WriteInstruction(Instruction.JNER, Register.R3);
 
@@ -873,7 +894,7 @@ namespace VM.Tests
         [Test]
         public void JNER_EqualFlagIsSet_DoesNothing()
         {
-            SetupCmpInstruction(0x1234, 0x1234);
+            SetupBinaryInstruction(Instruction.CMP, 0x1234, 0x1234);
             flasher.WriteInstruction(Instruction.LDVR, 0x008f, Register.R3);
             flasher.WriteInstruction(Instruction.JNER, Register.R3);
 
@@ -963,8 +984,6 @@ namespace VM.Tests
 
             ExecuteProgram();
         }
-
-        // TODO: Logic instructions
 
         // TODO: Stack instructions
         // TODO: memory access into stack is invalid

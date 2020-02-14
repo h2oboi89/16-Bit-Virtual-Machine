@@ -56,8 +56,8 @@ namespace VM
         {
             registers.Clear();
 
-            SetRegister(Register.SP, (ushort)(memory.MaxAddress - DATASIZE), false);
-            SetRegister(Register.FP, (ushort)(memory.MaxAddress - DATASIZE), false);
+            SetRegister(Register.SP, (ushort)(memory.MaxAddress - DATASIZE));
+            SetRegister(Register.FP, (ushort)(memory.MaxAddress - DATASIZE));
         }
 
         private void ResetAndThrow(Exception exception)
@@ -94,7 +94,7 @@ namespace VM
             return registers.GetU16((ushort)((byte)register * DATASIZE));
         }
 
-        private void SetRegister(Register register, ushort value, bool direct = true)
+        private void SetRegister(Register register, ushort value, bool direct = false)
         {
             if (register.IsPrivate() && direct)
             {
@@ -109,7 +109,7 @@ namespace VM
             var addresss = GetRegister(Register.PC);
             var value = memory.GetU8(addresss);
 
-            SetRegister(Register.PC, (ushort)(addresss + sizeof(byte)), false);
+            SetRegister(Register.PC, (ushort)(addresss + sizeof(byte)));
 
             return value;
         }
@@ -128,7 +128,7 @@ namespace VM
             var address = GetRegister(Register.PC);
             var value = memory.GetU16(address);
 
-            SetRegister(Register.PC, (ushort)(address + sizeof(ushort)), false);
+            SetRegister(Register.PC, (ushort)(address + sizeof(ushort)));
 
             return value;
         }
@@ -152,7 +152,7 @@ namespace VM
 
             value = flag.Set(value);
 
-            SetRegister(Register.FLAG, value, false);
+            SetRegister(Register.FLAG, value);
         }
 
         private void ClearFlag(Flag flag)
@@ -161,7 +161,7 @@ namespace VM
 
             value = flag.Clear(value);
 
-            SetRegister(Register.FLAG, value, false);
+            SetRegister(Register.FLAG, value);
         }
 
         /// <summary>
@@ -176,72 +176,74 @@ namespace VM
             return flag.IsSet(value);
         }
 
+        private static bool IsCarryFlagInstruction(Instruction instruction)
+        {
+            switch (instruction)
+            {
+                case Instruction.INC:
+                case Instruction.DEC:
+                case Instruction.ADD:
+                case Instruction.MUL:
+                case Instruction.SUB:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        private static bool IsZeroFlagInstruction(Instruction instruction)
+        {
+            switch (instruction)
+            {
+                case Instruction.INC:
+                case Instruction.DEC:
+                case Instruction.ADD:
+                case Instruction.SUB:
+                case Instruction.MUL:
+                case Instruction.DIV:
+                case Instruction.AND:
+                case Instruction.OR:
+                case Instruction.XOR:
+                case Instruction.NOT:
+                case Instruction.SRL:
+                case Instruction.SRLR:
+                case Instruction.SRR:
+                case Instruction.SRRR:
+                case Instruction.CMPZ:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
         private void ClearFlags(Instruction instruction)
         {
-            switch (instruction)
+            if (IsCarryFlagInstruction(instruction))
             {
-                case Instruction.INC:
-                case Instruction.DEC:
-                case Instruction.ADD:
-                case Instruction.SUB:
-                case Instruction.MUL:
-                case Instruction.DIV:
-                    ClearFlag(Flag.ZERO);
-                    ClearFlag(Flag.CARRY);
-                    break;
-
-                case Instruction.CMP:
-                    ClearFlag(Flag.LESSTHAN);
-                    ClearFlag(Flag.GREATERTHAN);
-                    ClearFlag(Flag.EQUAL);
-                    break;
-
-                case Instruction.CMPZ:
-                    ClearFlag(Flag.ZERO);
-                    break;
+                ClearFlag(Flag.CARRY);
             }
-        }
 
-        private static bool IsCarryInstruction(Instruction instruction)
-        {
-            switch (instruction)
+            if (IsZeroFlagInstruction(instruction))
             {
-                case Instruction.INC:
-                case Instruction.DEC:
-                case Instruction.ADD:
-                case Instruction.MUL:
-                case Instruction.SUB:
-                    return true;
-                default:
-                    return false;
+                ClearFlag(Flag.ZERO);
             }
-        }
 
-        private static bool IsZeroInstruction(Instruction instruction)
-        {
-            switch (instruction)
+            if (instruction == Instruction.CMP)
             {
-                case Instruction.INC:
-                case Instruction.DEC:
-                case Instruction.ADD:
-                case Instruction.SUB:
-                case Instruction.MUL:
-                case Instruction.DIV:
-                case Instruction.CMPZ:
-                    return true;
-                default:
-                    return false;
+                ClearFlag(Flag.LESSTHAN);
+                ClearFlag(Flag.GREATERTHAN);
+                ClearFlag(Flag.EQUAL);
             }
         }
 
         private void SetFlags(Instruction instruction)
         {
-            if (temp > ushort.MaxValue && IsCarryInstruction(instruction))
+            if (IsCarryFlagInstruction(instruction) && temp > ushort.MaxValue)
             {
                 SetFlag(Flag.CARRY);
             }
 
-            if (result == 0 && IsZeroInstruction(instruction))
+            if (IsZeroFlagInstruction(instruction) && result == 0)
             {
                 SetFlag(Flag.ZERO);
             }
@@ -387,7 +389,15 @@ namespace VM
 
                 // TODO: Subroutine instructions
 
-                // TODO: Jump instructions
+                case Instruction.JUMP:
+                    address = FetchU16();
+                    break;
+
+                case Instruction.JUMPR:
+                    register = FetchRegister();
+
+                    address = GetRegister(register);
+                    break;
 
                 case Instruction.CMPZ:
                     register = FetchRegister();
@@ -464,7 +474,7 @@ namespace VM
                 case Instruction.LDVR:
                 case Instruction.LDAR:
                 case Instruction.LDRR:
-                    SetRegister(destination, value);
+                    SetRegister(destination, value, true);
                     break;
 
                 case Instruction.STVA:
@@ -480,7 +490,7 @@ namespace VM
 
                     result = (ushort)(temp);
 
-                    SetRegister(register, result, false);
+                    SetRegister(register, result);
                     break;
 
                 case Instruction.DEC:
@@ -489,7 +499,7 @@ namespace VM
 
                     result = (ushort)temp;
 
-                    SetRegister(register, result, false);
+                    SetRegister(register, result);
                     break;
 
                 case Instruction.MUL:
@@ -497,7 +507,7 @@ namespace VM
 
                     result = (ushort)temp;
 
-                    SetRegister(register, result, false);
+                    SetRegister(register, result);
                     break;
 
                 case Instruction.DIV:
@@ -510,50 +520,53 @@ namespace VM
 
                     result = (ushort)temp;
 
-                    SetRegister(register, result, false);
+                    SetRegister(register, result);
                     break;
 
                 case Instruction.AND:
                     result = (ushort)(valueA & valueB);
 
-                    SetRegister(register, result, false);
+                    SetRegister(register, result);
                     break;
 
                 case Instruction.OR:
                     result = (ushort)(valueA | valueB);
 
-                    SetRegister(register, result, false);
+                    SetRegister(register, result);
                     break;
 
                 case Instruction.XOR:
                     result = (ushort)(valueA ^ valueB);
 
-                    SetRegister(register, result, false);
+                    SetRegister(register, result);
                     break;
 
                 case Instruction.NOT:
                     result = (ushort)~value;
 
-                    SetRegister(Register.ACC, result, false);
+                    SetRegister(Register.ACC, result);
                     break;
 
                 case Instruction.SRL:
                 case Instruction.SRLR:
                     result = (ushort)(value << shiftAmount);
 
-                    SetRegister(Register.ACC, result, false);
+                    SetRegister(Register.ACC, result);
                     break;
 
                 case Instruction.SRR:
                 case Instruction.SRRR:
                     result = (ushort)(value >> shiftAmount);
 
-                    SetRegister(Register.ACC, result, false);
+                    SetRegister(Register.ACC, result);
                     break;
 
                 // TODO: Subroutine instructions
 
-                // TODO: Jump instructions
+                case Instruction.JUMP:
+                case Instruction.JUMPR:
+                    SetRegister(Register.PC, address);
+                    break;
 
                 case Instruction.JLT:
                 case Instruction.JLTR:
@@ -565,7 +578,7 @@ namespace VM
                 case Instruction.JZR:
                     if (IsSet(flag))
                     {
-                        SetRegister(Register.PC, address, false);
+                        SetRegister(Register.PC, address);
                     }
                     break;
 
@@ -575,7 +588,7 @@ namespace VM
                 case Instruction.JNZR:
                     if (!IsSet(flag))
                     {
-                        SetRegister(Register.PC, address, false);
+                        SetRegister(Register.PC, address);
                     }
                     break;
 

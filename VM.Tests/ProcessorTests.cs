@@ -10,12 +10,40 @@ namespace VM.Tests
         private Processor processor;
         private Flasher flasher;
 
+        private bool resetOccured;
+        private Exception exception;
+
+        private void OnReset(object sender, ResetEventArgs e)
+        {
+            resetOccured = true;
+            exception = e.Exception;
+        }
+
         [SetUp]
         public void Setup()
         {
             memory = new Memory(0x100);
             flasher = new Flasher(memory);
             processor = new Processor(memory);
+
+            resetOccured = false;
+            exception = null;
+            processor.Reset += OnReset;
+        }
+
+        [TearDown]
+        public void TearDown()
+        {
+            processor.Reset -= OnReset;
+        }
+
+        #region Helper methods
+        private void FlashNNops(ushort n)
+        {
+            for (var i = 0; i < n; i++)
+            {
+                flasher.WriteInstruction(Instruction.NOP);
+            }
         }
 
         /// <summary>
@@ -73,12 +101,6 @@ namespace VM.Tests
             Assert.That(processor.IsSet(Flag.ZERO), Is.True);
         }
 
-        [Test]
-        public void Constructor_NullMemory_ThrowsException()
-        {
-            Assert.That(() => new Processor(null), Throws.ArgumentNullException);
-        }
-
         private void AssertProcessorIsInInitialState()
         {
             Assert.That(processor.GetRegister(Register.PC), Is.Zero);
@@ -108,6 +130,24 @@ namespace VM.Tests
             Assert.That(processor.GetRegister(Register.T8), Is.Zero);
         }
 
+        private void AssertExceptionOccursAndProcessorResets(Action lambda, Type exceptionType, string expectedMessage)
+        {
+            Assert.That(lambda, Throws.Exception.TypeOf(exceptionType)
+                        .With.Message.EqualTo(expectedMessage));
+
+            Assert.That(resetOccured, Is.True);
+            Assert.That(exception.Message, Is.EqualTo(expectedMessage));
+
+            AssertProcessorIsInInitialState();
+        }
+        #endregion
+
+        [Test]
+        public void Constructor_NullMemory_ThrowsException()
+        {
+            Assert.That(() => new Processor(null), Throws.ArgumentNullException);
+        }
+
         [Test]
         public void Constructor_InitializesRegisters()
         {
@@ -128,10 +168,10 @@ namespace VM.Tests
 
                 flasher.WriteInstruction(Instruction.LDVR, 0x1234, register);
 
-                Assert.That(() => processor.Step(), Throws.InvalidOperationException
-                        .With.Message.EqualTo($"{Enum.GetName(typeof(Register), register)} register cannot be modified directly by code."));
-
-                AssertProcessorIsInInitialState();
+                AssertExceptionOccursAndProcessorResets(
+                    () => processor.Step(),
+                    typeof(InvalidOperationException),
+                    $"{Enum.GetName(typeof(Register), register)} register cannot be modified directly by code.");
             }
         }
 
@@ -140,23 +180,21 @@ namespace VM.Tests
         {
             flasher.WriteInstruction(Instruction.INC, (Register)0xff);
 
-            Assert.That(() => processor.Step(), Throws.InvalidOperationException
-                       .With.Message.EqualTo("Unknown register 0xFF."));
-
-            AssertProcessorIsInInitialState();
+            AssertExceptionOccursAndProcessorResets(
+                () => processor.Step(),
+                typeof(InvalidOperationException),
+                "Unknown register 0xFF.");
         }
 
         [Test]
-        public void GetRegister_InvalidRegister_ResetsAndThrowsException()
+        public void GetRegister_InvalidRegister_ThrowsException()
         {
             processor.Step();
 
             Assert.That(processor.GetRegister(Register.PC), Is.Not.Zero);
 
             Assert.That(() => processor.GetRegister((Register)0xff), Throws.InvalidOperationException
-                       .With.Message.EqualTo("Unknown register 0xFF."));
-
-            AssertProcessorIsInInitialState();
+                .With.Message.EqualTo("Unknown register 0xFF."));
         }
 
         [Test]
@@ -164,22 +202,19 @@ namespace VM.Tests
         {
             flasher.WriteInstruction(Instruction.STVA, 0x1234, 0xffff);
 
-            Assert.That(() => processor.Step(), Throws.InstanceOf<IndexOutOfRangeException>()
-                .With.Message.StartsWith("Invalid memory address 0xFFFF."));
-
-            AssertProcessorIsInInitialState();
+            AssertExceptionOccursAndProcessorResets(
+                () => processor.Step(),
+                typeof(IndexOutOfRangeException),
+                "Invalid memory address 0xFFFF. Valid Range: [0x0000, 0x00FF]");
         }
 
         #region Instructions
         [Test]
         public void NOP_DoesNothing()
         {
-            for (var i = 0; i < 10; i++)
-            {
-                processor.Step();
+            FlashNNops(50);
 
-                Assert.That(processor.GetRegister(Register.PC), Is.EqualTo(i + 1));
-            }
+            ExecuteProgram();
         }
 
         [Test]
@@ -463,9 +498,10 @@ namespace VM.Tests
             processor.Step();
             processor.Step();
 
-            Assert.That(() => processor.Step(), Throws.InstanceOf<DivideByZeroException>());
-
-            AssertProcessorIsInInitialState();
+            AssertExceptionOccursAndProcessorResets(
+                () => processor.Step(),
+                typeof(DivideByZeroException),
+                "Attempted to divide by zero.");
         }
 
         [Test]
@@ -990,11 +1026,28 @@ namespace VM.Tests
         // TODO: stack overflow exception
 
         [Test]
+        public void HALT_HaltsExecution()
+        {
+            FlashNNops(50);
+
+            flasher.WriteInstruction(Instruction.HALT);
+
+            processor.Run();
+
+            Assert.That(processor.GetRegister(Register.PC), Is.EqualTo(flasher.Address));
+        }
+
+        [Test]
         public void RESET_ResetsProcessorToBeginningOfProgram()
         {
+            FlashNNops(50);
+
             flasher.WriteInstruction(Instruction.RESET);
 
-            processor.Step();
+            processor.Run();
+
+            Assert.That(resetOccured, Is.True);
+            Assert.That(exception, Is.Null);
 
             AssertProcessorIsInInitialState();
         }
@@ -1004,10 +1057,10 @@ namespace VM.Tests
         {
             flasher.WriteInstruction((Instruction)0xff);
 
-            Assert.That(() => processor.Step(), Throws.InvalidOperationException
-                        .With.Message.EqualTo($"Unknown instruction 0xFF."));
-
-            AssertProcessorIsInInitialState();
+            AssertExceptionOccursAndProcessorResets(
+                () => processor.Step(),
+                typeof(InvalidOperationException),
+                "Unknown instruction 0xFF.");
         }
         #endregion
     }

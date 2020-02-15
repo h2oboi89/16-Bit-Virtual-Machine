@@ -11,6 +11,8 @@ namespace VM
 
         private readonly Memory registers;
 
+        private bool continueExecution = false;
+
         #region Utility variables for storing references during decode and execution
         private ushort value;
         private ushort valueA;
@@ -49,10 +51,23 @@ namespace VM
 
             registers = new Memory((ushort)((Enum.GetValues(typeof(Register)).Length + 1) * DATASIZE));
 
-            Reset();
+            Initialize();
         }
 
-        private void Reset()
+        /// <summary>
+        /// Event handler for <see cref="Reset"/> event.
+        /// </summary>
+        /// <param name="sender"><see cref="Processor"/> that fired the event.</param>
+        /// <param name="e"><see cref="ResetEventArgs"/> for the event.</param>
+        public delegate void ResetEventHandler(object sender, ResetEventArgs e);
+
+        /// <summary>
+        /// Event fired when processor resets. Execution is terminated when this fires.
+        /// This can be from either the <see cref="Instruction.RESET"/> or an <see cref="Exception"/> during execution.
+        /// </summary>
+        public event ResetEventHandler Reset;
+
+        private void Initialize()
         {
             registers.Clear();
 
@@ -60,25 +75,27 @@ namespace VM
             SetRegister(Register.FP, (ushort)(memory.MaxAddress - DATASIZE));
         }
 
-        private void ResetAndThrow(Exception exception)
+        private void ResetState(Instruction instruction, Exception exception = null)
         {
-            Reset();
-            throw exception;
+            Initialize();
+
+            continueExecution = false;
+            Reset?.Invoke(this, new ResetEventArgs(instruction, exception));
         }
 
-        private void ValidateRegister(Register register)
+        private static void ValidateRegister(Register register)
         {
             if (!register.IsValid())
             {
-                ResetAndThrow(new InvalidOperationException($"Unknown register {Utility.FormatU8((byte)register)}."));
+                throw new InvalidOperationException($"Unknown register {Utility.FormatU8((byte)register)}.");
             }
         }
 
-        private void ValidateInstruction(Instruction instruction)
+        private static void ValidateInstruction(Instruction instruction)
         {
             if (!instruction.IsValid())
             {
-                ResetAndThrow(new InvalidOperationException($"Unknown instruction {Utility.FormatU8((byte)instruction)}."));
+                throw new InvalidOperationException($"Unknown instruction {Utility.FormatU8((byte)instruction)}.");
             }
         }
 
@@ -98,7 +115,7 @@ namespace VM
         {
             if (register.IsPrivate() && direct)
             {
-                ResetAndThrow(new InvalidOperationException($"{register.Name()} register cannot be modified directly by code."));
+                throw new InvalidOperationException($"{register.Name()} register cannot be modified directly by code.");
             }
 
             registers.SetU16((ushort)((byte)register * DATASIZE), value);
@@ -135,14 +152,7 @@ namespace VM
 
         private void Store(ushort address, ushort value)
         {
-            try
-            {
-                memory.SetU16(address, value);
-            }
-            catch (IndexOutOfRangeException exception)
-            {
-                ResetAndThrow(exception);
-            }
+            memory.SetU16(address, value);
         }
 
         #region Flags
@@ -268,15 +278,13 @@ namespace VM
 
         private Instruction Fetch()
         {
-            var instruction = (Instruction)FetchU8();
-
-            ValidateInstruction(instruction);
-
-            return instruction;
+            return (Instruction)FetchU8();
         }
 
         private void Decode(Instruction instruction)
         {
+            ValidateInstruction(instruction);
+
             switch (instruction)
             {
                 case Instruction.NOP:
@@ -513,7 +521,7 @@ namespace VM
                 case Instruction.DIV:
                     if (valueB == 0)
                     {
-                        ResetAndThrow(new DivideByZeroException());
+                        throw new DivideByZeroException();
                     }
 
                     temp = (uint)(valueA / valueB);
@@ -594,10 +602,12 @@ namespace VM
 
                 // TODO: Stack instructions
 
-                // TODO: Halt Instruction
+                case Instruction.HALT:
+                    continueExecution = false;
+                    break;
 
                 case Instruction.RESET:
-                    Reset();
+                    ResetState(instruction);
                     break;
             }
         }
@@ -608,10 +618,32 @@ namespace VM
         public void Step()
         {
             var instruction = Fetch();
-            Decode(instruction);
-            ClearFlags(instruction);
-            Execute(instruction);
-            SetFlags(instruction);
+
+            try
+            {
+                Decode(instruction);
+                ClearFlags(instruction);
+                Execute(instruction);
+                SetFlags(instruction);
+            }
+            catch (Exception e)
+            {
+                ResetState(instruction, e);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Executes program until a <see cref="Instruction.HALT"/> occurs or an <see cref="Exception"/> is thrown.
+        /// </summary>
+        public void Run()
+        {
+            continueExecution = true;
+
+            while (continueExecution)
+            {
+                Step();
+            }
         }
     }
 }

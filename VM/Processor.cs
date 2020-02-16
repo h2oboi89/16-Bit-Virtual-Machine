@@ -397,8 +397,6 @@ namespace VM
                     shiftAmount = (byte)GetRegister(registerB);
                     break;
 
-                // TODO: Subroutine instructions
-
                 case Instruction.JUMP:
                     address = FetchU16();
                     break;
@@ -434,6 +432,8 @@ namespace VM
 
                     address = GetRegister(register);
                     break;
+
+                    // TODO: Subroutine instructions
 
                     // TODO: Stack instructions
             }
@@ -571,8 +571,6 @@ namespace VM
                     SetRegister(Register.ACC, result);
                     break;
 
-                // TODO: Subroutine instructions
-
                 case Instruction.JUMP:
                 case Instruction.JUMPR:
                     SetRegister(Register.PC, address);
@@ -601,6 +599,8 @@ namespace VM
                         SetRegister(Register.PC, address);
                     }
                     break;
+
+                // TODO: Subroutine instructions
 
                 // TODO: Stack instructions
 

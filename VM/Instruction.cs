@@ -152,24 +152,6 @@
         SRRR,
         #endregion
 
-        #region Subroutine Instructions
-        /// <summary>
-        /// Call subroutine at address.
-        /// Argumemnts: Address (<see cref="ushort"/>.
-        /// </summary>
-        CALL,
-        /// <summary>
-        /// Call subroutine at address in Register.
-        /// Arguments: Address (<see cref="Register"/>).
-        /// </summary>
-        CALLR,
-        /// <summary>
-        /// Return from subroutine.
-        /// Arguments: NONE
-        /// </summary>
-        RET,
-        #endregion
-
         #region Jump Instructions
         /// <summary>
         /// Jump to address.
@@ -268,6 +250,24 @@
         /// Arguments: Address (<see cref="Register"/>).
         /// </summary>
         JNZR,
+        #endregion
+
+        #region Subroutine Instructions
+        /// <summary>
+        /// Call subroutine at address.
+        /// Argumemnts: Address (<see cref="ushort"/>.
+        /// </summary>
+        CALL,
+        /// <summary>
+        /// Call subroutine at address in Register.
+        /// Arguments: Address (<see cref="Register"/>).
+        /// </summary>
+        CALLR,
+        /// <summary>
+        /// Return from subroutine.
+        /// Arguments: NONE
+        /// </summary>
+        RET,
         #endregion
 
         #region Stack Instructions

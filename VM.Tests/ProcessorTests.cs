@@ -151,7 +151,7 @@ namespace VM.Tests
         private void AssertExceptionOccursAndProcessorResets(Action lambda, Type exceptionType, string expectedMessage)
         {
             Assert.That(lambda, Throws.Exception.TypeOf(exceptionType)
-                        .With.Message.EqualTo(expectedMessage));
+                .With.Message.EqualTo(expectedMessage));
 
             Assert.That(resetOccured, Is.True);
             Assert.That(exception.Message, Is.EqualTo(expectedMessage));
@@ -740,8 +740,6 @@ namespace VM.Tests
             AssertZeroValueAndFlag();
         }
 
-        // TODO: Subroutine instructions
-
         [Test]
         public void JUMP_DoesUnconditionalJumpUsingAddress()
         {
@@ -1052,6 +1050,8 @@ namespace VM.Tests
 
             ExecuteProgram();
         }
+
+        // TODO: Subroutine instructions
 
         // TODO: Stack instructions
         // TODO: memory access into stack is invalid

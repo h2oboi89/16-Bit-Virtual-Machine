@@ -51,7 +51,7 @@ namespace VM
 
             registers = new Memory((ushort)((Enum.GetValues(typeof(Register)).Length + 1) * DATASIZE));
 
-            Initialize();
+            InitializeRegisters();
         }
 
         /// <summary>
@@ -67,20 +67,22 @@ namespace VM
         /// </summary>
         public event ResetEventHandler Reset;
 
-        private void Initialize()
+        /// <summary>
+        /// Event fired when processor executes a <see cref="Instruction.HALT"/>.
+        /// </summary>
+        public event EventHandler Halt;
+
+        /// <summary>
+        /// Event fired after each <see cref="Instruction"/> is executed.
+        /// </summary>
+        public event EventHandler Tick;
+
+        private void InitializeRegisters()
         {
             registers.Clear();
 
             SetRegister(Register.SP, (ushort)(memory.MaxAddress - DATASIZE));
             SetRegister(Register.FP, (ushort)(memory.MaxAddress - DATASIZE));
-        }
-
-        private void ResetState(Instruction instruction, Exception exception = null)
-        {
-            Initialize();
-
-            continueExecution = false;
-            Reset?.Invoke(this, new ResetEventArgs(instruction, exception));
         }
 
         private static void ValidateRegister(Register register)
@@ -607,7 +609,8 @@ namespace VM
                     break;
 
                 case Instruction.RESET:
-                    ResetState(instruction);
+                    continueExecution = false;
+                    InitializeRegisters();
                     break;
             }
         }
@@ -625,10 +628,27 @@ namespace VM
                 ClearFlags(instruction);
                 Execute(instruction);
                 SetFlags(instruction);
+
+                Tick?.Invoke(this, new EventArgs());
+
+                if (instruction == Instruction.HALT)
+                {
+                    Halt?.Invoke(this, new EventArgs());
+                }
+
+                if (instruction == Instruction.RESET)
+                {
+                    Reset?.Invoke(this, new ResetEventArgs(instruction, null));
+                }
             }
             catch (Exception e)
             {
-                ResetState(instruction, e);
+                continueExecution = false;
+                InitializeRegisters();
+
+                Reset?.Invoke(this, new ResetEventArgs(instruction, e));
+
+                // FUTURE: don't throw exception?
                 throw;
             }
         }

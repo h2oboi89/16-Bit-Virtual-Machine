@@ -19,6 +19,20 @@ namespace VM.Tests
             exception = e.Exception;
         }
 
+        private bool haltOccured;
+
+        private void OnHalt(object sender, EventArgs e)
+        {
+            haltOccured = true;
+        }
+
+        private int tickCount = 0;
+
+        private void OnTick(object sender, EventArgs e)
+        {
+            tickCount++;
+        }
+
         [SetUp]
         public void Setup()
         {
@@ -29,12 +43,16 @@ namespace VM.Tests
             resetOccured = false;
             exception = null;
             processor.Reset += OnReset;
+
+            haltOccured = false;
+            processor.Halt += OnHalt;
         }
 
         [TearDown]
         public void TearDown()
         {
             processor.Reset -= OnReset;
+            processor.Halt -= OnHalt;
         }
 
         #region Helper methods
@@ -152,6 +170,20 @@ namespace VM.Tests
         public void Constructor_InitializesRegisters()
         {
             AssertProcessorIsInInitialState();
+        }
+
+        [Test]
+        public void Tick_FiresAfterEachStep()
+        {
+            FlashNNops(10);
+
+            processor.Tick += OnTick;
+
+            ExecuteProgram();
+
+            Assert.That(tickCount, Is.EqualTo(10));
+
+            processor.Tick -= OnTick;
         }
 
         [Test]
@@ -1035,6 +1067,8 @@ namespace VM.Tests
             processor.Run();
 
             Assert.That(processor.GetRegister(Register.PC), Is.EqualTo(flasher.Address));
+
+            Assert.That(haltOccured, Is.True);
         }
 
         [Test]

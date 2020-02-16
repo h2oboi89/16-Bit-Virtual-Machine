@@ -34,6 +34,7 @@
     <Reference Include="System" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="FibonacciSequenceTest.cs" />
     <Compile Include="MemoryTests.cs" />
     <Compile Include="ProcessorTests.cs" />
   </ItemGroup>

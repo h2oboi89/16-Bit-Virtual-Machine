@@ -106,10 +106,20 @@ namespace VM.Tests
             flasher.Address = 0;
         }
 
+        private void LoadValueIntoRegister(ushort value, Register register)
+        {
+            flasher.WriteInstruction(Instruction.LDVR, value, register);
+        }
+
+        private void LoadValueIntoRegisterR1(ushort value)
+        {
+            LoadValueIntoRegister(value, Register.R1);
+        }
+
         private void SetupBinaryInstruction(Instruction instruction, ushort valueA, ushort valueB)
         {
-            flasher.WriteInstruction(Instruction.LDVR, valueA, Register.R1);
-            flasher.WriteInstruction(Instruction.LDVR, valueB, Register.R2);
+            LoadValueIntoRegister(valueA, Register.R1);
+            LoadValueIntoRegister(valueB, Register.R2);
             flasher.WriteInstruction(instruction, Register.R1, Register.R2);
         }
 
@@ -148,9 +158,9 @@ namespace VM.Tests
             Assert.That(processor.GetRegister(Register.T8), Is.Zero);
         }
 
-        private void AssertExceptionOccursAndProcessorResets(Action lambda, Type exceptionType, string expectedMessage)
+        private void AssertExceptionOccursAndProcessorResets(Type exceptionType, string expectedMessage)
         {
-            Assert.That(lambda, Throws.Exception.TypeOf(exceptionType)
+            Assert.That(() => processor.Step(), Throws.Exception.TypeOf(exceptionType)
                 .With.Message.EqualTo(expectedMessage));
 
             Assert.That(resetOccured, Is.True);
@@ -198,12 +208,34 @@ namespace VM.Tests
             {
                 flasher.Address = 0;
 
-                flasher.WriteInstruction(Instruction.LDVR, 0x1234, register);
+                LoadValueIntoRegister(0x1234, register);
 
                 AssertExceptionOccursAndProcessorResets(
-                    () => processor.Step(),
                     typeof(InvalidOperationException),
                     $"{Enum.GetName(typeof(Register), register)} register cannot be modified directly by code.");
+            }
+        }
+
+        [Test]
+        public void NonPrivateRegister_ValuesCanBeModified()
+        {
+            var publicRegisters = new Register[]
+            {
+                Register.R1, Register.R2, Register.R3, Register.R4,
+                Register.R5, Register.R6, Register.R7, Register.R8,
+                Register.T1, Register.T2, Register.T3, Register.T4,
+                Register.T5, Register.T6, Register.T7, Register.T8
+            };
+
+            foreach (var register in publicRegisters)
+            {
+                Reset();
+
+                LoadValueIntoRegister(0x1234, register);
+
+                ExecuteProgram();
+
+                Assert.That(processor.GetRegister(register), Is.EqualTo(0x1234));
             }
         }
 
@@ -213,7 +245,6 @@ namespace VM.Tests
             flasher.WriteInstruction(Instruction.INC, (Register)0xff);
 
             AssertExceptionOccursAndProcessorResets(
-                () => processor.Step(),
                 typeof(InvalidOperationException),
                 "Unknown register 0xFF.");
         }
@@ -235,7 +266,6 @@ namespace VM.Tests
             flasher.WriteInstruction(Instruction.STVA, 0x1234, 0xffff);
 
             AssertExceptionOccursAndProcessorResets(
-                () => processor.Step(),
                 typeof(IndexOutOfRangeException),
                 "Invalid memory address 0xFFFF. Valid Range: [0x0000, 0x00FF]");
         }
@@ -252,7 +282,7 @@ namespace VM.Tests
         [Test]
         public void MOVE_MovesValueFromRegisterAToRegisterB()
         {
-            flasher.WriteInstruction(Instruction.LDVR, 0x1234, Register.R1);
+            LoadValueIntoRegisterR1(0x1234);
             flasher.WriteInstruction(Instruction.MOVE, Register.R1, Register.R2);
 
             ExecuteProgram();
@@ -263,7 +293,7 @@ namespace VM.Tests
         [Test]
         public void INC_IncrementsRegisterValue()
         {
-            flasher.WriteInstruction(Instruction.LDVR, 0x1234, Register.R1);
+            LoadValueIntoRegisterR1(0x1234);
             flasher.WriteInstruction(Instruction.INC, Register.R1);
 
             ExecuteProgram();
@@ -275,7 +305,7 @@ namespace VM.Tests
         [Test]
         public void INC_Overflow_WrapsAndSetsZeroAndCarryFlags()
         {
-            flasher.WriteInstruction(Instruction.LDVR, 0xffff, Register.R1);
+            LoadValueIntoRegisterR1(0xffff);
             flasher.WriteInstruction(Instruction.INC, Register.R1);
 
             ExecuteProgram();
@@ -287,7 +317,7 @@ namespace VM.Tests
         [Test]
         public void DEC_DecrementsRegisterValue()
         {
-            flasher.WriteInstruction(Instruction.LDVR, 0x1234, Register.R1);
+            LoadValueIntoRegisterR1(0x1234);
             flasher.WriteInstruction(Instruction.DEC, Register.R1);
 
             ExecuteProgram();
@@ -299,7 +329,7 @@ namespace VM.Tests
         [Test]
         public void DEC_Underflow_WrapsAndSetsCarryFlag()
         {
-            flasher.WriteInstruction(Instruction.LDVR, (ushort)0x0000, Register.R1);
+            LoadValueIntoRegisterR1(0x0000);
             flasher.WriteInstruction(Instruction.DEC, Register.R1);
 
             ExecuteProgram();
@@ -311,7 +341,7 @@ namespace VM.Tests
         [Test]
         public void DEC_ZeroResult_SetsZeroFlag()
         {
-            flasher.WriteInstruction(Instruction.LDVR, 0x0001, Register.R1);
+            LoadValueIntoRegisterR1(0x0001);
             flasher.WriteInstruction(Instruction.DEC, Register.R1);
 
             ExecuteProgram();
@@ -322,7 +352,7 @@ namespace VM.Tests
         [Test]
         public void LDVR_LoadsValueIntoRegister()
         {
-            flasher.WriteInstruction(Instruction.LDVR, 0x1234, Register.R1);
+            LoadValueIntoRegisterR1(0x1234);
 
             ExecuteProgram();
 
@@ -350,7 +380,7 @@ namespace VM.Tests
 
             WriteValueToMemory(address, 0x1234);
 
-            flasher.WriteInstruction(Instruction.LDVR, address, Register.R1);
+            LoadValueIntoRegisterR1(address);
             flasher.WriteInstruction(Instruction.LDRR, Register.R1, Register.R2);
 
             ExecuteProgram();
@@ -377,7 +407,7 @@ namespace VM.Tests
         {
             ushort address = 0x10;
 
-            flasher.WriteInstruction(Instruction.LDVR, address, Register.R1);
+            LoadValueIntoRegisterR1(address);
             flasher.WriteInstruction(Instruction.STVR, 0x1234, Register.R1);
 
             Assert.That(memory.GetU16(address), Is.Zero);
@@ -392,7 +422,7 @@ namespace VM.Tests
         {
             ushort address = 0x10;
 
-            flasher.WriteInstruction(Instruction.LDVR, 0x1234, Register.R1);
+            LoadValueIntoRegisterR1(0x1234);
             flasher.WriteInstruction(Instruction.STRA, Register.R1, address);
 
             ExecuteProgram();
@@ -405,8 +435,8 @@ namespace VM.Tests
         {
             ushort address = 0x10;
 
-            flasher.WriteInstruction(Instruction.LDVR, 0x1234, Register.R1);
-            flasher.WriteInstruction(Instruction.LDVR, address, Register.R2);
+            LoadValueIntoRegister(0x1234, Register.R1);
+            LoadValueIntoRegister(address, Register.R2);
             flasher.WriteInstruction(Instruction.STRR, Register.R1, Register.R2);
 
             ExecuteProgram();
@@ -531,7 +561,6 @@ namespace VM.Tests
             processor.Step();
 
             AssertExceptionOccursAndProcessorResets(
-                () => processor.Step(),
                 typeof(DivideByZeroException),
                 "Attempted to divide by zero.");
         }
@@ -609,7 +638,7 @@ namespace VM.Tests
         [Test]
         public void NOT_BinaryNotOfRegisterValue()
         {
-            flasher.WriteInstruction(Instruction.LDVR, 0xaaaa, Register.R1);
+            LoadValueIntoRegisterR1(0xaaaa);
             flasher.WriteInstruction(Instruction.NOT, Register.R1);
 
             ExecuteProgram();
@@ -620,7 +649,7 @@ namespace VM.Tests
         [Test]
         public void NOT_ZeroResult_SetsZeroFlag()
         {
-            flasher.WriteInstruction(Instruction.LDVR, 0xffff, Register.R1);
+            LoadValueIntoRegisterR1(0xffff);
             flasher.WriteInstruction(Instruction.NOT, Register.R1);
 
             ExecuteProgram();
@@ -635,7 +664,7 @@ namespace VM.Tests
             {
                 Reset();
 
-                flasher.WriteInstruction(Instruction.LDVR, 0x0001, Register.R1);
+                LoadValueIntoRegisterR1(0x0001);
                 flasher.WriteInstruction(Instruction.SRL, Register.R1, i);
 
                 ExecuteProgram();
@@ -647,7 +676,7 @@ namespace VM.Tests
         [Test]
         public void SRL_ExcessiveShift_ZeroesOutRegister()
         {
-            flasher.WriteInstruction(Instruction.LDVR, 0x0001, Register.R1);
+            LoadValueIntoRegisterR1(0x0001);
             flasher.WriteInstruction(Instruction.SRL, Register.R1, 16);
 
             ExecuteProgram();
@@ -662,8 +691,8 @@ namespace VM.Tests
             {
                 Reset();
 
-                flasher.WriteInstruction(Instruction.LDVR, 0x0001, Register.R1);
-                flasher.WriteInstruction(Instruction.LDVR, i, Register.R2);
+                LoadValueIntoRegister(0x0001, Register.R1);
+                LoadValueIntoRegister(i, Register.R2);
                 flasher.WriteInstruction(Instruction.SRLR, Register.R1, Register.R2);
 
                 ExecuteProgram();
@@ -675,8 +704,8 @@ namespace VM.Tests
         [Test]
         public void SRLR_ExcessiveShift_ZeroesOutRegister()
         {
-            flasher.WriteInstruction(Instruction.LDVR, 0x0001, Register.R1);
-            flasher.WriteInstruction(Instruction.LDVR, 16, Register.R2);
+            LoadValueIntoRegister(0x0001, Register.R1);
+            LoadValueIntoRegister(16, Register.R2);
             flasher.WriteInstruction(Instruction.SRLR, Register.R1, Register.R2);
 
             ExecuteProgram();
@@ -691,7 +720,7 @@ namespace VM.Tests
             {
                 Reset();
 
-                flasher.WriteInstruction(Instruction.LDVR, 0x8000, Register.R1);
+                LoadValueIntoRegisterR1(0x8000);
                 flasher.WriteInstruction(Instruction.SRR, Register.R1, i);
 
                 ExecuteProgram();
@@ -703,7 +732,7 @@ namespace VM.Tests
         [Test]
         public void SRR_ExcessiveShift_ZeroesOutRegister()
         {
-            flasher.WriteInstruction(Instruction.LDVR, 0x8000, Register.R1);
+            LoadValueIntoRegisterR1(0x8000);
             flasher.WriteInstruction(Instruction.SRR, Register.R1, 16);
 
             ExecuteProgram();
@@ -718,8 +747,8 @@ namespace VM.Tests
             {
                 Reset();
 
-                flasher.WriteInstruction(Instruction.LDVR, 0x8000, Register.R1);
-                flasher.WriteInstruction(Instruction.LDVR, i, Register.R2);
+                LoadValueIntoRegister(0x8000, Register.R1);
+                LoadValueIntoRegister(i, Register.R2);
                 flasher.WriteInstruction(Instruction.SRRR, Register.R1, Register.R2);
 
                 ExecuteProgram();
@@ -731,8 +760,8 @@ namespace VM.Tests
         [Test]
         public void SRRR_ExcessiveShift_ZeroesOutRegister()
         {
-            flasher.WriteInstruction(Instruction.LDVR, 0x8000, Register.R1);
-            flasher.WriteInstruction(Instruction.LDVR, 16, Register.R2);
+            LoadValueIntoRegister(0x8000, Register.R1);
+            LoadValueIntoRegister(16, Register.R2);
             flasher.WriteInstruction(Instruction.SRRR, Register.R1, Register.R2);
 
             ExecuteProgram();
@@ -751,7 +780,7 @@ namespace VM.Tests
         [Test]
         public void JUMPR_DoesUnconditionalJumpUsingRegisterValue()
         {
-            flasher.WriteInstruction(Instruction.LDVR, 0x1234, Register.R1);
+            LoadValueIntoRegisterR1(0x1234);
             flasher.WriteInstruction(Instruction.JUMPR, Register.R1);
 
             ExecuteProgram(0x1234);
@@ -796,7 +825,7 @@ namespace VM.Tests
         [Test]
         public void CMPZ_Zero_SetsZeroFlag()
         {
-            flasher.WriteInstruction(Instruction.LDVR, (ushort)0x0000, Register.R1);
+            LoadValueIntoRegisterR1(0x0000);
             flasher.WriteInstruction(Instruction.CMPZ, Register.R1);
 
             ExecuteProgram();
@@ -807,7 +836,7 @@ namespace VM.Tests
         [Test]
         public void CMPZ_NotZero_DoesNothing()
         {
-            flasher.WriteInstruction(Instruction.LDVR, 0xffff, Register.R1);
+            LoadValueIntoRegisterR1(0xffff);
             flasher.WriteInstruction(Instruction.CMPZ, Register.R1);
 
             ExecuteProgram();
@@ -837,7 +866,7 @@ namespace VM.Tests
         public void JLTR_LessThanFlagIsSet_ChangesPC()
         {
             SetupBinaryInstruction(Instruction.CMP, 0x1234, 0x4321);
-            flasher.WriteInstruction(Instruction.LDVR, 0x008f, Register.R3);
+            LoadValueIntoRegister(0x008f, Register.R3);
             flasher.WriteInstruction(Instruction.JLTR, Register.R3);
 
             ExecuteProgram(0x008f);
@@ -847,7 +876,7 @@ namespace VM.Tests
         public void JLTR_LessThanFlagIsNotSet_DoesNothing()
         {
             SetupBinaryInstruction(Instruction.CMP, 0x4321, 0x1234);
-            flasher.WriteInstruction(Instruction.LDVR, 0x008f, Register.R3);
+            LoadValueIntoRegister(0x008f, Register.R3);
             flasher.WriteInstruction(Instruction.JLTR, Register.R3);
 
             ExecuteProgram();
@@ -875,7 +904,7 @@ namespace VM.Tests
         public void JGTR_GreaterThanFlagIsSet_ChangesPC()
         {
             SetupBinaryInstruction(Instruction.CMP, 0x4321, 0x1234);
-            flasher.WriteInstruction(Instruction.LDVR, 0x008f, Register.R3);
+            LoadValueIntoRegister(0x008f, Register.R3);
             flasher.WriteInstruction(Instruction.JGTR, Register.R3);
 
             ExecuteProgram(0x008f);
@@ -885,7 +914,7 @@ namespace VM.Tests
         public void JGTR_GreaterThanFlagIsNotSet_DoesNothing()
         {
             SetupBinaryInstruction(Instruction.CMP, 0x1234, 0x4321);
-            flasher.WriteInstruction(Instruction.LDVR, 0x008f, Register.R3);
+            LoadValueIntoRegister(0x008f, Register.R3);
             flasher.WriteInstruction(Instruction.JGTR, Register.R3);
 
             ExecuteProgram();
@@ -913,7 +942,7 @@ namespace VM.Tests
         public void JER_EqualFlagIsSet_ChangesPC()
         {
             SetupBinaryInstruction(Instruction.CMP, 0x1234, 0x1234);
-            flasher.WriteInstruction(Instruction.LDVR, 0x008f, Register.R3);
+            LoadValueIntoRegister(0x008f, Register.R3);
             flasher.WriteInstruction(Instruction.JER, Register.R3);
 
             ExecuteProgram(0x008f);
@@ -923,7 +952,7 @@ namespace VM.Tests
         public void JER_EqualFlagIsNotSet_DoesNothing()
         {
             SetupBinaryInstruction(Instruction.CMP, 0x1234, 0x4321);
-            flasher.WriteInstruction(Instruction.LDVR, 0x008f, Register.R3);
+            LoadValueIntoRegister(0x008f, Register.R3);
             flasher.WriteInstruction(Instruction.JER, Register.R3);
 
             ExecuteProgram();
@@ -951,7 +980,7 @@ namespace VM.Tests
         public void JNER_EqualFlagIsNotSet_ChangesPC()
         {
             SetupBinaryInstruction(Instruction.CMP, 0x1234, 0x4321);
-            flasher.WriteInstruction(Instruction.LDVR, 0x008f, Register.R3);
+            LoadValueIntoRegister(0x008f, Register.R3);
             flasher.WriteInstruction(Instruction.JNER, Register.R3);
 
             ExecuteProgram(0x008f);
@@ -961,7 +990,7 @@ namespace VM.Tests
         public void JNER_EqualFlagIsSet_DoesNothing()
         {
             SetupBinaryInstruction(Instruction.CMP, 0x1234, 0x1234);
-            flasher.WriteInstruction(Instruction.LDVR, 0x008f, Register.R3);
+            LoadValueIntoRegister(0x008f, Register.R3);
             flasher.WriteInstruction(Instruction.JNER, Register.R3);
 
             ExecuteProgram();
@@ -970,7 +999,7 @@ namespace VM.Tests
         [Test]
         public void JZ_ZeroFlagIsSet_ChangesPC()
         {
-            flasher.WriteInstruction(Instruction.LDVR, (ushort)0x0000, Register.R1);
+            LoadValueIntoRegisterR1(0x0000);
             flasher.WriteInstruction(Instruction.CMPZ, Register.R1);
             flasher.WriteInstruction(Instruction.JZ, 0x008f);
 
@@ -980,7 +1009,7 @@ namespace VM.Tests
         [Test]
         public void JZ_ZeroFlagIsNotSet_ChangesPC()
         {
-            flasher.WriteInstruction(Instruction.LDVR, 0xffff, Register.R1);
+            LoadValueIntoRegisterR1(0xffff);
             flasher.WriteInstruction(Instruction.CMPZ, Register.R1);
             flasher.WriteInstruction(Instruction.JZ, 0x008f);
 
@@ -990,9 +1019,9 @@ namespace VM.Tests
         [Test]
         public void JZR_ZeroFlagIsSet_ChangesPC()
         {
-            flasher.WriteInstruction(Instruction.LDVR, (ushort)0x0000, Register.R1);
+            LoadValueIntoRegister(0x0000, Register.R1);
             flasher.WriteInstruction(Instruction.CMPZ, Register.R1);
-            flasher.WriteInstruction(Instruction.LDVR, 0x008f, Register.R3);
+            LoadValueIntoRegister(0x008f, Register.R3);
             flasher.WriteInstruction(Instruction.JZR, Register.R3);
 
             ExecuteProgram(0x008f);
@@ -1001,9 +1030,9 @@ namespace VM.Tests
         [Test]
         public void JZR_ZeroFlagIsNotSet_ChangesPC()
         {
-            flasher.WriteInstruction(Instruction.LDVR, 0xffff, Register.R1);
+            LoadValueIntoRegister(0xffff, Register.R1);
             flasher.WriteInstruction(Instruction.CMPZ, Register.R1);
-            flasher.WriteInstruction(Instruction.LDVR, 0x008f, Register.R3);
+            LoadValueIntoRegister(0x008f, Register.R3);
             flasher.WriteInstruction(Instruction.JZR, Register.R3);
 
             ExecuteProgram();
@@ -1012,7 +1041,7 @@ namespace VM.Tests
         [Test]
         public void JNZ_ZeroFlagIsNotSet_ChangesPC()
         {
-            flasher.WriteInstruction(Instruction.LDVR, 0xffff, Register.R1);
+            LoadValueIntoRegisterR1(0xffff);
             flasher.WriteInstruction(Instruction.CMPZ, Register.R1);
             flasher.WriteInstruction(Instruction.JNZ, 0x008f);
 
@@ -1022,7 +1051,7 @@ namespace VM.Tests
         [Test]
         public void JNZ_ZeroFlagIsSet_DoesNothing()
         {
-            flasher.WriteInstruction(Instruction.LDVR, (ushort)0x0000, Register.R1);
+            LoadValueIntoRegisterR1(0x0000);
             flasher.WriteInstruction(Instruction.CMPZ, Register.R1);
             flasher.WriteInstruction(Instruction.JNZ, 0x008f);
 
@@ -1032,9 +1061,9 @@ namespace VM.Tests
         [Test]
         public void JNZR_ZeroFlagIsNotSet_ChangesPC()
         {
-            flasher.WriteInstruction(Instruction.LDVR, 0xffff, Register.R1);
+            LoadValueIntoRegister(0xffff, Register.R1);
             flasher.WriteInstruction(Instruction.CMPZ, Register.R1);
-            flasher.WriteInstruction(Instruction.LDVR, 0x008f, Register.R3);
+            LoadValueIntoRegister(0x008f, Register.R3);
             flasher.WriteInstruction(Instruction.JNZR, Register.R3);
 
             ExecuteProgram(0x008f);
@@ -1043,9 +1072,9 @@ namespace VM.Tests
         [Test]
         public void JNZR_ZeroFlagIsSet_DoesNothing()
         {
-            flasher.WriteInstruction(Instruction.LDVR, (ushort)0x0000, Register.R1);
+            LoadValueIntoRegister(0x0000, Register.R1);
             flasher.WriteInstruction(Instruction.CMPZ, Register.R1);
-            flasher.WriteInstruction(Instruction.LDVR, 0x008f, Register.R3);
+            LoadValueIntoRegister(0x008f, Register.R3);
             flasher.WriteInstruction(Instruction.JNZR, Register.R3);
 
             ExecuteProgram();
@@ -1092,7 +1121,6 @@ namespace VM.Tests
             flasher.WriteInstruction((Instruction)0xff);
 
             AssertExceptionOccursAndProcessorResets(
-                () => processor.Step(),
                 typeof(InvalidOperationException),
                 "Unknown instruction 0xFF.");
         }

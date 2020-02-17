@@ -433,9 +433,15 @@ namespace VM
                     address = GetRegister(register);
                     break;
 
-                    // TODO: Subroutine instructions
+                // TODO: Subroutine instructions
 
-                    // TODO: Stack instructions
+                case Instruction.PUSH:
+                case Instruction.POP:
+                case Instruction.PEEK:
+                    register = FetchRegister();
+
+                    address = GetRegister(Register.SP);
+                    break;
             }
 
             SetFlagToCheckForLogicalJumps(instruction);
@@ -602,7 +608,35 @@ namespace VM
 
                 // TODO: Subroutine instructions
 
-                // TODO: Stack instructions
+                case Instruction.PUSH:
+                    // TODO: check for stack overflow
+                    value = GetRegister(register);
+
+                    memory.SetU16(address, value);
+                    SetRegister(Register.SP, (ushort)(address - DATASIZE));
+                    break;
+
+                case Instruction.POP:
+                    // TODO: check for empty stack
+                    address += DATASIZE;
+
+                    SetRegister(Register.SP, address);
+                    value = memory.GetU16(address);
+
+                    SetRegister(register, value);
+                    break;
+
+                case Instruction.PEEK:
+                    // TODO: check for empty stack
+                    address += DATASIZE;
+
+                    value = memory.GetU16(address);
+
+                    SetRegister(register, value);
+                    break;
+
+                // TODO: stack: update all to work with frames, not just full stack
+                // IE: treat each frame as a unique stack
 
                 case Instruction.HALT:
                     continueExecution = false;

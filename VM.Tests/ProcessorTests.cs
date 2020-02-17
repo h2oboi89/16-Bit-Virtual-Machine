@@ -1082,9 +1082,51 @@ namespace VM.Tests
 
         // TODO: Subroutine instructions
 
+        [Test]
+        public void PUSH_PutsValueFromRegisterOntoStack()
+        {
+            LoadValueIntoRegisterR1(0x1234);
+            flasher.WriteInstruction(Instruction.PUSH, Register.R1);
+
+            Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(memory.MaxAddress - Processor.DATASIZE));
+
+            ExecuteProgram();
+
+            Assert.That(processor.GetRegister(Register.SP), Is.Not.EqualTo(memory.MaxAddress - Processor.DATASIZE));
+        }
+
+        [Test]
+        public void POP_PutsValueFromStackIntoRegister()
+        {
+            LoadValueIntoRegisterR1(0x1234);
+            flasher.WriteInstruction(Instruction.PUSH, Register.R1);
+            flasher.WriteInstruction(Instruction.POP, Register.R2);
+
+            ExecuteProgram();
+
+            Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(memory.MaxAddress - Processor.DATASIZE));
+
+            Assert.That(processor.GetRegister(Register.R2), Is.EqualTo(0x1234));
+        }
+
+        [Test]
+        public void PEEK_PutsValueFromStackIntoRegisterWithoutRemovingItFromStack()
+        {
+            LoadValueIntoRegisterR1(0x1234);
+            flasher.WriteInstruction(Instruction.PUSH, Register.R1);
+            flasher.WriteInstruction(Instruction.PEEK, Register.R2);
+
+            ExecuteProgram();
+
+            Assert.That(processor.GetRegister(Register.SP), Is.Not.EqualTo(memory.MaxAddress - Processor.DATASIZE));
+
+            Assert.That(processor.GetRegister(Register.R2), Is.EqualTo(0x1234));
+        }
+
         // TODO: Stack instructions
         // TODO: memory access into stack is invalid
         // TODO: stack overflow exception
+        // TODO: empty stack exception
 
         [Test]
         public void HALT_HaltsExecution()

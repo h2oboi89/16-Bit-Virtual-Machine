@@ -41,7 +41,7 @@ namespace VM
 
             if (startAddress < ((sizeLimit - 1) * Processor.DATASIZE))
             {
-                throw new ArgumentOutOfRangeException(nameof(startAddress), "Start Address must be greater than size of stack.");
+                throw new ArgumentOutOfRangeException(nameof(startAddress), "Start Address must allow room for size of stack.");
             }
 
             this.startAddress = startAddress;

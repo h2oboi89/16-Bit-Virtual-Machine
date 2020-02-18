@@ -44,7 +44,7 @@ namespace VM.Tests
         {
             Assert.That(() => new Stack(memory, 0x0e, 9), Throws.InstanceOf<ArgumentOutOfRangeException>()
                 .With.Property("ParamName").EqualTo("startAddress").And
-                .With.Message.StartsWith("Start Address must be greater than size of stack."));
+                .With.Message.StartsWith("Start Address must allow room for size of stack."));
         }
 
         [Test]

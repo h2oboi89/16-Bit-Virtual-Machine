@@ -9,6 +9,7 @@ namespace VM.Tests
     [TestFixture]
     public class FibonacciSequenceTest
     {
+        // FIXME: timing / threading issues?
         [Test, Timeout(2000)]
         public void TestMethod()
         {

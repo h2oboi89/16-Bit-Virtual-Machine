@@ -6,6 +6,7 @@ namespace VM.Tests
 {
     public class ProcessorTests
     {
+        private const ushort MEMORY_SIZE = 0x100;
         private Memory memory;
         private Processor processor;
         private Flasher flasher;
@@ -36,7 +37,7 @@ namespace VM.Tests
         [SetUp]
         public void Setup()
         {
-            memory = new Memory(0x100);
+            memory = new Memory(MEMORY_SIZE);
             flasher = new Flasher(memory);
             processor = new Processor(memory);
 
@@ -136,8 +137,8 @@ namespace VM.Tests
             Assert.That(processor.GetRegister(Register.ACC), Is.Zero);
             Assert.That(processor.GetRegister(Register.FLAG), Is.Zero);
 
-            Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(memory.MaxAddress - Processor.DATASIZE));
-            Assert.That(processor.GetRegister(Register.FP), Is.EqualTo(memory.MaxAddress - Processor.DATASIZE));
+            Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(MEMORY_SIZE - Processor.DATASIZE));
+            Assert.That(processor.GetRegister(Register.FP), Is.EqualTo(MEMORY_SIZE - Processor.DATASIZE));
 
             Assert.That(processor.GetRegister(Register.R1), Is.Zero);
             Assert.That(processor.GetRegister(Register.R2), Is.Zero);
@@ -1088,11 +1089,11 @@ namespace VM.Tests
             LoadValueIntoRegisterR1(0x1234);
             flasher.WriteInstruction(Instruction.PUSH, Register.R1);
 
-            Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(memory.MaxAddress - Processor.DATASIZE));
+            Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(MEMORY_SIZE - Processor.DATASIZE));
 
             ExecuteProgram();
 
-            Assert.That(processor.GetRegister(Register.SP), Is.Not.EqualTo(memory.MaxAddress - Processor.DATASIZE));
+            Assert.That(processor.GetRegister(Register.SP), Is.Not.EqualTo(MEMORY_SIZE - Processor.DATASIZE));
         }
 
         [Test]
@@ -1104,7 +1105,7 @@ namespace VM.Tests
 
             ExecuteProgram();
 
-            Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(memory.MaxAddress - Processor.DATASIZE));
+            Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(MEMORY_SIZE - Processor.DATASIZE));
 
             Assert.That(processor.GetRegister(Register.R2), Is.EqualTo(0x1234));
         }
@@ -1118,7 +1119,7 @@ namespace VM.Tests
 
             ExecuteProgram();
 
-            Assert.That(processor.GetRegister(Register.SP), Is.Not.EqualTo(memory.MaxAddress - Processor.DATASIZE));
+            Assert.That(processor.GetRegister(Register.SP), Is.Not.EqualTo(MEMORY_SIZE - Processor.DATASIZE));
 
             Assert.That(processor.GetRegister(Register.R2), Is.EqualTo(0x1234));
         }

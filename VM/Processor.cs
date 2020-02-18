@@ -81,8 +81,8 @@ namespace VM
         {
             registers.Clear();
 
-            SetRegister(Register.SP, (ushort)(memory.MaxAddress - DATASIZE));
-            SetRegister(Register.FP, (ushort)(memory.MaxAddress - DATASIZE));
+            SetRegister(Register.SP, (ushort)(memory.MaxAddress - DATASIZE / 2));
+            SetRegister(Register.FP, (ushort)(memory.MaxAddress - DATASIZE / 2));
         }
 
         private static void ValidateRegister(Register register)

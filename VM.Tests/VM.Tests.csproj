@@ -37,6 +37,7 @@
     <Compile Include="FibonacciSequenceTest.cs" />
     <Compile Include="MemoryTests.cs" />
     <Compile Include="ProcessorTests.cs" />
+    <Compile Include="StackEngineTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="NUnit">

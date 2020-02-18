@@ -31,23 +31,20 @@ namespace VM.Tests
         }
 
         [Test]
-        public void InvalidMemoryAccess_ThrowsException()
-        {
-            Assert.That(() => memory.GetU8(0xffff),
-                Throws.InstanceOf<IndexOutOfRangeException>().With.Message.EqualTo("Invalid memory address 0xFFFF. Valid Range: [0x0000, 0x00FF]"));
-        }
-
-        [Test]
         public void GetU8_InvalidAddress_ThrowsException()
         {
-            Assert.That(() => memory.GetU8((ushort)(memory.MaxAddress + 1)),
+            Assert.That(() => memory.GetU8(0xff), Throws.Nothing);
+
+            Assert.That(() => memory.GetU8(0x100),
                 Throws.InstanceOf<IndexOutOfRangeException>().With.Message.StartsWith("Invalid memory address 0x0100."));
         }
 
         [Test]
         public void SetU8_InvalidAddress_ThrowsException()
         {
-            Assert.That(() => memory.SetU8((ushort)(memory.MaxAddress + 1), 0x10),
+            Assert.That(() => memory.SetU8(0xff, 0x10), Throws.Nothing);
+            
+            Assert.That(() => memory.SetU8(0x100, 0x10),
                 Throws.InstanceOf<IndexOutOfRangeException>().With.Message.StartsWith("Invalid memory address 0x0100."));
         }
 
@@ -65,20 +62,24 @@ namespace VM.Tests
         [Test]
         public void GetU16_InvalidAddress_ThrowsException()
         {
-            Assert.That(() => memory.GetU16(memory.MaxAddress),
+            Assert.That(() => memory.GetU16(0xfe), Throws.Nothing);
+
+            Assert.That(() => memory.GetU16(0xff),
                 Throws.InstanceOf<IndexOutOfRangeException>().With.Message.StartsWith("Invalid memory address 0x00FF."));
 
-            Assert.That(() => memory.GetU16((ushort)(memory.MaxAddress + 1)),
+            Assert.That(() => memory.GetU16(0x100),
                 Throws.InstanceOf<IndexOutOfRangeException>().With.Message.StartsWith("Invalid memory address 0x0100."));
         }
 
         [Test]
         public void SetU16_InvalidAddress_ThrowsException()
         {
-            Assert.That(() => memory.SetU16(memory.MaxAddress, 0x10),
+            Assert.That(() => memory.SetU16(0xfe, 0x0010), Throws.Nothing);
+
+            Assert.That(() => memory.SetU16(0xff, 0x0010),
                 Throws.InstanceOf<IndexOutOfRangeException>().With.Message.StartsWith("Invalid memory address 0x00FF."));
 
-            Assert.That(() => memory.SetU16((ushort)(memory.MaxAddress + 1), 0x10),
+            Assert.That(() => memory.SetU16(0x100, 0x0010),
                 Throws.InstanceOf<IndexOutOfRangeException>().With.Message.StartsWith("Invalid memory address 0x0100."));
         }
 

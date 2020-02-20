@@ -22,32 +22,38 @@ namespace VM
         /// </summary>
         /// <param name="memory"><see cref="Memory"/> that will contain the <see cref="Stack"/>.</param>
         /// <param name="startAddress">Address of first value in <see cref="Stack"/>.</param>
-        /// <param name="sizeLimit">How many items the <see cref="Stack"/> can hold.</param>
+        /// <param name="endAddress">Address of the last value in <see cref="Stack"/>.</param>
         /// <exception cref="ArgumentException">Thrown if <paramref name="startAddress"/> is not byte aligned with <see cref="Processor.DATASIZE"/></exception>
         /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="startAddress"/> and <paramref name="sizeLimit"/> do not fit into <see cref="Memory"/> based on their values.</exception>
-        public Stack(Memory memory, ushort startAddress, ushort sizeLimit)
+        public Stack(Memory memory, ushort startAddress, ushort endAddress)
         {
             this.memory = memory ?? throw new ArgumentNullException(nameof(memory));
 
-            if (startAddress % Processor.DATASIZE != 0)
-            {
-                throw new ArgumentException($"Start Address must be byte aligned for {Processor.DATASIZE}.", nameof(startAddress));
-            }
+            CheckAddressValidity(startAddress, nameof(startAddress), "Start");
+            CheckAddressValidity(endAddress, nameof(endAddress), "End");
 
-            if (startAddress + Processor.DATASIZE > memory.MaxAddress + 1)
+            if (startAddress <= endAddress)
             {
-                throw new ArgumentOutOfRangeException(nameof(startAddress), "Start Address must be a valid memory address.");
-            }
-
-            if (startAddress < ((sizeLimit - 1) * Processor.DATASIZE))
-            {
-                throw new ArgumentOutOfRangeException(nameof(startAddress), "Start Address must allow room for size of stack.");
+                throw new ArgumentOutOfRangeException(nameof(startAddress), "Start Address must be less than End Address.");
             }
 
             this.startAddress = startAddress;
-            endAddress = (ushort)(startAddress - ((sizeLimit - 1) * Processor.DATASIZE));
+            this.endAddress = endAddress;
 
             StackPointer = startAddress;
+        }
+
+        private void CheckAddressValidity(ushort address, string name, string displayName)
+        {
+            if (address % Processor.DATASIZE != 0)
+            {
+                throw new ArgumentException($"{displayName} Address must be byte aligned for {Processor.DATASIZE}.", name);
+            }
+
+            if (address + Processor.DATASIZE > memory.MaxAddress + 1)
+            {
+                throw new ArgumentOutOfRangeException(name, $"{displayName} Address must be a valid memory address.");
+            }
         }
 
         private void CheckForStackOverflow()

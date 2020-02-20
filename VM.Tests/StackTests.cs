@@ -13,9 +13,9 @@ namespace VM.Tests
         public void SetUp()
         {
             memory = new Memory(0x10);
-            stack = new Stack(memory, 0x0e, 4);
+            stack = new Stack(memory, 0x0e, 0x08);
         }
-        
+
         [Test]
         public void Constructor_NullMemoryArgument_ThrowsException()
         {
@@ -24,11 +24,15 @@ namespace VM.Tests
         }
 
         [Test]
-        public void Constructor_MisalignedStartAddress_ThrowsException()
+        public void Constructor_MisalignedAddresses_ThrowsException()
         {
             Assert.That(() => new Stack(memory, 1, 0), Throws.ArgumentException
                 .With.Property("ParamName").EqualTo("startAddress").And
                 .With.Message.StartsWith("Start Address must be byte aligned for 2."));
+
+            Assert.That(() => new Stack(memory, 0x0e, 1), Throws.ArgumentException
+                .With.Property("ParamName").EqualTo("endAddress").And
+                .With.Message.StartsWith("End Address must be byte aligned for 2."));
         }
 
         [Test]
@@ -40,11 +44,19 @@ namespace VM.Tests
         }
 
         [Test]
-        public void Constructor_SizeLimitExceedsStartAddress_ThrowsException()
+        public void Constructor_EndAddressGreaterThanMemoryMax_ThrowsException()
         {
-            Assert.That(() => new Stack(memory, 0x0e, 9), Throws.InstanceOf<ArgumentOutOfRangeException>()
+            Assert.That(() => new Stack(memory, 0x0e, 0x10), Throws.InstanceOf<ArgumentOutOfRangeException>()
+                .With.Property("ParamName").EqualTo("endAddress").And
+                .With.Message.StartsWith("End Address must be a valid memory address."));
+        }
+
+        [Test]
+        public void Constructor_StartAddressLessThanEndAddress_ThrowsException()
+        {
+            Assert.That(() => new Stack(memory, 0x0a, 0x0e), Throws.InstanceOf<ArgumentOutOfRangeException>()
                 .With.Property("ParamName").EqualTo("startAddress").And
-                .With.Message.StartsWith("Start Address must allow room for size of stack."));
+                .With.Message.StartsWith("Start Address must be less than End Address."));
         }
 
         [Test]
@@ -61,7 +73,7 @@ namespace VM.Tests
         [Test]
         public void Push_StackOverflow_ThrowsException()
         {
-            for(ushort i = 0; i < 4; i++)
+            for (ushort i = 0; i < 4; i++)
             {
                 stack.Push(i);
             }
@@ -132,14 +144,14 @@ namespace VM.Tests
 
             var pushValues = new ushort[] { 0, 1, 2, 3 };
 
-            foreach(var value in pushValues)
+            foreach (var value in pushValues)
             {
                 stack.Push(value);
             }
 
             var values = new ushort[pushValues.Length];
 
-            for(var i = 0; i < pushValues.Length; i++)
+            for (var i = 0; i < pushValues.Length; i++)
             {
                 values[i] = stack.Pop();
             }

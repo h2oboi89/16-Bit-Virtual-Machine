@@ -14,7 +14,7 @@ namespace VM.Tests
         public void TestMethod()
         {
             var memory = new Memory(0x100);
-            var processor = new Processor(memory);
+            var processor = new Processor(memory, 0x10);
             var flasher = new Flasher(memory);
 
             var sequence = new List<ushort> { 0, 1 };

@@ -7,6 +7,10 @@ namespace VM.Tests
     public class ProcessorTests
     {
         private const ushort MEMORY_SIZE = 0x100;
+        private const ushort STACK_SIZE = 0x10;
+        private const ushort STACK_START_ADDRESS = MEMORY_SIZE - Processor.DATASIZE;
+        private const ushort STACK_END_ADDRESS = STACK_START_ADDRESS - ((STACK_SIZE - 1) * Processor.DATASIZE);
+
         private Memory memory;
         private Processor processor;
         private Flasher flasher;
@@ -39,7 +43,7 @@ namespace VM.Tests
         {
             memory = new Memory(MEMORY_SIZE);
             flasher = new Flasher(memory);
-            processor = new Processor(memory);
+            processor = new Processor(memory, STACK_SIZE);
 
             resetOccured = false;
             exception = null;
@@ -137,8 +141,8 @@ namespace VM.Tests
             Assert.That(processor.GetRegister(Register.ACC), Is.Zero);
             Assert.That(processor.GetRegister(Register.FLAG), Is.Zero);
 
-            Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(MEMORY_SIZE - Processor.DATASIZE));
-            Assert.That(processor.GetRegister(Register.FP), Is.EqualTo(MEMORY_SIZE - Processor.DATASIZE));
+            Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(STACK_START_ADDRESS));
+            Assert.That(processor.GetRegister(Register.FP), Is.EqualTo(STACK_START_ADDRESS));
 
             Assert.That(processor.GetRegister(Register.R1), Is.Zero);
             Assert.That(processor.GetRegister(Register.R2), Is.Zero);
@@ -174,7 +178,7 @@ namespace VM.Tests
         [Test]
         public void Constructor_NullMemory_ThrowsException()
         {
-            Assert.That(() => new Processor(null), Throws.ArgumentNullException);
+            Assert.That(() => new Processor(null, 0), Throws.ArgumentNullException);
         }
 
         [Test]
@@ -1089,11 +1093,42 @@ namespace VM.Tests
             LoadValueIntoRegisterR1(0x1234);
             flasher.WriteInstruction(Instruction.PUSH, Register.R1);
 
-            Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(MEMORY_SIZE - Processor.DATASIZE));
+            Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(STACK_START_ADDRESS));
 
             ExecuteProgram();
 
-            Assert.That(processor.GetRegister(Register.SP), Is.Not.EqualTo(MEMORY_SIZE - Processor.DATASIZE));
+            Assert.That(processor.GetRegister(Register.SP), Is.Not.EqualTo(STACK_START_ADDRESS));
+        }
+
+        private void FillStack()
+        {
+            LoadValueIntoRegisterR1(0x1234);
+            for (var i = 0; i < STACK_SIZE; i++)
+            {
+                flasher.WriteInstruction(Instruction.PUSH, Register.R1);
+            }
+
+            Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(STACK_START_ADDRESS));
+
+            ExecuteProgram();
+        }
+
+        [Test]
+        public void PUSH_CanFillStack()
+        {
+            FillStack();
+
+            Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(STACK_END_ADDRESS - Processor.DATASIZE));
+        }
+
+        [Test]
+        public void PUSH_FullStack_ThrowsException()
+        {
+            FillStack();
+
+            flasher.WriteInstruction(Instruction.PUSH, Register.R1);
+
+            AssertExceptionOccursAndProcessorResets(typeof(StackOverflowException), "Stack is full.");
         }
 
         [Test]
@@ -1105,9 +1140,17 @@ namespace VM.Tests
 
             ExecuteProgram();
 
-            Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(MEMORY_SIZE - Processor.DATASIZE));
+            Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(STACK_START_ADDRESS));
 
             Assert.That(processor.GetRegister(Register.R2), Is.EqualTo(0x1234));
+        }
+
+        [Test]
+        public void POP_OnEmptyStack_ThrowsException()
+        {
+            flasher.WriteInstruction(Instruction.POP, Register.R1);
+
+            AssertExceptionOccursAndProcessorResets(typeof(InvalidOperationException), "Stack is empty.");
         }
 
         [Test]
@@ -1119,15 +1162,18 @@ namespace VM.Tests
 
             ExecuteProgram();
 
-            Assert.That(processor.GetRegister(Register.SP), Is.Not.EqualTo(MEMORY_SIZE - Processor.DATASIZE));
+            Assert.That(processor.GetRegister(Register.SP), Is.Not.EqualTo(STACK_START_ADDRESS));
 
             Assert.That(processor.GetRegister(Register.R2), Is.EqualTo(0x1234));
         }
 
-        // TODO: Stack instructions
-        // TODO: memory access into stack is invalid
-        // TODO: stack overflow exception
-        // TODO: empty stack exception
+        [Test]
+        public void PEEK_OnEmptyStack_ThrowsException()
+        {
+            flasher.WriteInstruction(Instruction.PEEK, Register.R1);
+
+            AssertExceptionOccursAndProcessorResets(typeof(InvalidOperationException), "Stack is empty.");
+        }
 
         [Test]
         public void HALT_HaltsExecution()
@@ -1157,6 +1203,10 @@ namespace VM.Tests
 
             AssertProcessorIsInInitialState();
         }
+
+        // TODO: Segfaults:
+        // FUTURE: memory access (Load and Store) outside of DATA (static or dynamic) is invalid
+        // FUTURE: executing outside of CODE is invalid (Jump, Logic, Subroutines)
 
         [Test]
         public void InvalidInstruction_ResetsAndThrowsException()

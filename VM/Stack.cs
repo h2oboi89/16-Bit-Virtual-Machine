@@ -43,6 +43,14 @@ namespace VM
             StackPointer = startAddress;
         }
 
+        /// <summary>
+        /// Resets <see cref="Stack"/> back to initial <see cref="StackPointer"/> value.
+        /// </summary>
+        public void Reset()
+        {
+            StackPointer = startAddress;
+        }
+
         private void CheckAddressValidity(ushort address, string name, string displayName)
         {
             if (address % Processor.DATASIZE != 0)

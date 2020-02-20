@@ -159,5 +159,24 @@ namespace VM.Tests
             Assert.That(values, Is.EqualTo(new ushort[] { 3, 2, 1, 0 }));
             Assert.That(stack.StackPointer, Is.EqualTo(0x0e));
         }
+
+        [Test]
+        public void Reset_ResetsStack()
+        {
+            Assert.That(stack.StackPointer, Is.EqualTo(0x0e));
+
+            var pushValues = new ushort[] { 0, 1, 2, 3 };
+
+            foreach (var value in pushValues)
+            {
+                stack.Push(value);
+            }
+
+            Assert.That(stack.StackPointer, Is.EqualTo(0x06));
+
+            stack.Reset();
+
+            Assert.That(stack.StackPointer, Is.EqualTo(0x0e));
+        }
     }
 }

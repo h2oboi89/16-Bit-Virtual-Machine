@@ -11,6 +11,8 @@ namespace VM
 
         private readonly Memory registers;
 
+        private readonly Stack stack;
+
         private bool continueExecution = false;
 
         #region Utility variables for storing references during decode and execution
@@ -44,14 +46,20 @@ namespace VM
         /// Creates a new <see cref="Processor"/> with the specified <see cref="Memory"/>
         /// </summary>
         /// <param name="memory"><see cref="Memory"/> that this <see cref="Processor"/> can utilize.</param>
-        public Processor(Memory memory)
+        /// <param name="stackSize">Number of items that can fit in the <see cref="Stack"/>.</param>
+        public Processor(Memory memory, ushort stackSize)
         {
             // TODO: memory map? (program, static data, dynamic data, stack, IO) 
             this.memory = memory ?? throw new ArgumentNullException(nameof(memory));
 
             registers = new Memory((ushort)((Enum.GetValues(typeof(Register)).Length + 1) * DATASIZE));
 
-            InitializeRegisters();
+            var stackStartAddress = (ushort)(memory.MaxAddress - DATASIZE / 2);
+            var stackEndAddress = (ushort)(stackStartAddress - ((stackSize - 1) * DATASIZE));
+
+            stack = new Stack(memory, stackStartAddress, stackEndAddress);
+
+            Initialize();
         }
 
         /// <summary>
@@ -77,12 +85,15 @@ namespace VM
         /// </summary>
         public event EventHandler Tick;
 
-        private void InitializeRegisters()
+        private void Initialize()
         {
             registers.Clear();
 
-            SetRegister(Register.SP, (ushort)(memory.MaxAddress - DATASIZE / 2));
-            SetRegister(Register.FP, (ushort)(memory.MaxAddress - DATASIZE / 2));
+            stack.Reset();
+            SetRegister(Register.SP, stack.StackPointer);
+
+            // TODO: update once we implement frames
+            SetRegister(Register.FP, stack.StackPointer);
         }
 
         private static void ValidateRegister(Register register)
@@ -439,8 +450,6 @@ namespace VM
                 case Instruction.POP:
                 case Instruction.PEEK:
                     register = FetchRegister();
-
-                    address = GetRegister(Register.SP);
                     break;
             }
 
@@ -609,34 +618,24 @@ namespace VM
                 // TODO: Subroutine instructions
 
                 case Instruction.PUSH:
-                    // TODO: check for stack overflow
                     value = GetRegister(register);
 
-                    memory.SetU16(address, value);
-                    SetRegister(Register.SP, (ushort)(address - DATASIZE));
+                    stack.Push(value);
+                    SetRegister(Register.SP, stack.StackPointer);
                     break;
 
                 case Instruction.POP:
-                    // TODO: check for empty stack
-                    address += DATASIZE;
-
-                    SetRegister(Register.SP, address);
-                    value = memory.GetU16(address);
+                    value = stack.Pop();
 
                     SetRegister(register, value);
+                    SetRegister(Register.SP, stack.StackPointer);
                     break;
 
                 case Instruction.PEEK:
-                    // TODO: check for empty stack
-                    address += DATASIZE;
-
-                    value = memory.GetU16(address);
+                    value = stack.Peek();
 
                     SetRegister(register, value);
                     break;
-
-                // TODO: stack: update all to work with frames, not just full stack
-                // IE: treat each frame as a unique stack
 
                 case Instruction.HALT:
                     continueExecution = false;
@@ -644,7 +643,7 @@ namespace VM
 
                 case Instruction.RESET:
                     continueExecution = false;
-                    InitializeRegisters();
+                    Initialize();
                     break;
             }
         }
@@ -678,7 +677,7 @@ namespace VM
             catch (Exception e)
             {
                 continueExecution = false;
-                InitializeRegisters();
+                Initialize();
 
                 Reset?.Invoke(this, new ResetEventArgs(instruction, e));
 

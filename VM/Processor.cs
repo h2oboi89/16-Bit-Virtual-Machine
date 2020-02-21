@@ -34,7 +34,7 @@ namespace VM
         private Register registerA;
         private Register registerB;
 
-        private Flag flag;
+        private Flags flag;
         #endregion
 
         /// <summary>
@@ -213,7 +213,7 @@ namespace VM
         }
 
         #region Flags
-        private void SetFlag(Flag flag)
+        private void SetFlag(Flags flag)
         {
             var value = GetRegister(Register.FLAG);
 
@@ -222,7 +222,7 @@ namespace VM
             SetRegister(Register.FLAG, value);
         }
 
-        private void ClearFlag(Flag flag)
+        private void ClearFlag(Flags flag)
         {
             var value = GetRegister(Register.FLAG);
 
@@ -232,11 +232,11 @@ namespace VM
         }
 
         /// <summary>
-        /// Determines if <see cref="Flag"/> is set.
+        /// Determines if <see cref="Flags"/> is set.
         /// </summary>
-        /// <param name="flag"><see cref="Flag"/> to check.</param>
-        /// <returns>True if <see cref="Flag"/> is set; otherwise false.</returns>
-        public bool IsSet(Flag flag)
+        /// <param name="flag"><see cref="Flags"/> to check.</param>
+        /// <returns>True if <see cref="Flags"/> is set; otherwise false.</returns>
+        public bool IsSet(Flags flag)
         {
             var value = GetRegister(Register.FLAG);
 
@@ -287,19 +287,19 @@ namespace VM
         {
             if (IsCarryFlagInstruction(instruction))
             {
-                ClearFlag(Flag.CARRY);
+                ClearFlag(Flags.CARRY);
             }
 
             if (IsZeroFlagInstruction(instruction))
             {
-                ClearFlag(Flag.ZERO);
+                ClearFlag(Flags.ZERO);
             }
 
             if (instruction == Instruction.CMP)
             {
-                ClearFlag(Flag.LESSTHAN);
-                ClearFlag(Flag.GREATERTHAN);
-                ClearFlag(Flag.EQUAL);
+                ClearFlag(Flags.LESSTHAN);
+                ClearFlag(Flags.GREATERTHAN);
+                ClearFlag(Flags.EQUAL);
             }
         }
 
@@ -307,27 +307,27 @@ namespace VM
         {
             if (IsCarryFlagInstruction(instruction) && temp > ushort.MaxValue)
             {
-                SetFlag(Flag.CARRY);
+                SetFlag(Flags.CARRY);
             }
 
             if (IsZeroFlagInstruction(instruction) && result == 0)
             {
-                SetFlag(Flag.ZERO);
+                SetFlag(Flags.ZERO);
             }
 
             if (instruction == Instruction.CMP)
             {
                 if (valueA < valueB)
                 {
-                    SetFlag(Flag.LESSTHAN);
+                    SetFlag(Flags.LESSTHAN);
                 }
                 else if (valueA == valueB)
                 {
-                    SetFlag(Flag.EQUAL);
+                    SetFlag(Flags.EQUAL);
                 }
                 else if (valueA > valueB)
                 {
-                    SetFlag(Flag.GREATERTHAN);
+                    SetFlag(Flags.GREATERTHAN);
                 }
             }
         }
@@ -498,8 +498,6 @@ namespace VM
                     address = GetRegister(register);
                     break;
 
-                // TODO: Subroutine instructions
-
                 case Instruction.PUSH:
                 case Instruction.POP:
                 case Instruction.PEEK:
@@ -516,26 +514,26 @@ namespace VM
             {
                 case Instruction.JLT:
                 case Instruction.JLTR:
-                    flag = Flag.LESSTHAN;
+                    flag = Flags.LESSTHAN;
                     break;
 
                 case Instruction.JGT:
                 case Instruction.JGTR:
-                    flag = Flag.GREATERTHAN;
+                    flag = Flags.GREATERTHAN;
                     break;
 
                 case Instruction.JE:
                 case Instruction.JER:
                 case Instruction.JNE:
                 case Instruction.JNER:
-                    flag = Flag.EQUAL;
+                    flag = Flags.EQUAL;
                     break;
 
                 case Instruction.JZ:
                 case Instruction.JZR:
                 case Instruction.JNZ:
                 case Instruction.JNZR:
-                    flag = Flag.ZERO;
+                    flag = Flags.ZERO;
                     break;
             }
         }

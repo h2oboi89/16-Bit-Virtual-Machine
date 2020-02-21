@@ -132,7 +132,7 @@ namespace VM.Tests
         private void AssertZeroValueAndFlag(Register register = Register.ACC)
         {
             Assert.That(processor.GetRegister(register), Is.Zero);
-            Assert.That(processor.IsSet(Flag.ZERO), Is.True);
+            Assert.That(processor.IsSet(Flags.ZERO), Is.True);
         }
 
         private void AssertProcessorIsInInitialState()
@@ -338,7 +338,7 @@ namespace VM.Tests
             ExecuteProgram();
 
             Assert.That(processor.GetRegister(Register.R0), Is.EqualTo(0x1235));
-            Assert.That(processor.IsSet(Flag.CARRY), Is.False);
+            Assert.That(processor.IsSet(Flags.CARRY), Is.False);
         }
 
         [Test]
@@ -350,7 +350,7 @@ namespace VM.Tests
             ExecuteProgram();
 
             AssertZeroValueAndFlag(Register.R0);
-            Assert.That(processor.IsSet(Flag.CARRY), Is.True);
+            Assert.That(processor.IsSet(Flags.CARRY), Is.True);
         }
 
         [Test]
@@ -362,7 +362,7 @@ namespace VM.Tests
             ExecuteProgram();
 
             Assert.That(processor.GetRegister(Register.R0), Is.EqualTo(0x1233));
-            Assert.That(processor.IsSet(Flag.CARRY), Is.False);
+            Assert.That(processor.IsSet(Flags.CARRY), Is.False);
         }
 
         [Test]
@@ -374,7 +374,7 @@ namespace VM.Tests
             ExecuteProgram();
 
             Assert.That(processor.GetRegister(Register.R0), Is.EqualTo(0xffff));
-            Assert.That(processor.IsSet(Flag.CARRY), Is.True);
+            Assert.That(processor.IsSet(Flags.CARRY), Is.True);
         }
 
         [Test]
@@ -497,7 +497,7 @@ namespace VM.Tests
             ExecuteProgram();
 
             Assert.That(processor.GetRegister(Register.ACC), Is.EqualTo(0x1234));
-            Assert.That(processor.IsSet(Flag.CARRY), Is.False);
+            Assert.That(processor.IsSet(Flags.CARRY), Is.False);
         }
 
         [Test]
@@ -508,7 +508,7 @@ namespace VM.Tests
             ExecuteProgram();
 
             Assert.That(processor.GetRegister(Register.ACC), Is.EqualTo(0x0f00));
-            Assert.That(processor.IsSet(Flag.CARRY), Is.True);
+            Assert.That(processor.IsSet(Flags.CARRY), Is.True);
         }
 
         [Test]
@@ -519,7 +519,7 @@ namespace VM.Tests
             ExecuteProgram();
 
             AssertZeroValueAndFlag();
-            Assert.That(processor.IsSet(Flag.CARRY), Is.True);
+            Assert.That(processor.IsSet(Flags.CARRY), Is.True);
         }
 
         [Test]
@@ -530,7 +530,7 @@ namespace VM.Tests
             ExecuteProgram();
 
             Assert.That(processor.GetRegister(Register.ACC), Is.EqualTo(0x11cc));
-            Assert.That(processor.IsSet(Flag.CARRY), Is.False);
+            Assert.That(processor.IsSet(Flags.CARRY), Is.False);
         }
 
         [Test]
@@ -541,7 +541,7 @@ namespace VM.Tests
             ExecuteProgram();
 
             Assert.That(processor.GetRegister(Register.ACC), Is.EqualTo(0x1100));
-            Assert.That(processor.IsSet(Flag.CARRY), Is.True);
+            Assert.That(processor.IsSet(Flags.CARRY), Is.True);
         }
 
         [Test]
@@ -562,7 +562,7 @@ namespace VM.Tests
             ExecuteProgram();
 
             Assert.That(processor.GetRegister(Register.ACC), Is.EqualTo(0xe100));
-            Assert.That(processor.IsSet(Flag.CARRY), Is.False);
+            Assert.That(processor.IsSet(Flags.CARRY), Is.False);
         }
 
         [Test]
@@ -573,7 +573,7 @@ namespace VM.Tests
             ExecuteProgram();
 
             Assert.That(processor.GetRegister(Register.ACC), Is.EqualTo(0xedcc));
-            Assert.That(processor.IsSet(Flag.CARRY), Is.True);
+            Assert.That(processor.IsSet(Flags.CARRY), Is.True);
         }
 
         [Test]
@@ -594,7 +594,7 @@ namespace VM.Tests
             ExecuteProgram();
 
             Assert.That(processor.GetRegister(Register.ACC), Is.EqualTo(0x0020));
-            Assert.That(processor.IsSet(Flag.CARRY), Is.False);
+            Assert.That(processor.IsSet(Flags.CARRY), Is.False);
         }
 
         [Test]
@@ -844,9 +844,9 @@ namespace VM.Tests
 
             ExecuteProgram();
 
-            Assert.That(processor.IsSet(Flag.LESSTHAN), Is.True);
-            Assert.That(processor.IsSet(Flag.EQUAL), Is.False);
-            Assert.That(processor.IsSet(Flag.GREATERTHAN), Is.False);
+            Assert.That(processor.IsSet(Flags.LESSTHAN), Is.True);
+            Assert.That(processor.IsSet(Flags.EQUAL), Is.False);
+            Assert.That(processor.IsSet(Flags.GREATERTHAN), Is.False);
         }
 
         [Test]
@@ -856,9 +856,9 @@ namespace VM.Tests
 
             ExecuteProgram();
 
-            Assert.That(processor.IsSet(Flag.LESSTHAN), Is.False);
-            Assert.That(processor.IsSet(Flag.EQUAL), Is.True);
-            Assert.That(processor.IsSet(Flag.GREATERTHAN), Is.False);
+            Assert.That(processor.IsSet(Flags.LESSTHAN), Is.False);
+            Assert.That(processor.IsSet(Flags.EQUAL), Is.True);
+            Assert.That(processor.IsSet(Flags.GREATERTHAN), Is.False);
         }
 
         [Test]
@@ -868,9 +868,9 @@ namespace VM.Tests
 
             ExecuteProgram();
 
-            Assert.That(processor.IsSet(Flag.LESSTHAN), Is.False);
-            Assert.That(processor.IsSet(Flag.EQUAL), Is.False);
-            Assert.That(processor.IsSet(Flag.GREATERTHAN), Is.True);
+            Assert.That(processor.IsSet(Flags.LESSTHAN), Is.False);
+            Assert.That(processor.IsSet(Flags.EQUAL), Is.False);
+            Assert.That(processor.IsSet(Flags.GREATERTHAN), Is.True);
         }
 
         [Test]
@@ -881,7 +881,7 @@ namespace VM.Tests
 
             ExecuteProgram();
 
-            Assert.That(processor.IsSet(Flag.ZERO), Is.True);
+            Assert.That(processor.IsSet(Flags.ZERO), Is.True);
         }
 
         [Test]
@@ -892,7 +892,7 @@ namespace VM.Tests
 
             ExecuteProgram();
 
-            Assert.That(processor.IsSet(Flag.ZERO), Is.False);
+            Assert.That(processor.IsSet(Flags.ZERO), Is.False);
         }
 
         [Test]

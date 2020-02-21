@@ -23,8 +23,8 @@ namespace VM.Tests
 
             processor.Reset += (o, e) =>
             {
-                Assert.That(e.Instruction, Is.EqualTo(Instruction.RESET));
                 Assert.That(e.Exception, Is.Null);
+                Assert.That(e.Instruction, Is.EqualTo(Instruction.RESET));
 
                 resetEvent.Set();
             };

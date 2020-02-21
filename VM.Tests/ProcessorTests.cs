@@ -284,6 +284,7 @@ namespace VM.Tests
             ExecuteProgram();
         }
 
+        #region Register
         [Test]
         public void MOVE_MovesValueFromRegisterAToRegisterB()
         {
@@ -353,7 +354,9 @@ namespace VM.Tests
 
             AssertZeroValueAndFlag(Register.R1);
         }
+        #endregion
 
+        #region Load
         [Test]
         public void LDVR_LoadsValueIntoRegister()
         {
@@ -392,7 +395,9 @@ namespace VM.Tests
 
             Assert.That(processor.GetRegister(Register.R2), Is.EqualTo(0x1234));
         }
+        #endregion
 
+        #region Store
         [Test]
         public void STVA_StoresValueAtAddress()
         {
@@ -448,7 +453,9 @@ namespace VM.Tests
 
             Assert.That(memory.GetU16(address), Is.EqualTo(0x1234));
         }
+        #endregion
 
+        #region Arithmetic
         [Test]
         public void ADD_AdditionOfTwoRegisterValues()
         {
@@ -599,7 +606,9 @@ namespace VM.Tests
 
             AssertZeroValueAndFlag();
         }
+        #endregion
 
+        #region Bitwise
         [Test]
         public void OR_BinaryOrOfTwoRegisterValues()
         {
@@ -773,7 +782,9 @@ namespace VM.Tests
 
             AssertZeroValueAndFlag();
         }
+        #endregion
 
+        #region Jump
         [Test]
         public void JUMP_DoesUnconditionalJumpUsingAddress()
         {
@@ -790,7 +801,9 @@ namespace VM.Tests
 
             ExecuteProgram(0x1234);
         }
+        #endregion
 
+        #region Logic
         [Test]
         public void CMP_LessThan_SetsLessThanFlag()
         {
@@ -1084,9 +1097,11 @@ namespace VM.Tests
 
             ExecuteProgram();
         }
+        #endregion
 
         // TODO: Subroutine instructions
 
+        #region Stack
         [Test]
         public void PUSH_PutsValueFromRegisterOntoStack()
         {
@@ -1174,7 +1189,9 @@ namespace VM.Tests
 
             AssertExceptionOccursAndProcessorResets(typeof(InvalidOperationException), "Stack is empty.");
         }
+        #endregion
 
+        #region Processor
         [Test]
         public void HALT_HaltsExecution()
         {
@@ -1203,6 +1220,7 @@ namespace VM.Tests
 
             AssertProcessorIsInInitialState();
         }
+        #endregion
 
         // TODO: Segfaults:
         // FUTURE: memory access (Load and Store) outside of DATA (static or dynamic) is invalid

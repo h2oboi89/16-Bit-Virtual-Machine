@@ -12,8 +12,8 @@ namespace VM
 
         private readonly Memory registers;
 
-        private readonly Stack<Stack> stacks = new Stack<Stack>();
-        private Stack Stack => stacks.Peek();
+        private readonly Stack<Frame> stacks = new Stack<Frame>();
+        private Frame Frame => stacks.Peek();
 
         private bool continueExecution = false;
 
@@ -48,7 +48,7 @@ namespace VM
         /// Creates a new <see cref="Processor"/> with the specified <see cref="Memory"/>
         /// </summary>
         /// <param name="memory"><see cref="Memory"/> that this <see cref="Processor"/> can utilize.</param>
-        /// <param name="stackSize">Number of items that can fit in the <see cref="VM.Stack"/>.</param>
+        /// <param name="stackSize">Number of items that can fit in the <see cref="VM.Frame"/>.</param>
         public Processor(Memory memory, ushort stackSize)
         {
             // TODO: memory map? (program, static data, dynamic data, stack, IO) 
@@ -59,7 +59,7 @@ namespace VM
             var startAddress = (ushort)(memory.MaxAddress - DATASIZE / 2);
             var endAddress = (ushort)(startAddress - ((stackSize - 1) * DATASIZE));
 
-            stacks.Push(new Stack(memory, startAddress, endAddress));
+            stacks.Push(new Frame(memory, startAddress, endAddress));
 
             Initialize();
         }
@@ -96,11 +96,11 @@ namespace VM
                 stacks.Pop();
             }
 
-            Stack.Reset();
-            SetRegister(Register.SP, Stack.StackPointer);
+            Frame.Reset();
+            SetRegister(Register.SP, Frame.StackPointer);
 
             // TODO: update once we implement frames
-            SetRegister(Register.FP, Stack.StackPointer);
+            SetRegister(Register.FP, Frame.StackPointer);
         }
 
         private static void ValidateRegister(Register register)
@@ -172,14 +172,14 @@ namespace VM
 
         private void Push(ushort value)
         {
-            Stack.Push(value);
-            SetRegister(Register.SP, Stack.StackPointer);
+            Frame.Push(value);
+            SetRegister(Register.SP, Frame.StackPointer);
         }
 
         private ushort Pop()
         {
-            var value = Stack.Pop();
-            SetRegister(Register.SP, Stack.StackPointer);
+            var value = Frame.Pop();
+            SetRegister(Register.SP, Frame.StackPointer);
 
             return value;
         }
@@ -197,12 +197,12 @@ namespace VM
 
             Push(GetRegister(Register.PC));
 
-            Push((ushort)(Stack.Size + DATASIZE));
+            Push((ushort)(Frame.Size + DATASIZE));
 
-            var startAddress = Stack.StackPointer;
-            var endAddress = Stack.EndAddress;
+            var startAddress = Frame.StackPointer;
+            var endAddress = Frame.EndAddress;
 
-            stacks.Push(new Stack(memory, startAddress, endAddress));
+            stacks.Push(new Frame(memory, startAddress, endAddress));
 
             SetRegister(Register.FP, GetRegister(Register.SP));
         }
@@ -677,7 +677,7 @@ namespace VM
                     break;
 
                 case Instruction.PEEK:
-                    value = Stack.Peek();
+                    value = Frame.Peek();
 
                     SetRegister(register, value);
                     break;

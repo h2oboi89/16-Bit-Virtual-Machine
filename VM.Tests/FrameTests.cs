@@ -4,33 +4,33 @@ using System;
 namespace VM.Tests
 {
     [TestFixture]
-    public class StackTests
+    public class FrameTests
     {
         private Memory memory;
-        private Stack stack;
+        private Frame stack;
 
         [SetUp]
         public void SetUp()
         {
             memory = new Memory(0x10);
-            stack = new Stack(memory, 0x0e, 0x08);
+            stack = new Frame(memory, 0x0e, 0x08);
         }
 
         [Test]
         public void Constructor_NullMemoryArgument_ThrowsException()
         {
-            Assert.That(() => new Stack(null, 0, 0), Throws.ArgumentNullException
+            Assert.That(() => new Frame(null, 0, 0), Throws.ArgumentNullException
                 .With.Property("ParamName").EqualTo("memory"));
         }
 
         [Test]
         public void Constructor_MisalignedAddresses_ThrowsException()
         {
-            Assert.That(() => new Stack(memory, 1, 0), Throws.ArgumentException
+            Assert.That(() => new Frame(memory, 1, 0), Throws.ArgumentException
                 .With.Property("ParamName").EqualTo("startAddress").And
                 .With.Message.StartsWith("Start Address must be byte aligned for 2."));
 
-            Assert.That(() => new Stack(memory, 0x0e, 1), Throws.ArgumentException
+            Assert.That(() => new Frame(memory, 0x0e, 1), Throws.ArgumentException
                 .With.Property("ParamName").EqualTo("endAddress").And
                 .With.Message.StartsWith("End Address must be byte aligned for 2."));
         }
@@ -38,7 +38,7 @@ namespace VM.Tests
         [Test]
         public void Constructor_StartAddressGreaterThanMemoryMax_ThrowsException()
         {
-            Assert.That(() => new Stack(memory, 0x10, 0), Throws.InstanceOf<ArgumentOutOfRangeException>()
+            Assert.That(() => new Frame(memory, 0x10, 0), Throws.InstanceOf<ArgumentOutOfRangeException>()
                 .With.Property("ParamName").EqualTo("startAddress").And
                 .With.Message.StartsWith("Start Address must be a valid memory address."));
         }
@@ -46,7 +46,7 @@ namespace VM.Tests
         [Test]
         public void Constructor_EndAddressGreaterThanMemoryMax_ThrowsException()
         {
-            Assert.That(() => new Stack(memory, 0x0e, 0x10), Throws.InstanceOf<ArgumentOutOfRangeException>()
+            Assert.That(() => new Frame(memory, 0x0e, 0x10), Throws.InstanceOf<ArgumentOutOfRangeException>()
                 .With.Property("ParamName").EqualTo("endAddress").And
                 .With.Message.StartsWith("End Address must be a valid memory address."));
         }
@@ -54,7 +54,7 @@ namespace VM.Tests
         [Test]
         public void Constructor_StartAddressLessThanEndAddress_ThrowsException()
         {
-            Assert.That(() => new Stack(memory, 0x0a, 0x0e), Throws.InstanceOf<ArgumentOutOfRangeException>()
+            Assert.That(() => new Frame(memory, 0x0a, 0x0e), Throws.InstanceOf<ArgumentOutOfRangeException>()
                 .With.Property("ParamName").EqualTo("startAddress").And
                 .With.Message.StartsWith("Start Address must be less than End Address."));
         }

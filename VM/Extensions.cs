@@ -29,6 +29,46 @@ namespace VM
             return Enum.IsDefined(typeof(Instruction), instruction);
         }
 
+        public static bool IsCarryFlag(this Instruction instruction)
+        {
+            switch (instruction)
+            {
+                case Instruction.INC:
+                case Instruction.DEC:
+                case Instruction.ADD:
+                case Instruction.MUL:
+                case Instruction.SUB:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        public static bool IsZeroFlag(this Instruction instruction)
+        {
+            switch (instruction)
+            {
+                case Instruction.INC:
+                case Instruction.DEC:
+                case Instruction.ADD:
+                case Instruction.SUB:
+                case Instruction.MUL:
+                case Instruction.DIV:
+                case Instruction.AND:
+                case Instruction.OR:
+                case Instruction.XOR:
+                case Instruction.NOT:
+                case Instruction.SRL:
+                case Instruction.SRLR:
+                case Instruction.SRR:
+                case Instruction.SRRR:
+                case Instruction.CMPZ:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
         public static ushort Set(this Flags flag, ushort bitfield)
         {
             return (ushort)(bitfield | (ushort)flag);

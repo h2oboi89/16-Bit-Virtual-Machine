@@ -620,7 +620,9 @@ namespace VM.Tests
 
             AssertZeroValueAndFlag();
         }
+        #endregion
 
+        #region Bitwise
         [Test]
         public void AND_BinaryAndOfTwoRegisterValues()
         {
@@ -640,9 +642,7 @@ namespace VM.Tests
 
             AssertZeroValueAndFlag();
         }
-        #endregion
 
-        #region Bitwise
         [Test]
         public void OR_BinaryOrOfTwoRegisterValues()
         {

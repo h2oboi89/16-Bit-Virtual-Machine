@@ -13,7 +13,7 @@
         /// <summary>
         /// <see cref="Flags"/> indicating results of <see cref="Instruction"/>s.
         /// </summary>
-        public ushort Flag { get; private set; }
+        public Flags Flag { get; private set; }
 
         /// <summary>
         /// Next Address to following a Conditional Jump <see cref="Instruction"/>.
@@ -31,12 +31,12 @@
 
         private void SetFlag(Flags flag)
         {
-            Flag = flag.Set(Flag);
+            Flag |= flag;
         }
 
         private void ClearFlag(Flags flag)
         {
-            Flag = flag.Clear(Flag);
+            Flag &= ~flag;
         }
 
         /// <summary>
@@ -46,7 +46,7 @@
         /// <returns>True if <see cref="Flags"/> is set; otherwise false.</returns>
         public bool IsSet(Flags flag)
         {
-            return flag.IsSet(Flag);
+            return (Flag & flag) == flag;
         }
 
         private void ClearFlags(Instruction instruction)

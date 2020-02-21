@@ -1,6 +1,7 @@
 ﻿#pragma warning disable CA1822 // Mark members as static
 using NUnit.Framework;
 using System;
+using System.Linq;
 
 namespace VM.Tests
 {
@@ -1251,10 +1252,79 @@ namespace VM.Tests
         [Test]
         public void Subroutine_AcceptsArgumentsAndReturnsValues()
         {
-            // TODO: implement
+            var instructionCount = 0;
+            ushort subroutineAddress = 0x1000;
+
+            LoadValueIntoRegister(1, Register.R0);
+            LoadValueIntoRegister(2, Register.R1);
+            LoadValueIntoRegister(3, Register.R2);
+            LoadValueIntoRegister(4, Register.R3);
+            flasher.WriteInstruction(Instruction.MOVE, Register.R0, Register.A0);
+            flasher.WriteInstruction(Instruction.MOVE, Register.R1, Register.A1);
+            flasher.WriteInstruction(Instruction.MOVE, Register.R2, Register.A2);
+            flasher.WriteInstruction(Instruction.MOVE, Register.R3, Register.A3);
+
+            flasher.WriteInstruction(Instruction.CALL, subroutineAddress);
+
+            flasher.WriteInstruction(Instruction.ADD, Register.V0, Register.V1);
+
+            instructionCount += flasher.InstructionCount;
+            flasher.Address = subroutineAddress;
+
+            flasher.WriteInstruction(Instruction.ADD, Register.A0, Register.A1);
+            flasher.WriteInstruction(Instruction.MOVE, Register.ACC, Register.V0);
+            flasher.WriteInstruction(Instruction.ADD, Register.A2, Register.A3);
+            flasher.WriteInstruction(Instruction.MOVE, Register.ACC, Register.V1);
+            flasher.WriteInstruction(Instruction.RET);
+
+            instructionCount += flasher.InstructionCount;
+
+            for (var i = 0; i < instructionCount; i++)
+            {
+                processor.Step();
+            }
+
+            Assert.That(processor.GetRegister(Register.ACC), Is.EqualTo(10));
         }
 
-        // TODO: Subroutine instructions
+        [Test]
+        public void Subroutine_NestedCallsAreSupported()
+        {
+            var instructionCount = 0;
+
+            var addresses = new ushort[]
+            {
+                0x1000, 0x2000, 0x3000, 0x4000, 0x5000
+            };
+
+            flasher.WriteInstruction(Instruction.CALL, addresses[0]);
+            instructionCount += flasher.InstructionCount;
+
+            for (ushort i = 0; i < addresses.Length; i++)
+            {
+                flasher.Address = addresses[i];
+
+                LoadValueIntoRegisterR0(addresses[i]);
+                flasher.WriteInstruction(Instruction.ADD, Register.T0, Register.R0);
+                flasher.WriteInstruction(Instruction.MOVE, Register.ACC, Register.T0);
+
+                if (i != addresses.Length - 1)
+                {
+                    flasher.WriteInstruction(Instruction.CALL, addresses[i + 1]);
+                }
+
+                flasher.WriteInstruction(Instruction.RET);
+                instructionCount += flasher.InstructionCount;
+            }
+
+            for (var i = 0; i < instructionCount; i++)
+            {
+                processor.Step();
+            }
+
+            Assert.That(processor.GetRegister(Register.T0), Is.EqualTo(addresses.Select(x => (int)x).Sum()));
+        }
+
         #endregion
 
         #region Stack

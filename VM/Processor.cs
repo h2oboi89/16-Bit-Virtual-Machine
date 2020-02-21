@@ -129,7 +129,7 @@ namespace VM
             }
             if (register == Register.FLAG)
             {
-                return alu.Flag;
+                return (ushort)alu.Flag;
             }
 
             return registers.GetU16((ushort)((byte)register * DATASIZE));

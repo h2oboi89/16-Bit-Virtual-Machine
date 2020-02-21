@@ -73,22 +73,5 @@ namespace VM
                     return false;
             }
         }
-
-        public static ushort Set(this Flags flag, ushort bitfield)
-        {
-            return (ushort)(bitfield | (ushort)flag);
-        }
-
-        public static ushort Clear(this Flags flag, ushort bitfield)
-        {
-            var mask = ~(ushort)flag;
-
-            return (ushort)(bitfield & mask);
-        }
-
-        public static bool IsSet(this Flags flag, ushort bitfield)
-        {
-            return (bitfield & (ushort)flag) != 0;
-        }
     }
 }

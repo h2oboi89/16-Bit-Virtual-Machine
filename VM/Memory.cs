@@ -5,7 +5,7 @@ namespace VM
     /// <summary>
     /// Represents a block of memory in the Virtual Machine
     /// </summary>
-    public class Memory
+    public sealed class Memory
     {
         private readonly byte[] memory;
 

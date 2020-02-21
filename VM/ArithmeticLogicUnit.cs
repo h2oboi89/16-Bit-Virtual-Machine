@@ -3,7 +3,7 @@
     /// <summary>
     /// Performs Arithmetic, Bitwise, and Logic <see cref="Instruction"/>s for the <see cref="Processor"/>.
     /// </summary>
-    public class ArithmeticLogicUnit
+    public sealed class ArithmeticLogicUnit
     {
         /// <summary>
         /// Result of all <see cref="Instruction"/>s are stored here.

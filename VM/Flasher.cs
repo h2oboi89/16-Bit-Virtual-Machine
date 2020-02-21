@@ -3,7 +3,7 @@
     /// <summary>
     /// Utility for writing programs to memory.
     /// </summary>
-    public class Flasher
+    public sealed class Flasher
     {
         private readonly Memory memory;
 

@@ -6,7 +6,7 @@ namespace VM
     /// <summary>
     /// Represents the call stack in a <see cref="Processor"/>.
     /// </summary>
-    public class Stack
+    public sealed class Stack
     {
         private readonly Memory memory;
 
@@ -155,7 +155,7 @@ namespace VM
         /// <summary>
         /// Represents a frame in the <see cref="Processor"/> stack.
         /// </summary>
-        internal class Frame
+        internal sealed class Frame
         {
             private readonly Memory memory;
 

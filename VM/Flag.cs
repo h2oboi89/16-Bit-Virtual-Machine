@@ -14,25 +14,13 @@
         /// </summary>
         LESSTHAN,
         /// <summary>
-        /// Set if result of last <see cref="Instruction.CMP"/> was that A &gt; B.
-        /// </summary>
-        GREATERTHAN,
-        /// <summary>
         /// Set if result of last <see cref="Instruction.CMP"/> was that A == B.
         /// </summary>
         EQUAL,
         /// <summary>
-        /// Set if result of last arithmetic operation was less than 0.
+        /// Set if result of last <see cref="Instruction.CMP"/> was that A &gt; B.
         /// </summary>
-        NEGATIVE,
-        /// <summary>
-        /// Set if result of last arithmetic operation resulted in overflow.
-        /// </summary>
-        OVERFLOW,
-        /// <summary>
-        /// Set if result of last arithmetic operation resulted in underflow.
-        /// </summary>
-        UNDERFLOW,
+        GREATERTHAN,
         /// <summary>
         /// Set if result of last arithmetic operation resulted in a carry.
         /// </summary>

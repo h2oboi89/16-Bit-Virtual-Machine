@@ -28,7 +28,7 @@ namespace VM
         /// </summary>
         public ushort MaxAddress { get { return (ushort)(memory.Length - 1); } }
 
-        private bool ValidAddress(ushort address, int size) => address + size <= MaxAddress;
+        private bool ValidAddress(ushort address, int size) => address + size <= memory.Length;
 
         private IndexOutOfRangeException MemoryException(ushort address)
         {
@@ -100,6 +100,11 @@ namespace VM
         /// <param name="value">Data to store.</param>
         public void SetU16(ushort address, ushort value)
         {
+            if (!ValidAddress(address, sizeof(ushort)))
+            {
+                throw MemoryException(address);
+            }
+
             foreach (var b in Utility.GetBytes(value))
             {
                 SetU8(address++, b);
@@ -113,7 +118,7 @@ namespace VM
         /// Used by <see cref="WriteU8(byte)"/> and <see cref="WriteU16(ushort)"/>.
         /// Automatically increments each time one of those methods is called.
         /// </summary>
-        internal int Address { get; set; }
+        internal ushort Address { get; set; }
 
         /// <summary>
         /// Writes the specifed <see cref="byte"/> to current memory location as specifed by <see cref="Address"/>.

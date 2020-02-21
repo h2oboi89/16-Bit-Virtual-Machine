@@ -10,7 +10,7 @@
         /// Does nothing aside from increment the <see cref="Register.PC"/>.
         /// Arguments: NONE.
         /// </summary>
-        NOP,
+        NOP = default(ushort),
 
         #region Register Instructions
         /// <summary>
@@ -101,7 +101,7 @@
         DIV,
         #endregion
 
-        #region Binary Instructions
+        #region Bitwise Instructions
         /// <summary>
         /// Performs bitwise and on two <see cref="Register"/>s and stores value in <see cref="Register.ACC"/> (A &amp; B).
         /// Arguments: A (<see cref="Register"/>), B (<see cref="Register"/>).
@@ -113,15 +113,15 @@
         /// </summary>
         OR,
         /// <summary>
-        /// Performs bitwise not on <see cref="Register"/>s and stores value in <see cref="Register.ACC"/> (~A).
-        /// Arguments: A (<see cref="Register"/>).
-        /// </summary>
-        NOT,
-        /// <summary>
         /// Performs bitwise and on two <see cref="Register"/>s and stores value in <see cref="Register.ACC"/> (A (+) B).
         /// Arguments: A (<see cref="Register"/>), B (<see cref="Register"/>).
         /// </summary>
         XOR,
+        /// <summary>
+        /// Performs bitwise not on <see cref="Register"/>s and stores value in <see cref="Register.ACC"/> (~A).
+        /// Arguments: A (<see cref="Register"/>).
+        /// </summary>
+        NOT,
         /// <summary>
         /// Shift Register Left.
         /// Shift value in register left by specified amount (Maximum is 15).
@@ -152,24 +152,6 @@
         SRRR,
         #endregion
 
-        #region Subroutine Instructions
-        /// <summary>
-        /// Call subroutine at address.
-        /// Argumemnts: Address (<see cref="ushort"/>.
-        /// </summary>
-        CALL,
-        /// <summary>
-        /// Call subroutine at address in Register.
-        /// Arguments: Address (<see cref="Register"/>).
-        /// </summary>
-        CALLR,
-        /// <summary>
-        /// Return from subroutine.
-        /// Arguments: NONE
-        /// </summary>
-        RET,
-        #endregion
-
         #region Jump Instructions
         /// <summary>
         /// Jump to address.
@@ -186,10 +168,16 @@
         #region Logic Instructions
         /// <summary>
         /// Compare values in <see cref="Register"/>s with each other (A &lt;cmp&gt; B).
-        /// Sets bits in <see cref="Register.FLAG"/> that get used by the various Jump <see cref="Instruction"/>s.
+        /// Sets bits in <see cref="Register.FLAG"/> that get used by the various Logical Jump <see cref="Instruction"/>s.
         /// Arguments: A (<see cref="Register"/>), B (<see cref="Register"/>).
         /// </summary>
         CMP,
+        /// <summary>
+        /// Compare value in <see cref="Register"/> against zero.
+        /// Sets bits in <see cref="Register.FLAG"/> that get used by the various Logical Jump <see cref="Instruction"/>s.
+        /// Arguments: A (<see cref="Register"/>).
+        /// </summary>
+        CMPZ,
         /// <summary>
         /// Jump if Less Than.
         /// Jumps to address if <see cref="Flag.LESSTHAN"/> is set.
@@ -262,6 +250,24 @@
         /// Arguments: Address (<see cref="Register"/>).
         /// </summary>
         JNZR,
+        #endregion
+
+        #region Subroutine Instructions
+        /// <summary>
+        /// Call subroutine at address.
+        /// Argumemnts: Address (<see cref="ushort"/>.
+        /// </summary>
+        CALL,
+        /// <summary>
+        /// Call subroutine at address in Register.
+        /// Arguments: Address (<see cref="Register"/>).
+        /// </summary>
+        CALLR,
+        /// <summary>
+        /// Return from subroutine.
+        /// Arguments: NONE
+        /// </summary>
+        RET,
         #endregion
 
         #region Stack Instructions

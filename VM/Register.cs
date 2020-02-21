@@ -13,7 +13,7 @@
         PC,
         /// <summary>
         /// Accumulator.
-        /// Where result of all Arithmetic and Binary <see cref="Instruction"/>s is stored.
+        /// Where result of all Arithmetic and Bitwise <see cref="Instruction"/>s is stored.
         /// </summary>
         ACC,
         /// <summary>

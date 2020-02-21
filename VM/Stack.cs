@@ -15,12 +15,12 @@ namespace VM
         private Frame StackFrame => frames.Peek();
 
         /// <summary>
-        /// Address of first value in <see cref="Frame"/>.
+        /// Address of first value in <see cref="Stack"/>.
         /// </summary>
         public ushort StartAddress { get; private set; }
 
         /// <summary>
-        /// Address of last value in <see cref="Frame"/>.
+        /// Address of last value in <see cref="Stack"/>.
         /// </summary>
         public ushort EndAddress { get; private set; }
 
@@ -143,7 +143,8 @@ namespace VM
             if (frames.Count > 1)
             {
                 frames.Pop();
-            } else
+            }
+            else
             {
                 throw new InvalidOperationException("Stack is empty.");
             }

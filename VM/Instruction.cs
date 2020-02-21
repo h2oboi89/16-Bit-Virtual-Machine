@@ -255,7 +255,7 @@
         #region Subroutine Instructions
         /// <summary>
         /// Call subroutine at address.
-        /// Argumemnts: Address (<see cref="ushort"/>.
+        /// Arguments: Address (<see cref="ushort"/>).
         /// </summary>
         CALL,
         /// <summary>

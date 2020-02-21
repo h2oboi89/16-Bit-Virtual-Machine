@@ -35,7 +35,20 @@
         FP,
         #endregion
 
+        #region Subroutine Registers
+        A0,
+        A1,
+        A2,
+        A3,
+        V0,
+        V1,
+        #endregion
+
         #region General Purpose Registers
+        /// <summary>
+        /// General purpose register.
+        /// </summary>
+        R0,
         /// <summary>
         /// General purpose register.
         /// </summary>
@@ -64,13 +77,14 @@
         /// General purpose register.
         /// </summary>
         R7,
-        /// <summary>
-        /// General purpose register.
-        /// </summary>
-        R8,
         #endregion
 
         #region Temporary Registers
+        /// <summary>
+        /// General purpose register.
+        /// Not preserved during subroutines.
+        /// </summary>
+        T0,
         /// <summary>
         /// General purpose register.
         /// Not preserved during subroutines.
@@ -105,12 +119,7 @@
         /// General purpose register.
         /// Not preserved during subroutines.
         /// </summary>
-        T7,
-        /// <summary>
-        /// General purpose register.
-        /// Not preserved during subroutines.
-        /// </summary>
-        T8
+        T7
         #endregion
     }
 }

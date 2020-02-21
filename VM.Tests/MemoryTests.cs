@@ -1,4 +1,5 @@
-﻿using NUnit.Framework;
+﻿#pragma warning disable CA1822 // Mark members as static
+using NUnit.Framework;
 using System;
 
 namespace VM.Tests
@@ -40,7 +41,7 @@ namespace VM.Tests
         public void SetU8_InvalidAddress_ThrowsException()
         {
             Assert.That(() => memory.SetU8(0xff, 0x10), Throws.Nothing);
-            
+
             Assert.That(() => memory.SetU8(0x100, 0x10),
                 Throws.InstanceOf<IndexOutOfRangeException>().With.Message.StartsWith("Invalid memory address 0x0100."));
         }
@@ -115,3 +116,4 @@ namespace VM.Tests
         }
     }
 }
+#pragma warning restore CA1822 // Mark members as static

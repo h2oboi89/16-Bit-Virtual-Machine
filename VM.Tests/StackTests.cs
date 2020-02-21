@@ -1,4 +1,5 @@
-﻿using NUnit.Framework;
+﻿#pragma warning disable CA1822 // Mark members as static
+using NUnit.Framework;
 using System;
 
 namespace VM.Tests
@@ -185,7 +186,7 @@ namespace VM.Tests
         {
             FillStack();
 
-            for(var i = 0; i < 8; i++)
+            for (var i = 0; i < 8; i++)
             {
                 stack.PopFrame();
             }
@@ -246,3 +247,4 @@ namespace VM.Tests
         }
     }
 }
+#pragma warning restore CA1822 // Mark members as static

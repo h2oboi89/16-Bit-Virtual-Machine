@@ -1,29 +1,32 @@
-﻿namespace VM
+﻿using System;
+
+namespace VM
 {
     /// <summary>
     /// Identifiers for the bits in <see cref="Register.FLAG"/>.
     /// </summary>
-    public enum Flag
+    [Flags]
+    public enum Flags
     {
         /// <summary>
         /// Set if result of last arithmetic operation was zero.
         /// </summary>
-        ZERO,
+        ZERO = 1,
         /// <summary>
         /// Set if result of last <see cref="Instruction.CMP"/> was that A &lt; B.
         /// </summary>
-        LESSTHAN,
+        LESSTHAN = 2,
         /// <summary>
         /// Set if result of last <see cref="Instruction.CMP"/> was that A == B.
         /// </summary>
-        EQUAL,
+        EQUAL = 4,
         /// <summary>
         /// Set if result of last <see cref="Instruction.CMP"/> was that A &gt; B.
         /// </summary>
-        GREATERTHAN,
+        GREATERTHAN = 8,
         /// <summary>
         /// Set if result of last arithmetic operation resulted in a carry.
         /// </summary>
-        CARRY
+        CARRY = 16
     }
 }

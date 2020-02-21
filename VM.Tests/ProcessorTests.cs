@@ -1,15 +1,17 @@
 ﻿#pragma warning disable CA1822 // Mark members as static
 using NUnit.Framework;
 using System;
+using System.Linq;
 
 namespace VM.Tests
 {
     public class ProcessorTests
     {
-        private const ushort MEMORY_SIZE = 0x100;
-        private const ushort STACK_SIZE = 0x10;
-        private const ushort STACK_START_ADDRESS = MEMORY_SIZE - Processor.DATASIZE;
+        private const uint MEMORY_SIZE = 0x8000;
+        private const ushort STACK_SIZE = 0x400;
+        private const ushort STACK_START_ADDRESS = (ushort)(MEMORY_SIZE - Processor.DATASIZE);
         private const ushort STACK_END_ADDRESS = STACK_START_ADDRESS - ((STACK_SIZE - 1) * Processor.DATASIZE);
+        private const ushort STATE_SIZE = 18;
 
         private Memory memory;
         private Processor processor;
@@ -116,34 +118,34 @@ namespace VM.Tests
             flasher.WriteInstruction(Instruction.LDVR, value, register);
         }
 
-        private void LoadValueIntoRegisterR1(ushort value)
+        private void LoadValueIntoRegisterR0(ushort value)
         {
-            LoadValueIntoRegister(value, Register.R1);
+            LoadValueIntoRegister(value, Register.R0);
         }
 
         private void SetupBinaryInstruction(Instruction instruction, ushort valueA, ushort valueB)
         {
-            LoadValueIntoRegister(valueA, Register.R1);
-            LoadValueIntoRegister(valueB, Register.R2);
-            flasher.WriteInstruction(instruction, Register.R1, Register.R2);
+            LoadValueIntoRegister(valueA, Register.R0);
+            LoadValueIntoRegister(valueB, Register.R1);
+            flasher.WriteInstruction(instruction, Register.R0, Register.R1);
         }
 
         private void AssertZeroValueAndFlag(Register register = Register.ACC)
         {
             Assert.That(processor.GetRegister(register), Is.Zero);
-            Assert.That(processor.IsSet(Flag.ZERO), Is.True);
+            Assert.That(processor.IsSet(Flags.ZERO), Is.True);
         }
 
         private void AssertProcessorIsInInitialState()
         {
             Assert.That(processor.GetRegister(Register.PC), Is.Zero);
-            Assert.That(processor.GetRegister(Register.RA), Is.Zero);
             Assert.That(processor.GetRegister(Register.ACC), Is.Zero);
             Assert.That(processor.GetRegister(Register.FLAG), Is.Zero);
 
             Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(STACK_START_ADDRESS));
             Assert.That(processor.GetRegister(Register.FP), Is.EqualTo(STACK_START_ADDRESS));
 
+            Assert.That(processor.GetRegister(Register.R0), Is.Zero);
             Assert.That(processor.GetRegister(Register.R1), Is.Zero);
             Assert.That(processor.GetRegister(Register.R2), Is.Zero);
             Assert.That(processor.GetRegister(Register.R3), Is.Zero);
@@ -151,8 +153,8 @@ namespace VM.Tests
             Assert.That(processor.GetRegister(Register.R5), Is.Zero);
             Assert.That(processor.GetRegister(Register.R6), Is.Zero);
             Assert.That(processor.GetRegister(Register.R7), Is.Zero);
-            Assert.That(processor.GetRegister(Register.R8), Is.Zero);
 
+            Assert.That(processor.GetRegister(Register.T0), Is.Zero);
             Assert.That(processor.GetRegister(Register.T1), Is.Zero);
             Assert.That(processor.GetRegister(Register.T2), Is.Zero);
             Assert.That(processor.GetRegister(Register.T3), Is.Zero);
@@ -160,7 +162,6 @@ namespace VM.Tests
             Assert.That(processor.GetRegister(Register.T5), Is.Zero);
             Assert.That(processor.GetRegister(Register.T6), Is.Zero);
             Assert.That(processor.GetRegister(Register.T7), Is.Zero);
-            Assert.That(processor.GetRegister(Register.T8), Is.Zero);
         }
 
         private void AssertExceptionOccursAndProcessorResets(Type exceptionType, string expectedMessage)
@@ -173,10 +174,23 @@ namespace VM.Tests
 
             AssertProcessorIsInInitialState();
         }
+
+        private void FillStack(ushort amount = STACK_SIZE)
+        {
+            LoadValueIntoRegisterR0(0x1234);
+            for (var i = 0; i < amount; i++)
+            {
+                flasher.WriteInstruction(Instruction.PUSH, Register.R0);
+            }
+
+            Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(STACK_START_ADDRESS));
+
+            ExecuteProgram();
+        }
         #endregion
 
         [Test]
-        public void Constructor_NullMemory_ThrowsException()
+        public void Constructor_NullMemory_ResetsAndThrowsException()
         {
             Assert.That(() => new Processor(null, 0), Throws.ArgumentNullException);
         }
@@ -206,7 +220,7 @@ namespace VM.Tests
         {
             var privateRegisters = new Register[]
             {
-                Register.PC, Register.RA, Register.ACC, Register.FLAG, Register.SP, Register.FP
+                Register.PC, Register.ACC, Register.FLAG
             };
 
             foreach (var register in privateRegisters)
@@ -222,14 +236,34 @@ namespace VM.Tests
         }
 
         [Test]
+        public void ModifyingStackRegisters_ResetsAndThrowsException()
+        {
+            var stackRegisters = new Register[]
+            {
+                Register.SP, Register.FP
+            };
+
+            foreach (var register in stackRegisters)
+            {
+                flasher.Address = 0;
+
+                LoadValueIntoRegister(0x1234, register);
+
+                AssertExceptionOccursAndProcessorResets(
+                    typeof(InvalidOperationException),
+                    $"{Enum.GetName(typeof(Register), register)} is managed by {typeof(Stack)}.");
+            }
+        }
+
+        [Test]
         public void NonPrivateRegister_ValuesCanBeModified()
         {
             var publicRegisters = new Register[]
             {
-                Register.R1, Register.R2, Register.R3, Register.R4,
-                Register.R5, Register.R6, Register.R7, Register.R8,
-                Register.T1, Register.T2, Register.T3, Register.T4,
-                Register.T5, Register.T6, Register.T7, Register.T8
+                Register.R0, Register.R1, Register.R2, Register.R3,
+                Register.R4, Register.R5, Register.R6, Register.R7,
+                Register.T0, Register.T1, Register.T2, Register.T3,
+                Register.T4, Register.T5, Register.T6, Register.T7
             };
 
             foreach (var register in publicRegisters)
@@ -255,7 +289,7 @@ namespace VM.Tests
         }
 
         [Test]
-        public void GetRegister_InvalidRegister_ThrowsException()
+        public void GetRegister_InvalidRegister_ResetsAndThrowsException()
         {
             processor.Step();
 
@@ -272,7 +306,7 @@ namespace VM.Tests
 
             AssertExceptionOccursAndProcessorResets(
                 typeof(IndexOutOfRangeException),
-                "Invalid memory address 0xFFFF. Valid Range: [0x0000, 0x00FF]");
+                "Invalid memory address 0xFFFF. Valid Range: [0x0000, 0x7FFF]");
         }
 
         #region Instructions
@@ -288,71 +322,71 @@ namespace VM.Tests
         [Test]
         public void MOVE_MovesValueFromRegisterAToRegisterB()
         {
-            LoadValueIntoRegisterR1(0x1234);
-            flasher.WriteInstruction(Instruction.MOVE, Register.R1, Register.R2);
+            LoadValueIntoRegisterR0(0x1234);
+            flasher.WriteInstruction(Instruction.MOVE, Register.R0, Register.R1);
 
             ExecuteProgram();
 
-            Assert.That(processor.GetRegister(Register.R2), Is.EqualTo(0x1234));
+            Assert.That(processor.GetRegister(Register.R1), Is.EqualTo(0x1234));
         }
 
         [Test]
         public void INC_IncrementsRegisterValue()
         {
-            LoadValueIntoRegisterR1(0x1234);
-            flasher.WriteInstruction(Instruction.INC, Register.R1);
+            LoadValueIntoRegisterR0(0x1234);
+            flasher.WriteInstruction(Instruction.INC, Register.R0);
 
             ExecuteProgram();
 
-            Assert.That(processor.GetRegister(Register.R1), Is.EqualTo(0x1235));
-            Assert.That(processor.IsSet(Flag.CARRY), Is.False);
+            Assert.That(processor.GetRegister(Register.R0), Is.EqualTo(0x1235));
+            Assert.That(processor.IsSet(Flags.CARRY), Is.False);
         }
 
         [Test]
         public void INC_Overflow_WrapsAndSetsZeroAndCarryFlags()
         {
-            LoadValueIntoRegisterR1(0xffff);
-            flasher.WriteInstruction(Instruction.INC, Register.R1);
+            LoadValueIntoRegisterR0(0xffff);
+            flasher.WriteInstruction(Instruction.INC, Register.R0);
 
             ExecuteProgram();
 
-            AssertZeroValueAndFlag(Register.R1);
-            Assert.That(processor.IsSet(Flag.CARRY), Is.True);
+            AssertZeroValueAndFlag(Register.R0);
+            Assert.That(processor.IsSet(Flags.CARRY), Is.True);
         }
 
         [Test]
         public void DEC_DecrementsRegisterValue()
         {
-            LoadValueIntoRegisterR1(0x1234);
-            flasher.WriteInstruction(Instruction.DEC, Register.R1);
+            LoadValueIntoRegisterR0(0x1234);
+            flasher.WriteInstruction(Instruction.DEC, Register.R0);
 
             ExecuteProgram();
 
-            Assert.That(processor.GetRegister(Register.R1), Is.EqualTo(0x1233));
-            Assert.That(processor.IsSet(Flag.CARRY), Is.False);
+            Assert.That(processor.GetRegister(Register.R0), Is.EqualTo(0x1233));
+            Assert.That(processor.IsSet(Flags.CARRY), Is.False);
         }
 
         [Test]
         public void DEC_Underflow_WrapsAndSetsCarryFlag()
         {
-            LoadValueIntoRegisterR1(0x0000);
-            flasher.WriteInstruction(Instruction.DEC, Register.R1);
+            LoadValueIntoRegisterR0(0x0000);
+            flasher.WriteInstruction(Instruction.DEC, Register.R0);
 
             ExecuteProgram();
 
-            Assert.That(processor.GetRegister(Register.R1), Is.EqualTo(0xffff));
-            Assert.That(processor.IsSet(Flag.CARRY), Is.True);
+            Assert.That(processor.GetRegister(Register.R0), Is.EqualTo(0xffff));
+            Assert.That(processor.IsSet(Flags.CARRY), Is.True);
         }
 
         [Test]
         public void DEC_ZeroResult_SetsZeroFlag()
         {
-            LoadValueIntoRegisterR1(0x0001);
-            flasher.WriteInstruction(Instruction.DEC, Register.R1);
+            LoadValueIntoRegisterR0(0x0001);
+            flasher.WriteInstruction(Instruction.DEC, Register.R0);
 
             ExecuteProgram();
 
-            AssertZeroValueAndFlag(Register.R1);
+            AssertZeroValueAndFlag(Register.R0);
         }
         #endregion
 
@@ -360,11 +394,11 @@ namespace VM.Tests
         [Test]
         public void LDVR_LoadsValueIntoRegister()
         {
-            LoadValueIntoRegisterR1(0x1234);
+            LoadValueIntoRegisterR0(0x1234);
 
             ExecuteProgram();
 
-            Assert.That(processor.GetRegister(Register.R1), Is.EqualTo(0x1234));
+            Assert.That(processor.GetRegister(Register.R0), Is.EqualTo(0x1234));
         }
 
         [Test]
@@ -374,11 +408,11 @@ namespace VM.Tests
 
             WriteValueToMemory(address, 0x1234);
 
-            flasher.WriteInstruction(Instruction.LDAR, address, Register.R1);
+            flasher.WriteInstruction(Instruction.LDAR, address, Register.R0);
 
             ExecuteProgram();
 
-            Assert.That(processor.GetRegister(Register.R1), Is.EqualTo(0x1234));
+            Assert.That(processor.GetRegister(Register.R0), Is.EqualTo(0x1234));
         }
 
         [Test]
@@ -388,12 +422,12 @@ namespace VM.Tests
 
             WriteValueToMemory(address, 0x1234);
 
-            LoadValueIntoRegisterR1(address);
-            flasher.WriteInstruction(Instruction.LDRR, Register.R1, Register.R2);
+            LoadValueIntoRegisterR0(address);
+            flasher.WriteInstruction(Instruction.LDRR, Register.R0, Register.R1);
 
             ExecuteProgram();
 
-            Assert.That(processor.GetRegister(Register.R2), Is.EqualTo(0x1234));
+            Assert.That(processor.GetRegister(Register.R1), Is.EqualTo(0x1234));
         }
         #endregion
 
@@ -417,8 +451,8 @@ namespace VM.Tests
         {
             ushort address = 0x10;
 
-            LoadValueIntoRegisterR1(address);
-            flasher.WriteInstruction(Instruction.STVR, 0x1234, Register.R1);
+            LoadValueIntoRegisterR0(address);
+            flasher.WriteInstruction(Instruction.STVR, 0x1234, Register.R0);
 
             Assert.That(memory.GetU16(address), Is.Zero);
 
@@ -432,8 +466,8 @@ namespace VM.Tests
         {
             ushort address = 0x10;
 
-            LoadValueIntoRegisterR1(0x1234);
-            flasher.WriteInstruction(Instruction.STRA, Register.R1, address);
+            LoadValueIntoRegisterR0(0x1234);
+            flasher.WriteInstruction(Instruction.STRA, Register.R0, address);
 
             ExecuteProgram();
 
@@ -445,9 +479,9 @@ namespace VM.Tests
         {
             ushort address = 0x10;
 
-            LoadValueIntoRegister(0x1234, Register.R1);
-            LoadValueIntoRegister(address, Register.R2);
-            flasher.WriteInstruction(Instruction.STRR, Register.R1, Register.R2);
+            LoadValueIntoRegister(0x1234, Register.R0);
+            LoadValueIntoRegister(address, Register.R1);
+            flasher.WriteInstruction(Instruction.STRR, Register.R0, Register.R1);
 
             ExecuteProgram();
 
@@ -464,7 +498,7 @@ namespace VM.Tests
             ExecuteProgram();
 
             Assert.That(processor.GetRegister(Register.ACC), Is.EqualTo(0x1234));
-            Assert.That(processor.IsSet(Flag.CARRY), Is.False);
+            Assert.That(processor.IsSet(Flags.CARRY), Is.False);
         }
 
         [Test]
@@ -475,7 +509,7 @@ namespace VM.Tests
             ExecuteProgram();
 
             Assert.That(processor.GetRegister(Register.ACC), Is.EqualTo(0x0f00));
-            Assert.That(processor.IsSet(Flag.CARRY), Is.True);
+            Assert.That(processor.IsSet(Flags.CARRY), Is.True);
         }
 
         [Test]
@@ -486,7 +520,7 @@ namespace VM.Tests
             ExecuteProgram();
 
             AssertZeroValueAndFlag();
-            Assert.That(processor.IsSet(Flag.CARRY), Is.True);
+            Assert.That(processor.IsSet(Flags.CARRY), Is.True);
         }
 
         [Test]
@@ -497,7 +531,7 @@ namespace VM.Tests
             ExecuteProgram();
 
             Assert.That(processor.GetRegister(Register.ACC), Is.EqualTo(0x11cc));
-            Assert.That(processor.IsSet(Flag.CARRY), Is.False);
+            Assert.That(processor.IsSet(Flags.CARRY), Is.False);
         }
 
         [Test]
@@ -508,7 +542,7 @@ namespace VM.Tests
             ExecuteProgram();
 
             Assert.That(processor.GetRegister(Register.ACC), Is.EqualTo(0x1100));
-            Assert.That(processor.IsSet(Flag.CARRY), Is.True);
+            Assert.That(processor.IsSet(Flags.CARRY), Is.True);
         }
 
         [Test]
@@ -529,7 +563,7 @@ namespace VM.Tests
             ExecuteProgram();
 
             Assert.That(processor.GetRegister(Register.ACC), Is.EqualTo(0xe100));
-            Assert.That(processor.IsSet(Flag.CARRY), Is.False);
+            Assert.That(processor.IsSet(Flags.CARRY), Is.False);
         }
 
         [Test]
@@ -540,7 +574,7 @@ namespace VM.Tests
             ExecuteProgram();
 
             Assert.That(processor.GetRegister(Register.ACC), Is.EqualTo(0xedcc));
-            Assert.That(processor.IsSet(Flag.CARRY), Is.True);
+            Assert.That(processor.IsSet(Flags.CARRY), Is.True);
         }
 
         [Test]
@@ -561,7 +595,7 @@ namespace VM.Tests
             ExecuteProgram();
 
             Assert.That(processor.GetRegister(Register.ACC), Is.EqualTo(0x0020));
-            Assert.That(processor.IsSet(Flag.CARRY), Is.False);
+            Assert.That(processor.IsSet(Flags.CARRY), Is.False);
         }
 
         [Test]
@@ -652,8 +686,8 @@ namespace VM.Tests
         [Test]
         public void NOT_BinaryNotOfRegisterValue()
         {
-            LoadValueIntoRegisterR1(0xaaaa);
-            flasher.WriteInstruction(Instruction.NOT, Register.R1);
+            LoadValueIntoRegisterR0(0xaaaa);
+            flasher.WriteInstruction(Instruction.NOT, Register.R0);
 
             ExecuteProgram();
 
@@ -663,8 +697,8 @@ namespace VM.Tests
         [Test]
         public void NOT_ZeroResult_SetsZeroFlag()
         {
-            LoadValueIntoRegisterR1(0xffff);
-            flasher.WriteInstruction(Instruction.NOT, Register.R1);
+            LoadValueIntoRegisterR0(0xffff);
+            flasher.WriteInstruction(Instruction.NOT, Register.R0);
 
             ExecuteProgram();
 
@@ -678,8 +712,8 @@ namespace VM.Tests
             {
                 Reset();
 
-                LoadValueIntoRegisterR1(0x0001);
-                flasher.WriteInstruction(Instruction.SRL, Register.R1, i);
+                LoadValueIntoRegisterR0(0x0001);
+                flasher.WriteInstruction(Instruction.SRL, Register.R0, i);
 
                 ExecuteProgram();
 
@@ -690,8 +724,8 @@ namespace VM.Tests
         [Test]
         public void SRL_ExcessiveShift_ZeroesOutRegister()
         {
-            LoadValueIntoRegisterR1(0x0001);
-            flasher.WriteInstruction(Instruction.SRL, Register.R1, 16);
+            LoadValueIntoRegisterR0(0x0001);
+            flasher.WriteInstruction(Instruction.SRL, Register.R0, 16);
 
             ExecuteProgram();
 
@@ -705,9 +739,9 @@ namespace VM.Tests
             {
                 Reset();
 
-                LoadValueIntoRegister(0x0001, Register.R1);
-                LoadValueIntoRegister(i, Register.R2);
-                flasher.WriteInstruction(Instruction.SRLR, Register.R1, Register.R2);
+                LoadValueIntoRegister(0x0001, Register.R0);
+                LoadValueIntoRegister(i, Register.R1);
+                flasher.WriteInstruction(Instruction.SRLR, Register.R0, Register.R1);
 
                 ExecuteProgram();
 
@@ -718,9 +752,9 @@ namespace VM.Tests
         [Test]
         public void SRLR_ExcessiveShift_ZeroesOutRegister()
         {
-            LoadValueIntoRegister(0x0001, Register.R1);
-            LoadValueIntoRegister(16, Register.R2);
-            flasher.WriteInstruction(Instruction.SRLR, Register.R1, Register.R2);
+            LoadValueIntoRegister(0x0001, Register.R0);
+            LoadValueIntoRegister(16, Register.R1);
+            flasher.WriteInstruction(Instruction.SRLR, Register.R0, Register.R1);
 
             ExecuteProgram();
 
@@ -734,8 +768,8 @@ namespace VM.Tests
             {
                 Reset();
 
-                LoadValueIntoRegisterR1(0x8000);
-                flasher.WriteInstruction(Instruction.SRR, Register.R1, i);
+                LoadValueIntoRegisterR0(0x8000);
+                flasher.WriteInstruction(Instruction.SRR, Register.R0, i);
 
                 ExecuteProgram();
 
@@ -746,8 +780,8 @@ namespace VM.Tests
         [Test]
         public void SRR_ExcessiveShift_ZeroesOutRegister()
         {
-            LoadValueIntoRegisterR1(0x8000);
-            flasher.WriteInstruction(Instruction.SRR, Register.R1, 16);
+            LoadValueIntoRegisterR0(0x8000);
+            flasher.WriteInstruction(Instruction.SRR, Register.R0, 16);
 
             ExecuteProgram();
 
@@ -761,9 +795,9 @@ namespace VM.Tests
             {
                 Reset();
 
-                LoadValueIntoRegister(0x8000, Register.R1);
-                LoadValueIntoRegister(i, Register.R2);
-                flasher.WriteInstruction(Instruction.SRRR, Register.R1, Register.R2);
+                LoadValueIntoRegister(0x8000, Register.R0);
+                LoadValueIntoRegister(i, Register.R1);
+                flasher.WriteInstruction(Instruction.SRRR, Register.R0, Register.R1);
 
                 ExecuteProgram();
 
@@ -774,9 +808,9 @@ namespace VM.Tests
         [Test]
         public void SRRR_ExcessiveShift_ZeroesOutRegister()
         {
-            LoadValueIntoRegister(0x8000, Register.R1);
-            LoadValueIntoRegister(16, Register.R2);
-            flasher.WriteInstruction(Instruction.SRRR, Register.R1, Register.R2);
+            LoadValueIntoRegister(0x8000, Register.R0);
+            LoadValueIntoRegister(16, Register.R1);
+            flasher.WriteInstruction(Instruction.SRRR, Register.R0, Register.R1);
 
             ExecuteProgram();
 
@@ -796,8 +830,8 @@ namespace VM.Tests
         [Test]
         public void JUMPR_DoesUnconditionalJumpUsingRegisterValue()
         {
-            LoadValueIntoRegisterR1(0x1234);
-            flasher.WriteInstruction(Instruction.JUMPR, Register.R1);
+            LoadValueIntoRegisterR0(0x1234);
+            flasher.WriteInstruction(Instruction.JUMPR, Register.R0);
 
             ExecuteProgram(0x1234);
         }
@@ -811,9 +845,9 @@ namespace VM.Tests
 
             ExecuteProgram();
 
-            Assert.That(processor.IsSet(Flag.LESSTHAN), Is.True);
-            Assert.That(processor.IsSet(Flag.EQUAL), Is.False);
-            Assert.That(processor.IsSet(Flag.GREATERTHAN), Is.False);
+            Assert.That(processor.IsSet(Flags.LESSTHAN), Is.True);
+            Assert.That(processor.IsSet(Flags.EQUAL), Is.False);
+            Assert.That(processor.IsSet(Flags.GREATERTHAN), Is.False);
         }
 
         [Test]
@@ -823,9 +857,9 @@ namespace VM.Tests
 
             ExecuteProgram();
 
-            Assert.That(processor.IsSet(Flag.LESSTHAN), Is.False);
-            Assert.That(processor.IsSet(Flag.EQUAL), Is.True);
-            Assert.That(processor.IsSet(Flag.GREATERTHAN), Is.False);
+            Assert.That(processor.IsSet(Flags.LESSTHAN), Is.False);
+            Assert.That(processor.IsSet(Flags.EQUAL), Is.True);
+            Assert.That(processor.IsSet(Flags.GREATERTHAN), Is.False);
         }
 
         [Test]
@@ -835,31 +869,31 @@ namespace VM.Tests
 
             ExecuteProgram();
 
-            Assert.That(processor.IsSet(Flag.LESSTHAN), Is.False);
-            Assert.That(processor.IsSet(Flag.EQUAL), Is.False);
-            Assert.That(processor.IsSet(Flag.GREATERTHAN), Is.True);
+            Assert.That(processor.IsSet(Flags.LESSTHAN), Is.False);
+            Assert.That(processor.IsSet(Flags.EQUAL), Is.False);
+            Assert.That(processor.IsSet(Flags.GREATERTHAN), Is.True);
         }
 
         [Test]
         public void CMPZ_Zero_SetsZeroFlag()
         {
-            LoadValueIntoRegisterR1(0x0000);
-            flasher.WriteInstruction(Instruction.CMPZ, Register.R1);
+            LoadValueIntoRegisterR0(0x0000);
+            flasher.WriteInstruction(Instruction.CMPZ, Register.R0);
 
             ExecuteProgram();
 
-            Assert.That(processor.IsSet(Flag.ZERO), Is.True);
+            Assert.That(processor.IsSet(Flags.ZERO), Is.True);
         }
 
         [Test]
         public void CMPZ_NotZero_DoesNothing()
         {
-            LoadValueIntoRegisterR1(0xffff);
-            flasher.WriteInstruction(Instruction.CMPZ, Register.R1);
+            LoadValueIntoRegisterR0(0xffff);
+            flasher.WriteInstruction(Instruction.CMPZ, Register.R0);
 
             ExecuteProgram();
 
-            Assert.That(processor.IsSet(Flag.ZERO), Is.False);
+            Assert.That(processor.IsSet(Flags.ZERO), Is.False);
         }
 
         [Test]
@@ -1017,8 +1051,8 @@ namespace VM.Tests
         [Test]
         public void JZ_ZeroFlagIsSet_ChangesPC()
         {
-            LoadValueIntoRegisterR1(0x0000);
-            flasher.WriteInstruction(Instruction.CMPZ, Register.R1);
+            LoadValueIntoRegisterR0(0x0000);
+            flasher.WriteInstruction(Instruction.CMPZ, Register.R0);
             flasher.WriteInstruction(Instruction.JZ, 0x008f);
 
             ExecuteProgram(0x008f);
@@ -1027,8 +1061,8 @@ namespace VM.Tests
         [Test]
         public void JZ_ZeroFlagIsNotSet_ChangesPC()
         {
-            LoadValueIntoRegisterR1(0xffff);
-            flasher.WriteInstruction(Instruction.CMPZ, Register.R1);
+            LoadValueIntoRegisterR0(0xffff);
+            flasher.WriteInstruction(Instruction.CMPZ, Register.R0);
             flasher.WriteInstruction(Instruction.JZ, 0x008f);
 
             ExecuteProgram();
@@ -1037,8 +1071,8 @@ namespace VM.Tests
         [Test]
         public void JZR_ZeroFlagIsSet_ChangesPC()
         {
-            LoadValueIntoRegister(0x0000, Register.R1);
-            flasher.WriteInstruction(Instruction.CMPZ, Register.R1);
+            LoadValueIntoRegister(0x0000, Register.R0);
+            flasher.WriteInstruction(Instruction.CMPZ, Register.R0);
             LoadValueIntoRegister(0x008f, Register.R3);
             flasher.WriteInstruction(Instruction.JZR, Register.R3);
 
@@ -1048,8 +1082,8 @@ namespace VM.Tests
         [Test]
         public void JZR_ZeroFlagIsNotSet_ChangesPC()
         {
-            LoadValueIntoRegister(0xffff, Register.R1);
-            flasher.WriteInstruction(Instruction.CMPZ, Register.R1);
+            LoadValueIntoRegister(0xffff, Register.R0);
+            flasher.WriteInstruction(Instruction.CMPZ, Register.R0);
             LoadValueIntoRegister(0x008f, Register.R3);
             flasher.WriteInstruction(Instruction.JZR, Register.R3);
 
@@ -1059,8 +1093,8 @@ namespace VM.Tests
         [Test]
         public void JNZ_ZeroFlagIsNotSet_ChangesPC()
         {
-            LoadValueIntoRegisterR1(0xffff);
-            flasher.WriteInstruction(Instruction.CMPZ, Register.R1);
+            LoadValueIntoRegisterR0(0xffff);
+            flasher.WriteInstruction(Instruction.CMPZ, Register.R0);
             flasher.WriteInstruction(Instruction.JNZ, 0x008f);
 
             ExecuteProgram(0x008f);
@@ -1069,8 +1103,8 @@ namespace VM.Tests
         [Test]
         public void JNZ_ZeroFlagIsSet_DoesNothing()
         {
-            LoadValueIntoRegisterR1(0x0000);
-            flasher.WriteInstruction(Instruction.CMPZ, Register.R1);
+            LoadValueIntoRegisterR0(0x0000);
+            flasher.WriteInstruction(Instruction.CMPZ, Register.R0);
             flasher.WriteInstruction(Instruction.JNZ, 0x008f);
 
             ExecuteProgram();
@@ -1079,8 +1113,8 @@ namespace VM.Tests
         [Test]
         public void JNZR_ZeroFlagIsNotSet_ChangesPC()
         {
-            LoadValueIntoRegister(0xffff, Register.R1);
-            flasher.WriteInstruction(Instruction.CMPZ, Register.R1);
+            LoadValueIntoRegister(0xffff, Register.R0);
+            flasher.WriteInstruction(Instruction.CMPZ, Register.R0);
             LoadValueIntoRegister(0x008f, Register.R3);
             flasher.WriteInstruction(Instruction.JNZR, Register.R3);
 
@@ -1090,8 +1124,8 @@ namespace VM.Tests
         [Test]
         public void JNZR_ZeroFlagIsSet_DoesNothing()
         {
-            LoadValueIntoRegister(0x0000, Register.R1);
-            flasher.WriteInstruction(Instruction.CMPZ, Register.R1);
+            LoadValueIntoRegister(0x0000, Register.R0);
+            flasher.WriteInstruction(Instruction.CMPZ, Register.R0);
             LoadValueIntoRegister(0x008f, Register.R3);
             flasher.WriteInstruction(Instruction.JNZR, Register.R3);
 
@@ -1099,33 +1133,212 @@ namespace VM.Tests
         }
         #endregion
 
-        // TODO: Subroutine instructions
+        #region Subroutines
+        [Test]
+        public void CALL_SavesStateAndSetsPCToValue()
+        {
+            flasher.WriteInstruction(Instruction.CALL, 0x1234);
+
+            processor.Step();
+
+            Assert.That(processor.GetRegister(Register.PC), Is.EqualTo(0x1234));
+
+            Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(STACK_START_ADDRESS - STATE_SIZE));
+            Assert.That(processor.GetRegister(Register.FP), Is.EqualTo(STACK_START_ADDRESS - STATE_SIZE));
+        }
+
+        [Test]
+        public void CALLR_SavesStateAndSetsPCToValueFromRegister()
+        {
+            LoadValueIntoRegisterR0(0x1234);
+            flasher.WriteInstruction(Instruction.CALLR, Register.R0);
+
+            processor.Step();
+            processor.Step();
+
+            Assert.That(processor.GetRegister(Register.PC), Is.EqualTo(0x1234));
+
+            Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(STACK_START_ADDRESS - STATE_SIZE));
+            Assert.That(processor.GetRegister(Register.FP), Is.EqualTo(STACK_START_ADDRESS - STATE_SIZE));
+        }
+
+        [Test]
+        public void CALL_StackOverflow_ResetsAndThrowsException()
+        {
+            FillStack();
+
+            flasher.WriteInstruction(Instruction.CALL, 0x1234);
+
+            AssertExceptionOccursAndProcessorResets(typeof(StackOverflowException), "Stack is full.");
+        }
+
+        [Test]
+        public void CALLR_StackOverflow_ResetsAndThrowsException()
+        {
+            FillStack();
+
+            LoadValueIntoRegisterR0(0x1234);
+            flasher.WriteInstruction(Instruction.CALLR, Register.R0);
+
+            processor.Step();
+            AssertExceptionOccursAndProcessorResets(typeof(StackOverflowException), "Stack is full.");
+        }
+
+        [Test]
+        public void RET_LoadsSavedStateAndSetsPCToValueBeforeCall()
+        {
+            ushort subroutineAddress = 0x4000;
+
+            LoadValueIntoRegister(0x0123, Register.R0);
+            LoadValueIntoRegister(0x4567, Register.R1);
+            LoadValueIntoRegister(0x89ab, Register.R2);
+            LoadValueIntoRegister(0xcdef, Register.R3);
+            flasher.WriteInstruction(Instruction.CALL, subroutineAddress);
+
+            var returnAddress = flasher.Address;
+
+            flasher.Address = subroutineAddress;
+            LoadValueIntoRegister(0xffff, Register.R0);
+            LoadValueIntoRegister(0xffff, Register.R1);
+            LoadValueIntoRegister(0xffff, Register.R2);
+            LoadValueIntoRegister(0xffff, Register.R3);
+            flasher.WriteInstruction(Instruction.RET);
+
+            // Load values into registers
+            processor.Step();
+            processor.Step();
+            processor.Step();
+            processor.Step();
+
+            // Call
+            processor.Step();
+
+            Assert.That(processor.GetRegister(Register.PC), Is.EqualTo(0x4000));
+            Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(STACK_START_ADDRESS - 18));
+            Assert.That(processor.GetRegister(Register.FP), Is.EqualTo(STACK_START_ADDRESS - 18));
+
+            // Overwrite registers
+            processor.Step();
+            processor.Step();
+            processor.Step();
+            processor.Step();
+
+            Assert.That(processor.GetRegister(Register.R0), Is.EqualTo(0xffff));
+            Assert.That(processor.GetRegister(Register.R1), Is.EqualTo(0xffff));
+            Assert.That(processor.GetRegister(Register.R2), Is.EqualTo(0xffff));
+            Assert.That(processor.GetRegister(Register.R3), Is.EqualTo(0xffff));
+
+            // Return
+            processor.Step();
+
+            Assert.That(processor.GetRegister(Register.PC), Is.EqualTo(returnAddress));
+            Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(STACK_START_ADDRESS));
+            Assert.That(processor.GetRegister(Register.FP), Is.EqualTo(STACK_START_ADDRESS));
+
+            Assert.That(processor.GetRegister(Register.R0), Is.EqualTo(0x0123));
+            Assert.That(processor.GetRegister(Register.R1), Is.EqualTo(0x4567));
+            Assert.That(processor.GetRegister(Register.R2), Is.EqualTo(0x89ab));
+            Assert.That(processor.GetRegister(Register.R3), Is.EqualTo(0xcdef));
+        }
+
+        [Test]
+        public void RET_EmptyCallStack_ResetsAndThrowsException()
+        {
+            flasher.WriteInstruction(Instruction.RET);
+
+            AssertExceptionOccursAndProcessorResets(typeof(InvalidOperationException), "Stack is empty.");
+        }
+
+        [Test]
+        public void Subroutine_AcceptsArgumentsAndReturnsValues()
+        {
+            var instructionCount = 0;
+            ushort subroutineAddress = 0x1000;
+
+            LoadValueIntoRegister(1, Register.R0);
+            LoadValueIntoRegister(2, Register.R1);
+            LoadValueIntoRegister(3, Register.R2);
+            LoadValueIntoRegister(4, Register.R3);
+            flasher.WriteInstruction(Instruction.MOVE, Register.R0, Register.A0);
+            flasher.WriteInstruction(Instruction.MOVE, Register.R1, Register.A1);
+            flasher.WriteInstruction(Instruction.MOVE, Register.R2, Register.A2);
+            flasher.WriteInstruction(Instruction.MOVE, Register.R3, Register.A3);
+
+            flasher.WriteInstruction(Instruction.CALL, subroutineAddress);
+
+            flasher.WriteInstruction(Instruction.ADD, Register.V0, Register.V1);
+
+            instructionCount += flasher.InstructionCount;
+            flasher.Address = subroutineAddress;
+
+            flasher.WriteInstruction(Instruction.ADD, Register.A0, Register.A1);
+            flasher.WriteInstruction(Instruction.MOVE, Register.ACC, Register.V0);
+            flasher.WriteInstruction(Instruction.ADD, Register.A2, Register.A3);
+            flasher.WriteInstruction(Instruction.MOVE, Register.ACC, Register.V1);
+            flasher.WriteInstruction(Instruction.RET);
+
+            instructionCount += flasher.InstructionCount;
+
+            for (var i = 0; i < instructionCount; i++)
+            {
+                processor.Step();
+            }
+
+            Assert.That(processor.GetRegister(Register.ACC), Is.EqualTo(10));
+        }
+
+        [Test]
+        public void Subroutine_NestedCallsAreSupported()
+        {
+            var instructionCount = 0;
+
+            var addresses = new ushort[]
+            {
+                0x1000, 0x2000, 0x3000, 0x4000, 0x5000
+            };
+
+            flasher.WriteInstruction(Instruction.CALL, addresses[0]);
+            instructionCount += flasher.InstructionCount;
+
+            for (ushort i = 0; i < addresses.Length; i++)
+            {
+                flasher.Address = addresses[i];
+
+                LoadValueIntoRegisterR0(addresses[i]);
+                flasher.WriteInstruction(Instruction.ADD, Register.T0, Register.R0);
+                flasher.WriteInstruction(Instruction.MOVE, Register.ACC, Register.T0);
+
+                if (i != addresses.Length - 1)
+                {
+                    flasher.WriteInstruction(Instruction.CALL, addresses[i + 1]);
+                }
+
+                flasher.WriteInstruction(Instruction.RET);
+                instructionCount += flasher.InstructionCount;
+            }
+
+            for (var i = 0; i < instructionCount; i++)
+            {
+                processor.Step();
+            }
+
+            Assert.That(processor.GetRegister(Register.T0), Is.EqualTo(addresses.Select(x => (int)x).Sum()));
+        }
+
+        #endregion
 
         #region Stack
         [Test]
         public void PUSH_PutsValueFromRegisterOntoStack()
         {
-            LoadValueIntoRegisterR1(0x1234);
-            flasher.WriteInstruction(Instruction.PUSH, Register.R1);
+            LoadValueIntoRegisterR0(0x1234);
+            flasher.WriteInstruction(Instruction.PUSH, Register.R0);
 
             Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(STACK_START_ADDRESS));
 
             ExecuteProgram();
 
             Assert.That(processor.GetRegister(Register.SP), Is.Not.EqualTo(STACK_START_ADDRESS));
-        }
-
-        private void FillStack()
-        {
-            LoadValueIntoRegisterR1(0x1234);
-            for (var i = 0; i < STACK_SIZE; i++)
-            {
-                flasher.WriteInstruction(Instruction.PUSH, Register.R1);
-            }
-
-            Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(STACK_START_ADDRESS));
-
-            ExecuteProgram();
         }
 
         [Test]
@@ -1137,11 +1350,11 @@ namespace VM.Tests
         }
 
         [Test]
-        public void PUSH_FullStack_ThrowsException()
+        public void PUSH_FullStack_ResetsAndThrowsException()
         {
             FillStack();
 
-            flasher.WriteInstruction(Instruction.PUSH, Register.R1);
+            flasher.WriteInstruction(Instruction.PUSH, Register.R0);
 
             AssertExceptionOccursAndProcessorResets(typeof(StackOverflowException), "Stack is full.");
         }
@@ -1149,45 +1362,45 @@ namespace VM.Tests
         [Test]
         public void POP_PutsValueFromStackIntoRegister()
         {
-            LoadValueIntoRegisterR1(0x1234);
-            flasher.WriteInstruction(Instruction.PUSH, Register.R1);
-            flasher.WriteInstruction(Instruction.POP, Register.R2);
+            LoadValueIntoRegisterR0(0x1234);
+            flasher.WriteInstruction(Instruction.PUSH, Register.R0);
+            flasher.WriteInstruction(Instruction.POP, Register.R1);
 
             ExecuteProgram();
 
             Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(STACK_START_ADDRESS));
 
-            Assert.That(processor.GetRegister(Register.R2), Is.EqualTo(0x1234));
+            Assert.That(processor.GetRegister(Register.R1), Is.EqualTo(0x1234));
         }
 
         [Test]
-        public void POP_OnEmptyStack_ThrowsException()
+        public void POP_OnEmptyStack_ResetsAndThrowsException()
         {
-            flasher.WriteInstruction(Instruction.POP, Register.R1);
+            flasher.WriteInstruction(Instruction.POP, Register.R0);
 
-            AssertExceptionOccursAndProcessorResets(typeof(InvalidOperationException), "Stack is empty.");
+            AssertExceptionOccursAndProcessorResets(typeof(InvalidOperationException), "Stack frame is empty.");
         }
 
         [Test]
         public void PEEK_PutsValueFromStackIntoRegisterWithoutRemovingItFromStack()
         {
-            LoadValueIntoRegisterR1(0x1234);
-            flasher.WriteInstruction(Instruction.PUSH, Register.R1);
-            flasher.WriteInstruction(Instruction.PEEK, Register.R2);
+            LoadValueIntoRegisterR0(0x1234);
+            flasher.WriteInstruction(Instruction.PUSH, Register.R0);
+            flasher.WriteInstruction(Instruction.PEEK, Register.R1);
 
             ExecuteProgram();
 
             Assert.That(processor.GetRegister(Register.SP), Is.Not.EqualTo(STACK_START_ADDRESS));
 
-            Assert.That(processor.GetRegister(Register.R2), Is.EqualTo(0x1234));
+            Assert.That(processor.GetRegister(Register.R1), Is.EqualTo(0x1234));
         }
 
         [Test]
-        public void PEEK_OnEmptyStack_ThrowsException()
+        public void PEEK_OnEmptyStack_ResetsAndThrowsException()
         {
-            flasher.WriteInstruction(Instruction.PEEK, Register.R1);
+            flasher.WriteInstruction(Instruction.PEEK, Register.R0);
 
-            AssertExceptionOccursAndProcessorResets(typeof(InvalidOperationException), "Stack is empty.");
+            AssertExceptionOccursAndProcessorResets(typeof(InvalidOperationException), "Stack frame is empty.");
         }
         #endregion
 

@@ -34,7 +34,7 @@ namespace VM.Tests
 
             flasher.WriteInstruction(Instruction.LDVR, (ushort)0, Register.R1);
             flasher.WriteInstruction(Instruction.LDVR, 1, Register.R2);
-            flasher.WriteInstruction(Instruction.LDVR, 1 << (ushort)Flag.CARRY, Register.R3);
+            flasher.WriteInstruction(Instruction.LDVR, (ushort)Flags.CARRY, Register.R3);
 
             // LOOP Address
             flasher.WriteInstruction(Instruction.AND, Register.FLAG, Register.R3);

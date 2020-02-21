@@ -12,13 +12,8 @@
         /// </summary>
         PC,
         /// <summary>
-        /// Return Address.
-        /// Address that execution will resume at following <see cref="Instruction.RET"/>.
-        /// </summary>
-        RA,
-        /// <summary>
         /// Accumulator.
-        /// Where result of all Arithmetic and Binary <see cref="Instruction"/>s is stored.
+        /// Where result of all Arithmetic and Bitwise <see cref="Instruction"/>s is stored.
         /// </summary>
         ACC,
         /// <summary>
@@ -36,6 +31,10 @@
         #endregion
 
         #region General Purpose Registers
+        /// <summary>
+        /// General purpose register.
+        /// </summary>
+        R0,
         /// <summary>
         /// General purpose register.
         /// </summary>
@@ -64,13 +63,14 @@
         /// General purpose register.
         /// </summary>
         R7,
-        /// <summary>
-        /// General purpose register.
-        /// </summary>
-        R8,
         #endregion
 
         #region Temporary Registers
+        /// <summary>
+        /// General purpose register.
+        /// Not preserved during subroutines.
+        /// </summary>
+        T0,
         /// <summary>
         /// General purpose register.
         /// Not preserved during subroutines.
@@ -106,11 +106,33 @@
         /// Not preserved during subroutines.
         /// </summary>
         T7,
+        #endregion
+
+        #region Subroutine Registers
         /// <summary>
-        /// General purpose register.
-        /// Not preserved during subroutines.
+        /// Subroutine Argument Register
         /// </summary>
-        T8
+        A0,
+        /// <summary>
+        /// Subroutine Argument Register
+        /// </summary>
+        A1,
+        /// <summary>
+        /// Subroutine Argument Register
+        /// </summary>
+        A2,
+        /// <summary>
+        /// Subroutine Argument Register
+        /// </summary>
+        A3,
+        /// <summary>
+        /// Subroutine Return Value Register
+        /// </summary>
+        V0,
+        /// <summary>
+        /// Subroutine Return Value Register
+        /// </summary>
+        V1
         #endregion
     }
 }

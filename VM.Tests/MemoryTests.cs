@@ -1,4 +1,5 @@
-﻿using NUnit.Framework;
+﻿#pragma warning disable CA1822 // Mark members as static
+using NUnit.Framework;
 using System;
 
 namespace VM.Tests
@@ -17,10 +18,7 @@ namespace VM.Tests
         [Test]
         public void Constructor_InvalidSize_ThrowsException()
         {
-            Assert.That(() => new Memory(-1),
-                Throws.InstanceOf<ArgumentOutOfRangeException>().With.Message.StartsWith("Must be in range [0x0000, 0x10000]"));
-
-            Assert.That(() => new Memory(ushort.MaxValue + 2),
+            Assert.That(() => new Memory(0x10001),
                 Throws.InstanceOf<ArgumentOutOfRangeException>().With.Message.StartsWith("Must be in range [0x0000, 0x10000]"));
         }
 
@@ -43,7 +41,7 @@ namespace VM.Tests
         public void SetU8_InvalidAddress_ThrowsException()
         {
             Assert.That(() => memory.SetU8(0xff, 0x10), Throws.Nothing);
-            
+
             Assert.That(() => memory.SetU8(0x100, 0x10),
                 Throws.InstanceOf<IndexOutOfRangeException>().With.Message.StartsWith("Invalid memory address 0x0100."));
         }
@@ -118,3 +116,4 @@ namespace VM.Tests
         }
     }
 }
+#pragma warning restore CA1822 // Mark members as static

@@ -180,73 +180,73 @@
         CMPZ,
         /// <summary>
         /// Jump if Less Than.
-        /// Jumps to address if <see cref="Flag.LESSTHAN"/> is set.
+        /// Jumps to address if <see cref="Flags.LESSTHAN"/> is set.
         /// Arguments: Address (<see cref="ushort"/>).
         /// </summary>
         JLT,
         /// <summary>
         /// Jump if Less Than.
-        /// Jumps to address pointed to by <see cref="Register"/> if <see cref="Flag.LESSTHAN"/> is set.
+        /// Jumps to address pointed to by <see cref="Register"/> if <see cref="Flags.LESSTHAN"/> is set.
         /// Arguments: Address (<see cref="Register"/>).
         /// </summary>
         JLTR,
         /// <summary>
         /// Jump if Greater Than.
-        /// Jumps to address if <see cref="Flag.GREATERTHAN"/> is set.
+        /// Jumps to address if <see cref="Flags.GREATERTHAN"/> is set.
         /// Arguments: Address (<see cref="ushort"/>).
         /// </summary>
         JGT,
         /// <summary>
         /// Jump if Greater Than.
-        /// Jumps to address pointed to by <see cref="Register"/> if <see cref="Flag.GREATERTHAN"/> is set.
+        /// Jumps to address pointed to by <see cref="Register"/> if <see cref="Flags.GREATERTHAN"/> is set.
         /// Arguments: Address (<see cref="Register"/>).
         /// </summary>
         JGTR,
         /// <summary>
         /// Jump if Equal.
-        /// Jumps to address if <see cref="Flag.EQUAL"/> is set.
+        /// Jumps to address if <see cref="Flags.EQUAL"/> is set.
         /// Arguments: Address (<see cref="ushort"/>).
         /// </summary>
         JE,
         /// <summary>
         /// Jump if Equal.
-        /// Jumps to address pointed to by <see cref="Register"/> if <see cref="Flag.EQUAL"/> is set.
+        /// Jumps to address pointed to by <see cref="Register"/> if <see cref="Flags.EQUAL"/> is set.
         /// Arguments: Address (<see cref="Register"/>).
         /// </summary>
         JER,
         /// <summary>
         /// Jump if Not Equal.
-        /// Jumps to address if <see cref="Flag.EQUAL"/> is not set.
+        /// Jumps to address if <see cref="Flags.EQUAL"/> is not set.
         /// Arguments: Address (<see cref="ushort"/>).
         /// </summary>
         JNE,
         /// <summary>
         /// Jump if Not Equal.
-        /// Jumps to address pointed to by <see cref="Register"/> if <see cref="Flag.EQUAL"/> is not set.
+        /// Jumps to address pointed to by <see cref="Register"/> if <see cref="Flags.EQUAL"/> is not set.
         /// Arguments: Address (<see cref="Register"/>).
         /// </summary>
         JNER,
         /// <summary>
         /// Jump if Zero.
-        /// Jumps to address if <see cref="Flag.ZERO"/> is set.
+        /// Jumps to address if <see cref="Flags.ZERO"/> is set.
         /// Arguments: Address (<see cref="ushort"/>).
         /// </summary>
         JZ,
         /// <summary>
         /// Jump if Zero.
-        /// Jumps to address pointed to by <see cref="Register"/> if <see cref="Flag.ZERO"/> is set.
+        /// Jumps to address pointed to by <see cref="Register"/> if <see cref="Flags.ZERO"/> is set.
         /// Arguments: Address (<see cref="Register"/>).
         /// </summary>
         JZR,
         /// <summary>
         /// Jump if Not Zero.
-        /// Jumps to address if <see cref="Flag.ZERO"/> not is set.
+        /// Jumps to address if <see cref="Flags.ZERO"/> not is set.
         /// Arguments: Address (<see cref="ushort"/>).
         /// </summary>
         JNZ,
         /// <summary>
         /// Jump if Not Zero.
-        /// Jumps to address pointed to by <see cref="Register"/> if <see cref="Flag.ZERO"/> not is set.
+        /// Jumps to address pointed to by <see cref="Register"/> if <see cref="Flags.ZERO"/> not is set.
         /// Arguments: Address (<see cref="Register"/>).
         /// </summary>
         JNZR,
@@ -255,7 +255,7 @@
         #region Subroutine Instructions
         /// <summary>
         /// Call subroutine at address.
-        /// Argumemnts: Address (<see cref="ushort"/>.
+        /// Arguments: Address (<see cref="ushort"/>).
         /// </summary>
         CALL,
         /// <summary>

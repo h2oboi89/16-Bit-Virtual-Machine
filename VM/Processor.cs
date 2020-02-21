@@ -34,7 +34,7 @@ namespace VM
         private Register registerA;
         private Register registerB;
 
-        private Flag flag;
+        private Flags flag;
         #endregion
 
         /// <summary>
@@ -54,10 +54,10 @@ namespace VM
 
             registers = new Memory((ushort)((Enum.GetValues(typeof(Register)).Length + 1) * DATASIZE));
 
-            var stackStartAddress = (ushort)(memory.MaxAddress - DATASIZE / 2);
-            var stackEndAddress = (ushort)(stackStartAddress - ((stackSize - 1) * DATASIZE));
+            var startAddress = (ushort)(memory.MaxAddress - DATASIZE / 2);
+            var endAddress = (ushort)(startAddress - ((stackSize - 1) * DATASIZE));
 
-            stack = new Stack(memory, stackStartAddress, stackEndAddress);
+            stack = new Stack(memory, startAddress, endAddress);
 
             Initialize();
         }
@@ -90,10 +90,6 @@ namespace VM
             registers.Clear();
 
             stack.Reset();
-            SetRegister(Register.SP, stack.StackPointer);
-
-            // TODO: update once we implement frames
-            SetRegister(Register.FP, stack.StackPointer);
         }
 
         private static void ValidateRegister(Register register)
@@ -121,11 +117,32 @@ namespace VM
         {
             ValidateRegister(register);
 
+            if (register == Register.SP)
+            {
+                return stack.StackPointer;
+            }
+            if (register == Register.FP)
+            {
+                return stack.FramePointer;
+            }
+
             return registers.GetU16((ushort)((byte)register * DATASIZE));
         }
 
+        /// <summary>
+        /// Sets the value of <see cref="Register"/> to <paramref name="value"/>.
+        /// NOTE: <see cref="Register.SP"/> and <see cref="Register.FP"/> are managed by <see cref="Stack"/> and should not be modified by this method.
+        /// </summary>
+        /// <param name="register"><see cref="Register"/> whose value is to be set.</param>
+        /// <param name="value">Value to store in register.</param>
+        /// <param name="direct">True if a direct result of an <see cref="Instruction"/>; otherwise false.</param>
         private void SetRegister(Register register, ushort value, bool direct = false)
-        {
+        {            
+            if (register.IsStack())
+            {
+                throw new InvalidOperationException($"{register.Name()} is managed by {typeof(Stack)}.");
+            }
+            
             if (register.IsPrivate() && direct)
             {
                 throw new InvalidOperationException($"{register.Name()} register cannot be modified directly by code.");
@@ -163,13 +180,40 @@ namespace VM
             return value;
         }
 
-        private void Store(ushort address, ushort value)
+        private void PushState()
         {
-            memory.SetU16(address, value);
+            stack.Push(GetRegister(Register.R0));
+            stack.Push(GetRegister(Register.R1));
+            stack.Push(GetRegister(Register.R2));
+            stack.Push(GetRegister(Register.R3));
+            stack.Push(GetRegister(Register.R4));
+            stack.Push(GetRegister(Register.R5));
+            stack.Push(GetRegister(Register.R6));
+            stack.Push(GetRegister(Register.R7));
+
+            stack.Push(GetRegister(Register.PC));
+
+            stack.PushFrame();
+        }
+
+        private void PopState()
+        {
+            stack.PopFrame();
+
+            SetRegister(Register.PC, stack.Pop());
+
+            SetRegister(Register.R7, stack.Pop());
+            SetRegister(Register.R6, stack.Pop());
+            SetRegister(Register.R5, stack.Pop());
+            SetRegister(Register.R4, stack.Pop());
+            SetRegister(Register.R3, stack.Pop());
+            SetRegister(Register.R2, stack.Pop());
+            SetRegister(Register.R1, stack.Pop());
+            SetRegister(Register.R0, stack.Pop());
         }
 
         #region Flags
-        private void SetFlag(Flag flag)
+        private void SetFlag(Flags flag)
         {
             var value = GetRegister(Register.FLAG);
 
@@ -178,7 +222,7 @@ namespace VM
             SetRegister(Register.FLAG, value);
         }
 
-        private void ClearFlag(Flag flag)
+        private void ClearFlag(Flags flag)
         {
             var value = GetRegister(Register.FLAG);
 
@@ -188,11 +232,11 @@ namespace VM
         }
 
         /// <summary>
-        /// Determines if <see cref="Flag"/> is set.
+        /// Determines if <see cref="Flags"/> is set.
         /// </summary>
-        /// <param name="flag"><see cref="Flag"/> to check.</param>
-        /// <returns>True if <see cref="Flag"/> is set; otherwise false.</returns>
-        public bool IsSet(Flag flag)
+        /// <param name="flag"><see cref="Flags"/> to check.</param>
+        /// <returns>True if <see cref="Flags"/> is set; otherwise false.</returns>
+        public bool IsSet(Flags flag)
         {
             var value = GetRegister(Register.FLAG);
 
@@ -243,19 +287,19 @@ namespace VM
         {
             if (IsCarryFlagInstruction(instruction))
             {
-                ClearFlag(Flag.CARRY);
+                ClearFlag(Flags.CARRY);
             }
 
             if (IsZeroFlagInstruction(instruction))
             {
-                ClearFlag(Flag.ZERO);
+                ClearFlag(Flags.ZERO);
             }
 
             if (instruction == Instruction.CMP)
             {
-                ClearFlag(Flag.LESSTHAN);
-                ClearFlag(Flag.GREATERTHAN);
-                ClearFlag(Flag.EQUAL);
+                ClearFlag(Flags.LESSTHAN);
+                ClearFlag(Flags.GREATERTHAN);
+                ClearFlag(Flags.EQUAL);
             }
         }
 
@@ -263,27 +307,27 @@ namespace VM
         {
             if (IsCarryFlagInstruction(instruction) && temp > ushort.MaxValue)
             {
-                SetFlag(Flag.CARRY);
+                SetFlag(Flags.CARRY);
             }
 
             if (IsZeroFlagInstruction(instruction) && result == 0)
             {
-                SetFlag(Flag.ZERO);
+                SetFlag(Flags.ZERO);
             }
 
             if (instruction == Instruction.CMP)
             {
                 if (valueA < valueB)
                 {
-                    SetFlag(Flag.LESSTHAN);
+                    SetFlag(Flags.LESSTHAN);
                 }
                 else if (valueA == valueB)
                 {
-                    SetFlag(Flag.EQUAL);
+                    SetFlag(Flags.EQUAL);
                 }
                 else if (valueA > valueB)
                 {
-                    SetFlag(Flag.GREATERTHAN);
+                    SetFlag(Flags.GREATERTHAN);
                 }
             }
         }
@@ -444,7 +488,15 @@ namespace VM
                     address = GetRegister(register);
                     break;
 
-                // TODO: Subroutine instructions
+                case Instruction.CALL:
+                    address = FetchU16();
+                    break;
+
+                case Instruction.CALLR:
+                    register = FetchRegister();
+
+                    address = GetRegister(register);
+                    break;
 
                 case Instruction.PUSH:
                 case Instruction.POP:
@@ -462,26 +514,26 @@ namespace VM
             {
                 case Instruction.JLT:
                 case Instruction.JLTR:
-                    flag = Flag.LESSTHAN;
+                    flag = Flags.LESSTHAN;
                     break;
 
                 case Instruction.JGT:
                 case Instruction.JGTR:
-                    flag = Flag.GREATERTHAN;
+                    flag = Flags.GREATERTHAN;
                     break;
 
                 case Instruction.JE:
                 case Instruction.JER:
                 case Instruction.JNE:
                 case Instruction.JNER:
-                    flag = Flag.EQUAL;
+                    flag = Flags.EQUAL;
                     break;
 
                 case Instruction.JZ:
                 case Instruction.JZR:
                 case Instruction.JNZ:
                 case Instruction.JNZR:
-                    flag = Flag.ZERO;
+                    flag = Flags.ZERO;
                     break;
             }
         }
@@ -506,7 +558,7 @@ namespace VM
                 case Instruction.STVR:
                 case Instruction.STRA:
                 case Instruction.STRR:
-                    Store(address, value);
+                    memory.SetU16(address, value);
                     break;
 
                 case Instruction.INC:
@@ -615,20 +667,27 @@ namespace VM
                     }
                     break;
 
-                // TODO: Subroutine instructions
+                case Instruction.CALL:
+                case Instruction.CALLR:
+                    PushState();
+
+                    SetRegister(Register.PC, address);
+                    break;
+
+                case Instruction.RET:
+                    PopState();
+                    break;
 
                 case Instruction.PUSH:
                     value = GetRegister(register);
 
                     stack.Push(value);
-                    SetRegister(Register.SP, stack.StackPointer);
                     break;
 
                 case Instruction.POP:
                     value = stack.Pop();
 
                     SetRegister(register, value);
-                    SetRegister(Register.SP, stack.StackPointer);
                     break;
 
                 case Instruction.PEEK:

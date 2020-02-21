@@ -6,7 +6,12 @@ namespace VM
     {
         public static bool IsPrivate(this Register register)
         {
-            return register < Register.R1;
+            return register < Register.SP;
+        }
+
+        public static bool IsStack(this Register register)
+        {
+            return register == Register.SP || register == Register.FP;
         }
 
         public static bool IsValid(this Register register)
@@ -24,23 +29,21 @@ namespace VM
             return Enum.IsDefined(typeof(Instruction), instruction);
         }
 
-        public static ushort Set(this Flag flag, ushort bitfield)
+        public static ushort Set(this Flags flag, ushort bitfield)
         {
-            var mask = (ushort)(0x0001 << (ushort)flag);
-
-            return (ushort)(bitfield | mask);
+            return (ushort)(bitfield | (ushort)flag);
         }
 
-        public static ushort Clear(this Flag flag, ushort bitfield)
+        public static ushort Clear(this Flags flag, ushort bitfield)
         {
-            var mask = (ushort)~(0x0001 << (ushort)flag);
+            var mask = ~(ushort)flag;
 
             return (ushort)(bitfield & mask);
         }
 
-        public static bool IsSet(this Flag flag, ushort bitfield)
+        public static bool IsSet(this Flags flag, ushort bitfield)
         {
-            return ((bitfield >> (ushort)flag) & 0x0001) != 0;
+            return (bitfield & (ushort)flag) != 0;
         }
     }
 }

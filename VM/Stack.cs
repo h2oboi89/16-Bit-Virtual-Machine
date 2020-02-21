@@ -1,20 +1,38 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace VM
 {
     /// <summary>
-    /// Represents a frame in the <see cref="Processor"/> stack.
+    /// Represents the call stack in a <see cref="Processor"/>.
     /// </summary>
     public class Stack
     {
         private readonly Memory memory;
-        private readonly ushort startAddress;
-        private readonly ushort endAddress;
+
+        private readonly Stack<Frame> frames = new Stack<Frame>();
+
+        private Frame StackFrame => frames.Peek();
 
         /// <summary>
-        /// Address of hte next available location on the <see cref="Stack"/>
+        /// Address of first value in <see cref="Stack"/>.
         /// </summary>
-        public ushort StackPointer { get; private set; }
+        public ushort StartAddress { get; private set; }
+
+        /// <summary>
+        /// Address of last value in <see cref="Stack"/>.
+        /// </summary>
+        public ushort EndAddress { get; private set; }
+
+        /// <summary>
+        /// Address of the next available location on the <see cref="Stack"/>.
+        /// </summary>
+        public ushort StackPointer => StackFrame.Pointer;
+
+        /// <summary>
+        /// Value of <see cref="StackPointer"/> before last subroutine call.
+        /// </summary>
+        public ushort FramePointer { get; private set; }
 
         /// <summary>
         /// Creates a new <see cref="Stack"/> at the specified region in <see cref="Memory"/>.
@@ -23,8 +41,9 @@ namespace VM
         /// <param name="memory"><see cref="Memory"/> that will contain the <see cref="Stack"/>.</param>
         /// <param name="startAddress">Address of first value in <see cref="Stack"/>.</param>
         /// <param name="endAddress">Address of the last value in <see cref="Stack"/>.</param>
-        /// <exception cref="ArgumentException">Thrown if <paramref name="startAddress"/> is not byte aligned with <see cref="Processor.DATASIZE"/></exception>
-        /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="startAddress"/> and <paramref name="sizeLimit"/> do not fit into <see cref="Memory"/> based on their values.</exception>
+        /// <exception cref="ArgumentException">Thrown if <paramref name="startAddress"/> or <paramref name="endAddress"/> is not byte aligned with <see cref="Processor.DATASIZE"/></exception>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="startAddress"/> or <paramref name="endAddress"/> do not fit into <see cref="Memory"/> based on their values.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="startAddress"/> is less than <paramref name="endAddress"/>.</exception>
         public Stack(Memory memory, ushort startAddress, ushort endAddress)
         {
             this.memory = memory ?? throw new ArgumentNullException(nameof(memory));
@@ -37,18 +56,10 @@ namespace VM
                 throw new ArgumentOutOfRangeException(nameof(startAddress), "Start Address must be less than End Address.");
             }
 
-            this.startAddress = startAddress;
-            this.endAddress = endAddress;
+            StartAddress = startAddress;
+            EndAddress = endAddress;
 
-            StackPointer = startAddress;
-        }
-
-        /// <summary>
-        /// Resets <see cref="Stack"/> back to initial <see cref="StackPointer"/> value.
-        /// </summary>
-        public void Reset()
-        {
-            StackPointer = startAddress;
+            frames.Push(new Frame(memory, startAddress, endAddress));
         }
 
         private void CheckAddressValidity(ushort address, string name, string displayName)
@@ -64,12 +75,19 @@ namespace VM
             }
         }
 
-        private void CheckForStackOverflow()
+        /// <summary>
+        /// Resets the <see cref="Stack"/> back to intial values.
+        /// </summary>
+        public void Reset()
         {
-            if (StackPointer < endAddress)
+            while (frames.Count > 1)
             {
-                throw new StackOverflowException("Stack is full.");
+                frames.Pop();
             }
+
+            StackFrame.Reset();
+
+            FramePointer = StackPointer;
         }
 
         /// <summary>
@@ -80,17 +98,7 @@ namespace VM
         /// <exception cref="StackOverflowException">Thrown when <see cref="Stack"/> is full.</exception>
         public void Push(ushort value)
         {
-            CheckForStackOverflow();
-            memory.SetU16(StackPointer, value);
-            StackPointer -= Processor.DATASIZE;
-        }
-
-        private void CheckForEmptyStack()
-        {
-            if (StackPointer == startAddress)
-            {
-                throw new InvalidOperationException("Stack is empty.");
-            }
+            StackFrame.Push(value);
         }
 
         /// <summary>
@@ -101,10 +109,7 @@ namespace VM
         /// <exception cref="InvalidOperationException">Thrown if <see cref="Stack"/> is empty.</exception>
         public ushort Pop()
         {
-            // FUTURE: zero out memory on POP for security?
-            CheckForEmptyStack();
-            StackPointer += Processor.DATASIZE;
-            return memory.GetU16(StackPointer);
+            return StackFrame.Pop();
         }
 
         /// <summary>
@@ -115,12 +120,140 @@ namespace VM
         /// <exception cref="InvalidOperationException">Thrown if <see cref="Stack"/> is empty.</exception>
         public ushort Peek()
         {
-            CheckForEmptyStack();
-            var address = (ushort)(StackPointer + Processor.DATASIZE);
-            return memory.GetU16(address);
+            return StackFrame.Peek();
         }
 
-        // TODO: stack: update all to work with frames, not just full stack
-        // IE: treat each frame as a unique stack
+        /// <summary>
+        /// Closes current stack frame and starts a new one.
+        /// </summary>
+        public void PushFrame()
+        {
+            var startAddress = StackFrame.Pointer;
+
+            frames.Push(new Frame(memory, startAddress, EndAddress));
+
+            FramePointer = StackPointer;
+        }
+
+        /// <summary>
+        /// Closes current stack frame and opens previous one.
+        /// </summary>
+        public void PopFrame()
+        {
+            if (frames.Count > 1)
+            {
+                frames.Pop();
+            }
+            else
+            {
+                throw new InvalidOperationException("Stack is empty.");
+            }
+
+            FramePointer = StackFrame.StartAddress;
+        }
+
+        /// <summary>
+        /// Represents a frame in the <see cref="Processor"/> stack.
+        /// </summary>
+        internal class Frame
+        {
+            private readonly Memory memory;
+
+            /// <summary>
+            /// Address of first value in <see cref="Frame"/>.
+            /// </summary>
+            public ushort StartAddress { get; private set; }
+
+            /// <summary>
+            /// Address of last value in <see cref="Frame"/>.
+            /// </summary>
+            public ushort EndAddress { get; private set; }
+
+            /// <summary>
+            /// Address of the next available location on the <see cref="Frame"/>.
+            /// </summary>
+            public ushort Pointer { get; private set; }
+
+            /// <summary>
+            /// Creates a new <see cref="Frame"/> at the specified region in <see cref="Memory"/>.
+            /// NOTE: <see cref="Frame"/> grows down (<see cref="Pointer"/> value gets smaller each time a value is added to the <see cref="Frame"/>).
+            /// </summary>
+            /// <param name="memory"><see cref="Memory"/> that will contain the <see cref="Frame"/>.</param>
+            /// <param name="startAddress">Address of first value in <see cref="Frame"/>.</param>
+            /// <param name="endAddress">Address of the last value in <see cref="Frame"/>.</param>
+            internal Frame(Memory memory, ushort startAddress, ushort endAddress)
+            {
+                this.memory = memory;
+
+                StartAddress = startAddress;
+                EndAddress = endAddress;
+
+                Pointer = startAddress;
+            }
+
+            /// <summary>
+            /// Resets <see cref="Frame"/> back to initial <see cref="Pointer"/> value.
+            /// </summary>
+            internal void Reset()
+            {
+                Pointer = StartAddress;
+            }
+
+            private void CheckForStackOverflow()
+            {
+                if (Pointer < EndAddress)
+                {
+                    throw new StackOverflowException("Stack is full.");
+                }
+            }
+
+            /// <summary>
+            /// Inserts a value at the top of the <see cref="Frame"/>.
+            /// Decrements <see cref="Pointer"/>.
+            /// </summary>
+            /// <param name="value">Value to put on <see cref="Frame"/>.</param>
+            /// <exception cref="StackOverflowException">Thrown when <see cref="Frame"/> is full.</exception>
+            public void Push(ushort value)
+            {
+                CheckForStackOverflow();
+                memory.SetU16(Pointer, value);
+                Pointer -= Processor.DATASIZE;
+            }
+
+            private void CheckForEmptyStack()
+            {
+                if (Pointer == StartAddress)
+                {
+                    throw new InvalidOperationException("Stack frame is empty.");
+                }
+            }
+
+            /// <summary>
+            /// Removes and returns value at the top of the <see cref="Frame"/>.
+            /// Increments <see cref="Pointer"/>.
+            /// </summary>
+            /// <returns>Value from top of <see cref="Frame"/>.</returns>
+            /// <exception cref="InvalidOperationException">Thrown if <see cref="Frame"/> is empty.</exception>
+            public ushort Pop()
+            {
+                // FUTURE: zero out memory on POP for security?
+                CheckForEmptyStack();
+                Pointer += Processor.DATASIZE;
+                return memory.GetU16(Pointer);
+            }
+
+            /// <summary>
+            /// Returns the value at the top of the <see cref="Frame"/> without removing it.
+            /// Does not increment <see cref="Pointer"/>.
+            /// </summary>
+            /// <returns>Value from top of <see cref="Frame"/>.</returns>
+            /// <exception cref="InvalidOperationException">Thrown if <see cref="Frame"/> is empty.</exception>
+            public ushort Peek()
+            {
+                CheckForEmptyStack();
+                var address = (ushort)(Pointer + Processor.DATASIZE);
+                return memory.GetU16(address);
+            }
+        }
     }
 }

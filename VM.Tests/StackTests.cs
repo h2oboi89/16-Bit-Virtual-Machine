@@ -16,6 +16,15 @@ namespace VM.Tests
             stack = new Stack(memory, 0xfe, 0xf0);
         }
 
+        private void FillStack()
+        {
+            for (var i = 0; i < 8; i++)
+            {
+                stack.Push((ushort)i);
+                stack.PushFrame();
+            }
+        }
+
         [Test]
         public void Constructor_NullMemoryArgument_ThrowsException()
         {
@@ -98,7 +107,7 @@ namespace VM.Tests
         public void Pop_EmptyStack_ThrowsException()
         {
             Assert.That(() => stack.Pop(), Throws.InvalidOperationException
-                .With.Message.EqualTo("Stack is empty."));
+                .With.Message.EqualTo("Stack frame is empty."));
         }
 
         [Test]
@@ -117,7 +126,7 @@ namespace VM.Tests
         public void Peek_EmptyStack_ThrowsException()
         {
             Assert.That(() => stack.Peek(), Throws.InvalidOperationException
-                .With.Message.EqualTo("Stack is empty."));
+                .With.Message.EqualTo("Stack frame is empty."));
         }
 
         [Test]
@@ -161,6 +170,61 @@ namespace VM.Tests
         }
 
         [Test]
+        public void PushFrame_StartsANewFrame()
+        {
+            stack.Push(1);
+
+            stack.PushFrame();
+
+            Assert.That(() => stack.Pop(), Throws.InvalidOperationException
+                .With.Message.EqualTo("Stack frame is empty."));
+        }
+
+        [Test]
+        public void PushFrame_MultipleFrames()
+        {
+            FillStack();
+
+            for(var i = 0; i < 8; i++)
+            {
+                stack.PopFrame();
+            }
+
+            Assert.That(stack.Pop(), Is.EqualTo(0));
+
+            Assert.That(() => stack.Pop(), Throws.InvalidOperationException
+                .With.Message.EqualTo("Stack frame is empty."));
+        }
+
+        [Test]
+        public void PushFrame_StackOverflow()
+        {
+            FillStack();
+
+            Assert.That(() => stack.Push(1), Throws.InstanceOf<StackOverflowException>()
+                .With.Message.EqualTo("Stack is full."));
+        }
+
+        [Test]
+        public void PopFrame_GoesBackToPreviousFrame()
+        {
+            stack.Push(1);
+
+            stack.PushFrame();
+
+            stack.PopFrame();
+
+            Assert.That(stack.Pop(), Is.EqualTo(1));
+        }
+
+        [Test]
+        public void PopFrame_EmptyStack_ThrowsException()
+        {
+            Assert.That(() => stack.PopFrame(), Throws.InvalidOperationException
+                .With.Message.EqualTo("Stack empty."));
+        }
+
+        [Test]
         public void Reset_ResetsStack()
         {
             Assert.That(stack.StackPointer, Is.EqualTo(0xfe));
@@ -180,7 +244,5 @@ namespace VM.Tests
 
             Assert.That(stack.StackPointer, Is.EqualTo(0xfe));
         }
-
-        // TODO: push and pop frame
     }
 }

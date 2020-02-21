@@ -1281,7 +1281,7 @@ namespace VM.Tests
         {
             flasher.WriteInstruction(Instruction.POP, Register.R0);
 
-            AssertExceptionOccursAndProcessorResets(typeof(InvalidOperationException), "Stack is empty.");
+            AssertExceptionOccursAndProcessorResets(typeof(InvalidOperationException), "Stack frame is empty.");
         }
 
         [Test]
@@ -1303,7 +1303,7 @@ namespace VM.Tests
         {
             flasher.WriteInstruction(Instruction.PEEK, Register.R0);
 
-            AssertExceptionOccursAndProcessorResets(typeof(InvalidOperationException), "Stack is empty.");
+            AssertExceptionOccursAndProcessorResets(typeof(InvalidOperationException), "Stack frame is empty.");
         }
         #endregion
 

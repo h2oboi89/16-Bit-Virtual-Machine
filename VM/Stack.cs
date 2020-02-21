@@ -217,7 +217,7 @@ namespace VM
             {
                 if (Pointer == StartAddress)
                 {
-                    throw new InvalidOperationException("Stack is empty.");
+                    throw new InvalidOperationException("Stack frame is empty.");
                 }
             }
 

@@ -57,7 +57,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Flag.cs" />
+    <Compile Include="Flags.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="Flasher.cs" />
     <Compile Include="Instruction.cs" />

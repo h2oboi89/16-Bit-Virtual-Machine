@@ -189,7 +189,7 @@ namespace VM.Tests
         #endregion
 
         [Test]
-        public void Constructor_NullMemory_ThrowsException()
+        public void Constructor_NullMemory_ResetsAndThrowsException()
         {
             Assert.That(() => new Processor(null, 0), Throws.ArgumentNullException);
         }
@@ -288,7 +288,7 @@ namespace VM.Tests
         }
 
         [Test]
-        public void GetRegister_InvalidRegister_ThrowsException()
+        public void GetRegister_InvalidRegister_ResetsAndThrowsException()
         {
             processor.Step();
 
@@ -1162,6 +1162,28 @@ namespace VM.Tests
         }
 
         [Test]
+        public void CALL_StackOverflow_ResetsAndThrowsException()
+        {
+            FillStack();
+
+            flasher.WriteInstruction(Instruction.CALL, 0x1234);
+
+            AssertExceptionOccursAndProcessorResets(typeof(StackOverflowException), "Stack is full.");
+        }
+
+        [Test]
+        public void CALLR_StackOverflow_ResetsAndThrowsException()
+        {
+            FillStack();
+
+            LoadValueIntoRegisterR0(0x1234);
+            flasher.WriteInstruction(Instruction.CALLR, Register.R0);
+
+            processor.Step();
+            AssertExceptionOccursAndProcessorResets(typeof(StackOverflowException), "Stack is full.");
+        }
+
+        [Test]
         public void RET_LoadsSavedStateAndSetsPCToValueBeforeCall()
         {
             ushort subroutineAddress = 0x4000;
@@ -1219,13 +1241,18 @@ namespace VM.Tests
         }
 
         [Test]
+        public void RET_EmptyCallStack_ResetsAndThrowsException()
+        {
+            flasher.WriteInstruction(Instruction.RET);
+
+            AssertExceptionOccursAndProcessorResets(typeof(InvalidOperationException), "Stack is empty.");
+        }
+
+        [Test]
         public void Subroutine_AcceptsArgumentsAndReturnsValues()
         {
             // TODO: implement
         }
-
-        // TODO: ret on empty call stack
-        // TODO: stack overflow via CALL and CALLR
 
         // TODO: Subroutine instructions
         #endregion
@@ -1253,7 +1280,7 @@ namespace VM.Tests
         }
 
         [Test]
-        public void PUSH_FullStack_ThrowsException()
+        public void PUSH_FullStack_ResetsAndThrowsException()
         {
             FillStack();
 
@@ -1277,7 +1304,7 @@ namespace VM.Tests
         }
 
         [Test]
-        public void POP_OnEmptyStack_ThrowsException()
+        public void POP_OnEmptyStack_ResetsAndThrowsException()
         {
             flasher.WriteInstruction(Instruction.POP, Register.R0);
 
@@ -1299,7 +1326,7 @@ namespace VM.Tests
         }
 
         [Test]
-        public void PEEK_OnEmptyStack_ThrowsException()
+        public void PEEK_OnEmptyStack_ResetsAndThrowsException()
         {
             flasher.WriteInstruction(Instruction.PEEK, Register.R0);
 

@@ -221,7 +221,7 @@ namespace VM.Tests
         public void PopFrame_EmptyStack_ThrowsException()
         {
             Assert.That(() => stack.PopFrame(), Throws.InvalidOperationException
-                .With.Message.EqualTo("Stack empty."));
+                .With.Message.EqualTo("Stack is empty."));
         }
 
         [Test]

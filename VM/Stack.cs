@@ -140,7 +140,13 @@ namespace VM
         /// </summary>
         public void PopFrame()
         {
-            frames.Pop();
+            if (frames.Count > 1)
+            {
+                frames.Pop();
+            } else
+            {
+                throw new InvalidOperationException("Stack is empty.");
+            }
 
             FramePointer = StackFrame.StartAddress;
         }

@@ -17,10 +17,7 @@ namespace VM.Tests
         [Test]
         public void Constructor_InvalidSize_ThrowsException()
         {
-            Assert.That(() => new Memory(-1),
-                Throws.InstanceOf<ArgumentOutOfRangeException>().With.Message.StartsWith("Must be in range [0x0000, 0x10000]"));
-
-            Assert.That(() => new Memory(ushort.MaxValue + 2),
+            Assert.That(() => new Memory(0x10001),
                 Throws.InstanceOf<ArgumentOutOfRangeException>().With.Message.StartsWith("Must be in range [0x0000, 0x10000]"));
         }
 

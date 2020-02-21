@@ -13,9 +13,9 @@ namespace VM
         /// Creates a new block of memory with the specified size.
         /// </summary>
         /// <param name="sizeInBytes">Size of memory in bytes.</param>
-        public Memory(int sizeInBytes)
+        public Memory(uint sizeInBytes)
         {
-            if (sizeInBytes < 0 || sizeInBytes > ushort.MaxValue + 1)
+            if (sizeInBytes > ushort.MaxValue + 1)
             {
                 throw new ArgumentOutOfRangeException(nameof(sizeInBytes), "Must be in range [0x0000, 0x10000]");
             }

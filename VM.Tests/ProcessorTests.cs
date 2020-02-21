@@ -6,9 +6,9 @@ namespace VM.Tests
 {
     public class ProcessorTests
     {
-        private const ushort MEMORY_SIZE = 0x100;
-        private const ushort STACK_SIZE = 0x10;
-        private const ushort STACK_START_ADDRESS = MEMORY_SIZE - Processor.DATASIZE;
+        private const uint MEMORY_SIZE = 0x8000;
+        private const ushort STACK_SIZE = 0x0800;
+        private const ushort STACK_START_ADDRESS = (ushort)(MEMORY_SIZE - Processor.DATASIZE);
         private const ushort STACK_END_ADDRESS = STACK_START_ADDRESS - ((STACK_SIZE - 1) * Processor.DATASIZE);
 
         private Memory memory;
@@ -272,7 +272,7 @@ namespace VM.Tests
 
             AssertExceptionOccursAndProcessorResets(
                 typeof(IndexOutOfRangeException),
-                "Invalid memory address 0xFFFF. Valid Range: [0x0000, 0x00FF]");
+                "Invalid memory address 0xFFFF. Valid Range: [0x0000, 0x7FFF]");
         }
 
         #region Instructions
@@ -1099,7 +1099,16 @@ namespace VM.Tests
         }
         #endregion
 
+        #region Subroutines
+        [Test]
+        public void TestMethod()
+        {
+            var answer = 42;
+            Assert.That(answer, Is.EqualTo(42), "Some useful error message");
+        }
+
         // TODO: Subroutine instructions
+        #endregion
 
         #region Stack
         [Test]

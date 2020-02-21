@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace VM
+﻿namespace VM
 {
     /// <summary>
     /// Performs Arithmetic, Bitwise, and Logic <see cref="Instruction"/>s for the <see cref="Processor"/>.
@@ -172,11 +170,6 @@ namespace VM
                     break;
 
                 case Instruction.DIV:
-                    if (valueB == 0)
-                    {
-                        throw new DivideByZeroException();
-                    }
-
                     temp = (uint)(valueA / valueB);
 
                     Accumulator = (ushort)temp;

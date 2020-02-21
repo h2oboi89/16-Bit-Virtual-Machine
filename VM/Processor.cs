@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 
 namespace VM
 {
@@ -12,8 +11,7 @@ namespace VM
 
         private readonly Memory registers;
 
-        private readonly Stack<Frame> stacks = new Stack<Frame>();
-        private Frame Frame => stacks.Peek();
+        private readonly Stack stack;
 
         private bool continueExecution = false;
 
@@ -48,7 +46,7 @@ namespace VM
         /// Creates a new <see cref="Processor"/> with the specified <see cref="Memory"/>
         /// </summary>
         /// <param name="memory"><see cref="Memory"/> that this <see cref="Processor"/> can utilize.</param>
-        /// <param name="stackSize">Number of items that can fit in the <see cref="VM.Frame"/>.</param>
+        /// <param name="stackSize">Number of items that can fit in the <see cref="Stack"/>.</param>
         public Processor(Memory memory, ushort stackSize)
         {
             // TODO: memory map? (program, static data, dynamic data, stack, IO) 
@@ -59,7 +57,7 @@ namespace VM
             var startAddress = (ushort)(memory.MaxAddress - DATASIZE / 2);
             var endAddress = (ushort)(startAddress - ((stackSize - 1) * DATASIZE));
 
-            stacks.Push(new Frame(memory, startAddress, endAddress));
+            stack = new Stack(memory, startAddress, endAddress);
 
             Initialize();
         }
@@ -91,16 +89,7 @@ namespace VM
         {
             registers.Clear();
 
-            while(stacks.Count > 1)
-            {
-                stacks.Pop();
-            }
-
-            Frame.Reset();
-            SetRegister(Register.SP, Frame.StackPointer);
-
-            // TODO: update once we implement frames
-            SetRegister(Register.FP, Frame.StackPointer);
+            stack.Reset();
         }
 
         private static void ValidateRegister(Register register)
@@ -128,11 +117,32 @@ namespace VM
         {
             ValidateRegister(register);
 
+            if (register == Register.SP)
+            {
+                return stack.StackPointer;
+            }
+            if (register == Register.FP)
+            {
+                return stack.FramePointer;
+            }
+
             return registers.GetU16((ushort)((byte)register * DATASIZE));
         }
 
+        /// <summary>
+        /// Sets the value of <see cref="Register"/> to <paramref name="value"/>.
+        /// NOTE: <see cref="Register.SP"/> and <see cref="Register.FP"/> are managed by <see cref="Stack"/> and should not be modified by this method.
+        /// </summary>
+        /// <param name="register"><see cref="Register"/> whose value is to be set.</param>
+        /// <param name="value">Value to store in register.</param>
+        /// <param name="direct">True if a direct result of an <see cref="Instruction"/>; otherwise false.</param>
         private void SetRegister(Register register, ushort value, bool direct = false)
-        {
+        {            
+            if (register.IsStack())
+            {
+                throw new InvalidOperationException($"{register.Name()} is managed by {typeof(Stack)}.");
+            }
+            
             if (register.IsPrivate() && direct)
             {
                 throw new InvalidOperationException($"{register.Name()} register cannot be modified directly by code.");
@@ -170,41 +180,36 @@ namespace VM
             return value;
         }
 
-        private void Push(ushort value)
-        {
-            Frame.Push(value);
-            SetRegister(Register.SP, Frame.StackPointer);
-        }
-
-        private ushort Pop()
-        {
-            var value = Frame.Pop();
-            SetRegister(Register.SP, Frame.StackPointer);
-
-            return value;
-        }
-
         private void PushState()
         {
-            Push(GetRegister(Register.R0));
-            Push(GetRegister(Register.R1));
-            Push(GetRegister(Register.R2));
-            Push(GetRegister(Register.R3));
-            Push(GetRegister(Register.R4));
-            Push(GetRegister(Register.R5));
-            Push(GetRegister(Register.R6));
-            Push(GetRegister(Register.R7));
+            stack.Push(GetRegister(Register.R0));
+            stack.Push(GetRegister(Register.R1));
+            stack.Push(GetRegister(Register.R2));
+            stack.Push(GetRegister(Register.R3));
+            stack.Push(GetRegister(Register.R4));
+            stack.Push(GetRegister(Register.R5));
+            stack.Push(GetRegister(Register.R6));
+            stack.Push(GetRegister(Register.R7));
 
-            Push(GetRegister(Register.PC));
+            stack.Push(GetRegister(Register.PC));
 
-            Push((ushort)(Frame.Size + DATASIZE));
+            stack.PushFrame();
+        }
 
-            var startAddress = Frame.StackPointer;
-            var endAddress = Frame.EndAddress;
+        private void PopState()
+        {
+            stack.PopFrame();
 
-            stacks.Push(new Frame(memory, startAddress, endAddress));
+            SetRegister(Register.PC, stack.Pop());
 
-            SetRegister(Register.FP, GetRegister(Register.SP));
+            SetRegister(Register.R7, stack.Pop());
+            SetRegister(Register.R6, stack.Pop());
+            SetRegister(Register.R5, stack.Pop());
+            SetRegister(Register.R4, stack.Pop());
+            SetRegister(Register.R3, stack.Pop());
+            SetRegister(Register.R2, stack.Pop());
+            SetRegister(Register.R1, stack.Pop());
+            SetRegister(Register.R0, stack.Pop());
         }
 
         #region Flags
@@ -486,6 +491,13 @@ namespace VM
                 case Instruction.CALL:
                     address = FetchU16();
                     break;
+
+                case Instruction.CALLR:
+                    register = FetchRegister();
+
+                    address = GetRegister(register);
+                    break;
+
                 // TODO: Subroutine instructions
 
                 case Instruction.PUSH:
@@ -658,26 +670,30 @@ namespace VM
                     break;
 
                 case Instruction.CALL:
+                case Instruction.CALLR:
                     PushState();
 
                     SetRegister(Register.PC, address);
                     break;
-                // TODO: Subroutine instructions
+
+                case Instruction.RET:
+                    PopState();
+                    break;
 
                 case Instruction.PUSH:
                     value = GetRegister(register);
 
-                    Push(value);
+                    stack.Push(value);
                     break;
 
                 case Instruction.POP:
-                    value = Pop();
+                    value = stack.Pop();
 
                     SetRegister(register, value);
                     break;
 
                 case Instruction.PEEK:
-                    value = Frame.Peek();
+                    value = stack.Peek();
 
                     SetRegister(register, value);
                     break;

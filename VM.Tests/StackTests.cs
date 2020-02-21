@@ -4,33 +4,33 @@ using System;
 namespace VM.Tests
 {
     [TestFixture]
-    public class FrameTests
+    public class StackTests
     {
         private Memory memory;
-        private Frame stack;
+        private Stack stack;
 
         [SetUp]
         public void SetUp()
         {
-            memory = new Memory(0x10);
-            stack = new Frame(memory, 0x0e, 0x08);
+            memory = new Memory(0x100);
+            stack = new Stack(memory, 0xfe, 0xf0);
         }
 
         [Test]
         public void Constructor_NullMemoryArgument_ThrowsException()
         {
-            Assert.That(() => new Frame(null, 0, 0), Throws.ArgumentNullException
+            Assert.That(() => new Stack(null, 0, 0), Throws.ArgumentNullException
                 .With.Property("ParamName").EqualTo("memory"));
         }
 
         [Test]
         public void Constructor_MisalignedAddresses_ThrowsException()
         {
-            Assert.That(() => new Frame(memory, 1, 0), Throws.ArgumentException
+            Assert.That(() => new Stack(memory, 1, 0), Throws.ArgumentException
                 .With.Property("ParamName").EqualTo("startAddress").And
                 .With.Message.StartsWith("Start Address must be byte aligned for 2."));
 
-            Assert.That(() => new Frame(memory, 0x0e, 1), Throws.ArgumentException
+            Assert.That(() => new Stack(memory, 0x0e, 1), Throws.ArgumentException
                 .With.Property("ParamName").EqualTo("endAddress").And
                 .With.Message.StartsWith("End Address must be byte aligned for 2."));
         }
@@ -38,7 +38,7 @@ namespace VM.Tests
         [Test]
         public void Constructor_StartAddressGreaterThanMemoryMax_ThrowsException()
         {
-            Assert.That(() => new Frame(memory, 0x10, 0), Throws.InstanceOf<ArgumentOutOfRangeException>()
+            Assert.That(() => new Stack(memory, 0x100, 0), Throws.InstanceOf<ArgumentOutOfRangeException>()
                 .With.Property("ParamName").EqualTo("startAddress").And
                 .With.Message.StartsWith("Start Address must be a valid memory address."));
         }
@@ -46,7 +46,7 @@ namespace VM.Tests
         [Test]
         public void Constructor_EndAddressGreaterThanMemoryMax_ThrowsException()
         {
-            Assert.That(() => new Frame(memory, 0x0e, 0x10), Throws.InstanceOf<ArgumentOutOfRangeException>()
+            Assert.That(() => new Stack(memory, 0x0e, 0x100), Throws.InstanceOf<ArgumentOutOfRangeException>()
                 .With.Property("ParamName").EqualTo("endAddress").And
                 .With.Message.StartsWith("End Address must be a valid memory address."));
         }
@@ -54,7 +54,7 @@ namespace VM.Tests
         [Test]
         public void Constructor_StartAddressLessThanEndAddress_ThrowsException()
         {
-            Assert.That(() => new Frame(memory, 0x0a, 0x0e), Throws.InstanceOf<ArgumentOutOfRangeException>()
+            Assert.That(() => new Stack(memory, 0x0a, 0x0e), Throws.InstanceOf<ArgumentOutOfRangeException>()
                 .With.Property("ParamName").EqualTo("startAddress").And
                 .With.Message.StartsWith("Start Address must be less than End Address."));
         }
@@ -62,18 +62,18 @@ namespace VM.Tests
         [Test]
         public void Push_AddsValueToStack()
         {
-            Assert.That(stack.StackPointer, Is.EqualTo(0x0e));
+            Assert.That(stack.StackPointer, Is.EqualTo(0xfe));
 
             stack.Push(0x1234);
 
-            Assert.That(memory.GetU16(0x0e), Is.EqualTo(0x1234));
-            Assert.That(stack.StackPointer, Is.EqualTo(0x0c));
+            Assert.That(memory.GetU16(0xfe), Is.EqualTo(0x1234));
+            Assert.That(stack.StackPointer, Is.EqualTo(0xfc));
         }
 
         [Test]
         public void Push_StackOverflow_ThrowsException()
         {
-            for (ushort i = 0; i < 4; i++)
+            for (ushort i = 0; i < 8; i++)
             {
                 stack.Push(i);
             }
@@ -85,13 +85,13 @@ namespace VM.Tests
         [Test]
         public void Pop_RemovesValueFromStack()
         {
-            Assert.That(stack.StackPointer, Is.EqualTo(0x0e));
+            Assert.That(stack.StackPointer, Is.EqualTo(0xfe));
 
             stack.Push(0x1234);
             var value = stack.Pop();
 
             Assert.That(value, Is.EqualTo(0x1234));
-            Assert.That(stack.StackPointer, Is.EqualTo(0x0e));
+            Assert.That(stack.StackPointer, Is.EqualTo(0xfe));
         }
 
         [Test]
@@ -104,13 +104,13 @@ namespace VM.Tests
         [Test]
         public void Peek_ReturnsValueWithoutRemovingFromStack()
         {
-            Assert.That(stack.StackPointer, Is.EqualTo(0x0e));
+            Assert.That(stack.StackPointer, Is.EqualTo(0xfe));
 
             stack.Push(0x1234);
             var value = stack.Peek();
 
             Assert.That(value, Is.EqualTo(0x1234));
-            Assert.That(stack.StackPointer, Is.EqualTo(0x0c));
+            Assert.That(stack.StackPointer, Is.EqualTo(0xfc));
         }
 
         [Test]
@@ -123,7 +123,7 @@ namespace VM.Tests
         [Test]
         public void MultiplePeeks_ReturnSameValue()
         {
-            Assert.That(stack.StackPointer, Is.EqualTo(0x0e));
+            Assert.That(stack.StackPointer, Is.EqualTo(0xfe));
 
             stack.Push(0x1234);
 
@@ -134,13 +134,13 @@ namespace VM.Tests
                 Assert.That(value, Is.EqualTo(0x1234));
             }
 
-            Assert.That(stack.StackPointer, Is.EqualTo(0x0c));
+            Assert.That(stack.StackPointer, Is.EqualTo(0xfc));
         }
 
         [Test]
         public void ValuesArePoppedInReversePushOrder()
         {
-            Assert.That(stack.StackPointer, Is.EqualTo(0x0e));
+            Assert.That(stack.StackPointer, Is.EqualTo(0xfe));
 
             var pushValues = new ushort[] { 0, 1, 2, 3 };
 
@@ -157,13 +157,15 @@ namespace VM.Tests
             }
 
             Assert.That(values, Is.EqualTo(new ushort[] { 3, 2, 1, 0 }));
-            Assert.That(stack.StackPointer, Is.EqualTo(0x0e));
+            Assert.That(stack.StackPointer, Is.EqualTo(0xfe));
         }
 
         [Test]
         public void Reset_ResetsStack()
         {
-            Assert.That(stack.StackPointer, Is.EqualTo(0x0e));
+            Assert.That(stack.StackPointer, Is.EqualTo(0xfe));
+
+            stack.PushFrame();
 
             var pushValues = new ushort[] { 0, 1, 2, 3 };
 
@@ -172,11 +174,13 @@ namespace VM.Tests
                 stack.Push(value);
             }
 
-            Assert.That(stack.StackPointer, Is.EqualTo(0x06));
+            Assert.That(stack.StackPointer, Is.EqualTo(0xf6));
 
             stack.Reset();
 
-            Assert.That(stack.StackPointer, Is.EqualTo(0x0e));
+            Assert.That(stack.StackPointer, Is.EqualTo(0xfe));
         }
+
+        // TODO: push and pop frame
     }
 }

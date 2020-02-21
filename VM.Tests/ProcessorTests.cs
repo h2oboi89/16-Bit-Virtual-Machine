@@ -137,7 +137,6 @@ namespace VM.Tests
         private void AssertProcessorIsInInitialState()
         {
             Assert.That(processor.GetRegister(Register.PC), Is.Zero);
-            Assert.That(processor.GetRegister(Register.RA), Is.Zero);
             Assert.That(processor.GetRegister(Register.ACC), Is.Zero);
             Assert.That(processor.GetRegister(Register.FLAG), Is.Zero);
 
@@ -219,7 +218,7 @@ namespace VM.Tests
         {
             var privateRegisters = new Register[]
             {
-                Register.PC, Register.RA, Register.ACC, Register.FLAG, Register.SP, Register.FP
+                Register.PC, Register.ACC, Register.FLAG, Register.SP, Register.FP
             };
 
             foreach (var register in privateRegisters)
@@ -241,7 +240,7 @@ namespace VM.Tests
             {
                 Register.R0, Register.R1, Register.R2, Register.R3,
                 Register.R4, Register.R5, Register.R6, Register.R7,
-                Register.T0, Register.T1, Register.T2, Register.T3, 
+                Register.T0, Register.T1, Register.T2, Register.T3,
                 Register.T4, Register.T5, Register.T6, Register.T7
             };
 
@@ -1113,6 +1112,52 @@ namespace VM.Tests
         #endregion
 
         #region Subroutines
+        [Test]
+        public void CALL_SavesStateAndSetsPCToValue()
+        {
+            flasher.WriteInstruction(Instruction.CALL, 0x1234);
+
+            processor.Step();
+
+            Assert.That(processor.GetRegister(Register.PC), Is.EqualTo(0x1234));
+
+            Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(STACK_START_ADDRESS - 20));
+            Assert.That(processor.GetRegister(Register.FP), Is.EqualTo(STACK_START_ADDRESS - 20));
+        }
+        [Test]
+        public void Subroutine_AcceptsArgumentsAndReturnsValues()
+        {
+            //ushort subroutineAddress = 0x100;
+
+            //flasher.WriteInstruction(Instruction.LDVR, 1, Register.A0);
+            //flasher.WriteInstruction(Instruction.LDVR, 2, Register.A1);
+            //flasher.WriteInstruction(Instruction.CALL, subroutineAddress);
+
+            //ushort returnAddress = flasher.Address;
+
+            //flasher.Address = subroutineAddress;
+
+            //flasher.WriteInstruction(Instruction.ADD, Register.A0, Register.A1);
+            //flasher.WriteInstruction(Instruction.MOVE, Register.ACC, Register.V0);
+            //flasher.WriteInstruction(Instruction.RET);
+
+            //// main
+            //processor.Step();
+            //processor.Step();
+            //processor.Step();
+
+            //// subroutine
+            //// TODO: assert stack is at proper level
+
+            //processor.Step();
+            //processor.Step();
+            //processor.Step();
+
+            //Assert.That(processor.GetRegister(Register.PC), Is.EqualTo(returnAddress));
+            //Assert.That(processor.GetRegister(Register.V0), Is.EqualTo(3));
+
+            //Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(STACK_START_ADDRESS));
+        }
         // TODO: Subroutine instructions
         #endregion
 

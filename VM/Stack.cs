@@ -8,13 +8,16 @@ namespace VM
     public class Stack
     {
         private readonly Memory memory;
-        private readonly ushort startAddress;
-        private readonly ushort endAddress;
+        
+        public ushort StartAddress { get; private set; }
+        public ushort EndAddress { get; private set; }
 
         /// <summary>
         /// Address of hte next available location on the <see cref="Stack"/>
         /// </summary>
         public ushort StackPointer { get; private set; }
+
+        public ushort Size => (ushort)(StartAddress - StackPointer);
 
         /// <summary>
         /// Creates a new <see cref="Stack"/> at the specified region in <see cref="Memory"/>.
@@ -37,8 +40,8 @@ namespace VM
                 throw new ArgumentOutOfRangeException(nameof(startAddress), "Start Address must be less than End Address.");
             }
 
-            this.startAddress = startAddress;
-            this.endAddress = endAddress;
+            StartAddress = startAddress;
+            EndAddress = endAddress;
 
             StackPointer = startAddress;
         }
@@ -48,7 +51,7 @@ namespace VM
         /// </summary>
         public void Reset()
         {
-            StackPointer = startAddress;
+            StackPointer = StartAddress;
         }
 
         private void CheckAddressValidity(ushort address, string name, string displayName)
@@ -66,7 +69,7 @@ namespace VM
 
         private void CheckForStackOverflow()
         {
-            if (StackPointer < endAddress)
+            if (StackPointer < EndAddress)
             {
                 throw new StackOverflowException("Stack is full.");
             }
@@ -87,7 +90,7 @@ namespace VM
 
         private void CheckForEmptyStack()
         {
-            if (StackPointer == startAddress)
+            if (StackPointer == StartAddress)
             {
                 throw new InvalidOperationException("Stack is empty.");
             }

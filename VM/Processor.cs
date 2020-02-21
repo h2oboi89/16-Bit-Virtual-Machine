@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace VM
 {
@@ -11,7 +12,8 @@ namespace VM
 
         private readonly Memory registers;
 
-        private readonly Stack stack;
+        private readonly Stack<Stack> stacks = new Stack<Stack>();
+        private Stack Stack => stacks.Peek();
 
         private bool continueExecution = false;
 
@@ -46,7 +48,7 @@ namespace VM
         /// Creates a new <see cref="Processor"/> with the specified <see cref="Memory"/>
         /// </summary>
         /// <param name="memory"><see cref="Memory"/> that this <see cref="Processor"/> can utilize.</param>
-        /// <param name="stackSize">Number of items that can fit in the <see cref="Stack"/>.</param>
+        /// <param name="stackSize">Number of items that can fit in the <see cref="VM.Stack"/>.</param>
         public Processor(Memory memory, ushort stackSize)
         {
             // TODO: memory map? (program, static data, dynamic data, stack, IO) 
@@ -54,10 +56,10 @@ namespace VM
 
             registers = new Memory((ushort)((Enum.GetValues(typeof(Register)).Length + 1) * DATASIZE));
 
-            var stackStartAddress = (ushort)(memory.MaxAddress - DATASIZE / 2);
-            var stackEndAddress = (ushort)(stackStartAddress - ((stackSize - 1) * DATASIZE));
+            var startAddress = (ushort)(memory.MaxAddress - DATASIZE / 2);
+            var endAddress = (ushort)(startAddress - ((stackSize - 1) * DATASIZE));
 
-            stack = new Stack(memory, stackStartAddress, stackEndAddress);
+            stacks.Push(new Stack(memory, startAddress, endAddress));
 
             Initialize();
         }
@@ -89,11 +91,16 @@ namespace VM
         {
             registers.Clear();
 
-            stack.Reset();
-            SetRegister(Register.SP, stack.StackPointer);
+            while(stacks.Count > 1)
+            {
+                stacks.Pop();
+            }
+
+            Stack.Reset();
+            SetRegister(Register.SP, Stack.StackPointer);
 
             // TODO: update once we implement frames
-            SetRegister(Register.FP, stack.StackPointer);
+            SetRegister(Register.FP, Stack.StackPointer);
         }
 
         private static void ValidateRegister(Register register)
@@ -163,9 +170,41 @@ namespace VM
             return value;
         }
 
-        private void Store(ushort address, ushort value)
+        private void Push(ushort value)
         {
-            memory.SetU16(address, value);
+            Stack.Push(value);
+            SetRegister(Register.SP, Stack.StackPointer);
+        }
+
+        private ushort Pop()
+        {
+            var value = Stack.Pop();
+            SetRegister(Register.SP, Stack.StackPointer);
+
+            return value;
+        }
+
+        private void PushState()
+        {
+            Push(GetRegister(Register.R0));
+            Push(GetRegister(Register.R1));
+            Push(GetRegister(Register.R2));
+            Push(GetRegister(Register.R3));
+            Push(GetRegister(Register.R4));
+            Push(GetRegister(Register.R5));
+            Push(GetRegister(Register.R6));
+            Push(GetRegister(Register.R7));
+
+            Push(GetRegister(Register.PC));
+
+            Push((ushort)(Stack.Size + DATASIZE));
+
+            var startAddress = Stack.StackPointer;
+            var endAddress = Stack.EndAddress;
+
+            stacks.Push(new Stack(memory, startAddress, endAddress));
+
+            SetRegister(Register.FP, GetRegister(Register.SP));
         }
 
         #region Flags
@@ -444,6 +483,9 @@ namespace VM
                     address = GetRegister(register);
                     break;
 
+                case Instruction.CALL:
+                    address = FetchU16();
+                    break;
                 // TODO: Subroutine instructions
 
                 case Instruction.PUSH:
@@ -506,7 +548,7 @@ namespace VM
                 case Instruction.STVR:
                 case Instruction.STRA:
                 case Instruction.STRR:
-                    Store(address, value);
+                    memory.SetU16(address, value);
                     break;
 
                 case Instruction.INC:
@@ -615,24 +657,27 @@ namespace VM
                     }
                     break;
 
+                case Instruction.CALL:
+                    PushState();
+
+                    SetRegister(Register.PC, address);
+                    break;
                 // TODO: Subroutine instructions
 
                 case Instruction.PUSH:
                     value = GetRegister(register);
 
-                    stack.Push(value);
-                    SetRegister(Register.SP, stack.StackPointer);
+                    Push(value);
                     break;
 
                 case Instruction.POP:
-                    value = stack.Pop();
+                    value = Pop();
 
                     SetRegister(register, value);
-                    SetRegister(Register.SP, stack.StackPointer);
                     break;
 
                 case Instruction.PEEK:
-                    value = stack.Peek();
+                    value = Stack.Peek();
 
                     SetRegister(register, value);
                     break;

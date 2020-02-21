@@ -12,11 +12,6 @@
         /// </summary>
         PC,
         /// <summary>
-        /// Return Address.
-        /// Address that execution will resume at following <see cref="Instruction.RET"/>.
-        /// </summary>
-        RA,
-        /// <summary>
         /// Accumulator.
         /// Where result of all Arithmetic and Binary <see cref="Instruction"/>s is stored.
         /// </summary>
@@ -33,15 +28,6 @@
         /// Frame Pointer
         /// </summary>
         FP,
-        #endregion
-
-        #region Subroutine Registers
-        A0,
-        A1,
-        A2,
-        A3,
-        V0,
-        V1,
         #endregion
 
         #region General Purpose Registers
@@ -119,7 +105,34 @@
         /// General purpose register.
         /// Not preserved during subroutines.
         /// </summary>
-        T7
+        T7,
+        #endregion
+
+        #region Subroutine Registers
+        /// <summary>
+        /// Subroutine Argument Register
+        /// </summary>
+        A0,
+        /// <summary>
+        /// Subroutine Argument Register
+        /// </summary>
+        A1,
+        /// <summary>
+        /// Subroutine Argument Register
+        /// </summary>
+        A2,
+        /// <summary>
+        /// Subroutine Argument Register
+        /// </summary>
+        A3,
+        /// <summary>
+        /// Subroutine Return Value Register
+        /// </summary>
+        V0,
+        /// <summary>
+        /// Subroutine Return Value Register
+        /// </summary>
+        V1
         #endregion
     }
 }

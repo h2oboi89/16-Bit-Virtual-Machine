@@ -354,5 +354,221 @@ namespace VM.Tests
 
             Assert.That(alu.IsSet(Flags.ZERO), Is.False);
         }
+
+        [Test]
+        public void JLT_LessThanFlagIsSet_UsesValueA()
+        {
+            alu.Execute(Instruction.CMP, 0x1234, 0x4321);
+            alu.Execute(Instruction.JLT, 0x0000, 0xffff);
+
+            Assert.That(alu.JumpAddress, Is.EqualTo(0x0000));
+        }
+
+        [Test]
+        public void JLT_LessThanFlagIsNotSet_UsesValueB()
+        {
+            alu.Execute(Instruction.CMP, 0x4321, 0x1234);
+            alu.Execute(Instruction.JLT, 0x0000, 0xffff);
+
+            Assert.That(alu.JumpAddress, Is.EqualTo(0xffff));
+        }
+
+        [Test]
+        public void JLTR_LessThanFlagIsSet_UsesValueA()
+        {
+            alu.Execute(Instruction.CMP, 0x1234, 0x4321);
+            alu.Execute(Instruction.JLTR, 0x0000, 0xffff);
+
+            Assert.That(alu.JumpAddress, Is.EqualTo(0x0000));
+        }
+
+        [Test]
+        public void JLTR_LessThanFlagIsNotSet_UsesValueB()
+        {
+            alu.Execute(Instruction.CMP, 0x4321, 0x1234);
+            alu.Execute(Instruction.JLTR, 0x0000, 0xffff);
+
+            Assert.That(alu.JumpAddress, Is.EqualTo(0xffff));
+        }
+
+        [Test]
+        public void JGT_GreaterThanFlagIsSet_UsesValueA()
+        {
+            alu.Execute(Instruction.CMP, 0x4321, 0x1234);
+            alu.Execute(Instruction.JGT, 0x0000, 0xffff);
+
+            Assert.That(alu.JumpAddress, Is.EqualTo(0x0000));
+        }
+
+        [Test]
+        public void JGT_GreaterThanFlagIsNotSet_UsesValueA()
+        {
+            alu.Execute(Instruction.CMP, 0x1234, 0x4321);
+            alu.Execute(Instruction.JGT, 0x0000, 0xffff);
+
+            Assert.That(alu.JumpAddress, Is.EqualTo(0xffff));
+        }
+
+        [Test]
+        public void JGTR_GreaterThanFlagIsSet_UsesValueA()
+        {
+            alu.Execute(Instruction.CMP, 0x4321, 0x1234);
+            alu.Execute(Instruction.JGTR, 0x0000, 0xffff);
+
+            Assert.That(alu.JumpAddress, Is.EqualTo(0x0000));
+        }
+
+        [Test]
+        public void JGTR_GreaterThanFlagIsNotSet_UsesValueB()
+        {
+            alu.Execute(Instruction.CMP, 0x1234, 0x4321);
+            alu.Execute(Instruction.JGTR, 0x0000, 0xffff);
+
+            Assert.That(alu.JumpAddress, Is.EqualTo(0xffff));
+        }
+
+        [Test]
+        public void JE_EqualFlagIsSet_UsesValueA()
+        {
+            alu.Execute(Instruction.CMP, 0x1234, 0x1234);
+            alu.Execute(Instruction.JE, 0x0000, 0xffff);
+
+            Assert.That(alu.JumpAddress, Is.EqualTo(0x0000));
+        }
+
+        [Test]
+        public void JE_EqualFlagIsNotSet_UsesValueB()
+        {
+            alu.Execute(Instruction.CMP, 0x1234, 0x4321);
+            alu.Execute(Instruction.JE, 0x0000, 0xffff);
+
+            Assert.That(alu.JumpAddress, Is.EqualTo(0xffff));
+        }
+
+        [Test]
+        public void JER_EqualFlagIsSet_UsesValueA()
+        {
+            alu.Execute(Instruction.CMP, 0x1234, 0x1234);
+            alu.Execute(Instruction.JER, 0x0000, 0xffff);
+
+            Assert.That(alu.JumpAddress, Is.EqualTo(0x0000));
+        }
+
+        [Test]
+        public void JER_EqualFlagIsNotSet_UsesValueB()
+        {
+            alu.Execute(Instruction.CMP, 0x1234, 0x4321);
+            alu.Execute(Instruction.JER, 0x0000, 0xffff);
+
+            Assert.That(alu.JumpAddress, Is.EqualTo(0xffff));
+        }
+
+        [Test]
+        public void JNE_EqualFlagIsNotSet_UsesValueA()
+        {
+            alu.Execute(Instruction.CMP, 0x1234, 0x4321);
+            alu.Execute(Instruction.JNE, 0x0000, 0xffff);
+
+            Assert.That(alu.JumpAddress, Is.EqualTo(0x0000));
+        }
+
+        [Test]
+        public void JNE_EqualFlagIsSet_UsesValueB()
+        {
+            alu.Execute(Instruction.CMP, 0x1234, 0x1234);
+            alu.Execute(Instruction.JNE, 0x0000, 0xffff);
+
+            Assert.That(alu.JumpAddress, Is.EqualTo(0xffff));
+        }
+
+        [Test]
+        public void JNER_EqualFlagIsNotSet_UsesValueA()
+        {
+            alu.Execute(Instruction.CMP, 0x1234, 0x4321);
+            alu.Execute(Instruction.JNER, 0x0000, 0xffff);
+
+            Assert.That(alu.JumpAddress, Is.EqualTo(0x0000));
+        }
+
+        [Test]
+        public void JNER_EqualFlagIsSet_UsesValueB()
+        {
+            alu.Execute(Instruction.CMP, 0x1234, 0x1234);
+            alu.Execute(Instruction.JNER, 0x0000, 0xffff);
+
+            Assert.That(alu.JumpAddress, Is.EqualTo(0xffff));
+        }
+
+        [Test]
+        public void JZ_ZeroFlagIsSet_UsesValueA()
+        {
+            alu.Execute(Instruction.ADD, 0, 0);
+            alu.Execute(Instruction.JZ, 0x0000, 0xffff);
+
+            Assert.That(alu.JumpAddress, Is.EqualTo(0x0000));
+        }
+
+        [Test]
+        public void JZ_ZeroFlagIsNotSet_UsesValueB()
+        {
+            alu.Execute(Instruction.ADD, 0, 1);
+            alu.Execute(Instruction.JZ, 0x0000, 0xffff);
+
+            Assert.That(alu.JumpAddress, Is.EqualTo(0xffff));
+        }
+
+        [Test]
+        public void JZR_ZeroFlagIsSet_UsesValueA()
+        {
+            alu.Execute(Instruction.ADD, 0, 0);
+            alu.Execute(Instruction.JZR, 0x0000, 0xffff);
+
+            Assert.That(alu.JumpAddress, Is.EqualTo(0x0000));
+        }
+
+        [Test]
+        public void JZR_ZeroFlagIsNotSet_UsesValueB()
+        {
+            alu.Execute(Instruction.ADD, 0, 1);
+            alu.Execute(Instruction.JZR, 0x0000, 0xffff);
+
+            Assert.That(alu.JumpAddress, Is.EqualTo(0xffff));
+        }
+
+        [Test]
+        public void JNZ_ZeroFlagIsNotSet_UsesValueA()
+        {
+            alu.Execute(Instruction.ADD, 0, 1);
+            alu.Execute(Instruction.JNZ, 0x0000, 0xffff);
+
+            Assert.That(alu.JumpAddress, Is.EqualTo(0x0000));
+        }
+
+        [Test]
+        public void JNZ_ZeroFlagIsSet_UsesValueB()
+        {
+            alu.Execute(Instruction.ADD, 0, 0);
+            alu.Execute(Instruction.JNZ, 0x0000, 0xffff);
+
+            Assert.That(alu.JumpAddress, Is.EqualTo(0xffff));
+        }
+
+        [Test]
+        public void JNZR_ZeroFlagIsNotSet_UsesValueA()
+        {
+            alu.Execute(Instruction.ADD, 0, 1);
+            alu.Execute(Instruction.JNZR, 0x0000, 0xffff);
+
+            Assert.That(alu.JumpAddress, Is.EqualTo(0x0000));
+        }
+
+        [Test]
+        public void JNZR_ZeroFlagIsSet_UsesValueB()
+        {
+            alu.Execute(Instruction.ADD, 0, 0);
+            alu.Execute(Instruction.JNZR, 0x0000, 0xffff);
+
+            Assert.That(alu.JumpAddress, Is.EqualTo(0xffff));
+        }
     }
 }

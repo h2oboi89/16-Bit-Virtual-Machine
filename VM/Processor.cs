@@ -13,6 +13,8 @@ namespace VM
 
         private readonly Stack stack;
 
+        private readonly ArithmeticLogicUnit alu;
+
         private bool continueExecution = false;
 
         #region Utility variables for storing references during decode and execution
@@ -20,21 +22,14 @@ namespace VM
         private ushort valueA;
         private ushort valueB;
 
-        private uint temp;
-
-        private byte shiftAmount;
-
-        private ushort result;
-
         private ushort address;
+        private ushort jumpAddress;
 
         private Register register;
         private Register source;
         private Register destination;
         private Register registerA;
         private Register registerB;
-
-        private Flags flag;
         #endregion
 
         /// <summary>
@@ -58,6 +53,8 @@ namespace VM
             var endAddress = (ushort)(startAddress - ((stackSize - 1) * DATASIZE));
 
             stack = new Stack(memory, startAddress, endAddress);
+
+            alu = new ArithmeticLogicUnit();
 
             Initialize();
         }
@@ -90,6 +87,7 @@ namespace VM
             registers.Clear();
 
             stack.Reset();
+            alu.Reset();
         }
 
         private static void ValidateRegister(Register register)
@@ -125,6 +123,14 @@ namespace VM
             {
                 return stack.FramePointer;
             }
+            if (register == Register.ACC)
+            {
+                return alu.Accumulator;
+            }
+            if (register == Register.FLAG)
+            {
+                return alu.Flag;
+            }
 
             return registers.GetU16((ushort)((byte)register * DATASIZE));
         }
@@ -137,15 +143,16 @@ namespace VM
         /// <param name="value">Value to store in register.</param>
         /// <param name="direct">True if a direct result of an <see cref="Instruction"/>; otherwise false.</param>
         private void SetRegister(Register register, ushort value, bool direct = false)
-        {            
-            if (register.IsStack())
-            {
-                throw new InvalidOperationException($"{register.Name()} is managed by {typeof(Stack)}.");
-            }
-            
-            if (register.IsPrivate() && direct)
+        {
+            if (direct && register.IsPrivate())
             {
                 throw new InvalidOperationException($"{register.Name()} register cannot be modified directly by code.");
+            }
+
+            // stop develop from accidentally modifying Stack and ALU registers
+            if (register.IsStack() || register.IsAlu())
+            {
+                throw new InvalidOperationException($"{register.Name()} is managed by another class.");
             }
 
             registers.SetU16((ushort)((byte)register * DATASIZE), value);
@@ -212,25 +219,6 @@ namespace VM
             SetRegister(Register.R0, stack.Pop());
         }
 
-        #region Flags
-        private void SetFlag(Flags flag)
-        {
-            var value = GetRegister(Register.FLAG);
-
-            value = flag.Set(value);
-
-            SetRegister(Register.FLAG, value);
-        }
-
-        private void ClearFlag(Flags flag)
-        {
-            var value = GetRegister(Register.FLAG);
-
-            value = flag.Clear(value);
-
-            SetRegister(Register.FLAG, value);
-        }
-
         /// <summary>
         /// Determines if <see cref="Flags"/> is set.
         /// </summary>
@@ -238,100 +226,8 @@ namespace VM
         /// <returns>True if <see cref="Flags"/> is set; otherwise false.</returns>
         public bool IsSet(Flags flag)
         {
-            var value = GetRegister(Register.FLAG);
-
-            return flag.IsSet(value);
+            return alu.IsSet(flag);
         }
-
-        private static bool IsCarryFlagInstruction(Instruction instruction)
-        {
-            switch (instruction)
-            {
-                case Instruction.INC:
-                case Instruction.DEC:
-                case Instruction.ADD:
-                case Instruction.MUL:
-                case Instruction.SUB:
-                    return true;
-                default:
-                    return false;
-            }
-        }
-
-        private static bool IsZeroFlagInstruction(Instruction instruction)
-        {
-            switch (instruction)
-            {
-                case Instruction.INC:
-                case Instruction.DEC:
-                case Instruction.ADD:
-                case Instruction.SUB:
-                case Instruction.MUL:
-                case Instruction.DIV:
-                case Instruction.AND:
-                case Instruction.OR:
-                case Instruction.XOR:
-                case Instruction.NOT:
-                case Instruction.SRL:
-                case Instruction.SRLR:
-                case Instruction.SRR:
-                case Instruction.SRRR:
-                case Instruction.CMPZ:
-                    return true;
-                default:
-                    return false;
-            }
-        }
-
-        private void ClearFlags(Instruction instruction)
-        {
-            if (IsCarryFlagInstruction(instruction))
-            {
-                ClearFlag(Flags.CARRY);
-            }
-
-            if (IsZeroFlagInstruction(instruction))
-            {
-                ClearFlag(Flags.ZERO);
-            }
-
-            if (instruction == Instruction.CMP)
-            {
-                ClearFlag(Flags.LESSTHAN);
-                ClearFlag(Flags.GREATERTHAN);
-                ClearFlag(Flags.EQUAL);
-            }
-        }
-
-        private void SetFlags(Instruction instruction)
-        {
-            if (IsCarryFlagInstruction(instruction) && temp > ushort.MaxValue)
-            {
-                SetFlag(Flags.CARRY);
-            }
-
-            if (IsZeroFlagInstruction(instruction) && result == 0)
-            {
-                SetFlag(Flags.ZERO);
-            }
-
-            if (instruction == Instruction.CMP)
-            {
-                if (valueA < valueB)
-                {
-                    SetFlag(Flags.LESSTHAN);
-                }
-                else if (valueA == valueB)
-                {
-                    SetFlag(Flags.EQUAL);
-                }
-                else if (valueA > valueB)
-                {
-                    SetFlag(Flags.GREATERTHAN);
-                }
-            }
-        }
-        #endregion
 
         private Instruction Fetch()
         {
@@ -344,12 +240,6 @@ namespace VM
 
             switch (instruction)
             {
-                case Instruction.NOP:
-                case Instruction.RET:
-                case Instruction.RESET:
-                case Instruction.HALT:
-                    break;
-
                 case Instruction.MOVE:
                     source = FetchRegister();
                     destination = FetchRegister();
@@ -432,15 +322,15 @@ namespace VM
                 case Instruction.NOT:
                     register = FetchRegister();
 
-                    value = GetRegister(register);
+                    valueA = GetRegister(register);
                     break;
 
                 case Instruction.SRL:
                 case Instruction.SRR:
                     register = FetchRegister();
-                    shiftAmount = FetchU8();
+                    valueB = FetchU8();
 
-                    value = GetRegister(register);
+                    valueA = GetRegister(register);
                     break;
 
                 case Instruction.SRLR:
@@ -448,24 +338,24 @@ namespace VM
                     registerA = FetchRegister();
                     registerB = FetchRegister();
 
-                    value = GetRegister(registerA);
-                    shiftAmount = (byte)GetRegister(registerB);
+                    valueA = GetRegister(registerA);
+                    valueB = GetRegister(registerB);
                     break;
 
                 case Instruction.JUMP:
-                    address = FetchU16();
+                    jumpAddress = FetchU16();
                     break;
 
                 case Instruction.JUMPR:
                     register = FetchRegister();
 
-                    address = GetRegister(register);
+                    jumpAddress = GetRegister(register);
                     break;
 
                 case Instruction.CMPZ:
                     register = FetchRegister();
 
-                    result = GetRegister(register);
+                    valueA = GetRegister(register);
                     break;
 
                 case Instruction.JLT:
@@ -474,7 +364,8 @@ namespace VM
                 case Instruction.JNE:
                 case Instruction.JZ:
                 case Instruction.JNZ:
-                    address = FetchU16();
+                    jumpAddress = FetchU16();
+                    address = GetRegister(Register.PC);
                     break;
 
                 case Instruction.JLTR:
@@ -485,7 +376,8 @@ namespace VM
                 case Instruction.JNZR:
                     register = FetchRegister();
 
-                    address = GetRegister(register);
+                    jumpAddress = GetRegister(register);
+                    address = GetRegister(Register.PC);
                     break;
 
                 case Instruction.CALL:
@@ -504,49 +396,12 @@ namespace VM
                     register = FetchRegister();
                     break;
             }
-
-            SetFlagToCheckForLogicalJumps(instruction);
-        }
-
-        private void SetFlagToCheckForLogicalJumps(Instruction instruction)
-        {
-            switch (instruction)
-            {
-                case Instruction.JLT:
-                case Instruction.JLTR:
-                    flag = Flags.LESSTHAN;
-                    break;
-
-                case Instruction.JGT:
-                case Instruction.JGTR:
-                    flag = Flags.GREATERTHAN;
-                    break;
-
-                case Instruction.JE:
-                case Instruction.JER:
-                case Instruction.JNE:
-                case Instruction.JNER:
-                    flag = Flags.EQUAL;
-                    break;
-
-                case Instruction.JZ:
-                case Instruction.JZR:
-                case Instruction.JNZ:
-                case Instruction.JNZR:
-                    flag = Flags.ZERO;
-                    break;
-            }
         }
 
         private void Execute(Instruction instruction)
         {
             switch (instruction)
             {
-                case Instruction.NOP:
-                case Instruction.CMP:
-                case Instruction.CMPZ:
-                    break;
-
                 case Instruction.MOVE:
                 case Instruction.LDVR:
                 case Instruction.LDAR:
@@ -562,85 +417,32 @@ namespace VM
                     break;
 
                 case Instruction.INC:
-                case Instruction.ADD:
-                    temp = (uint)(valueA + valueB);
-
-                    result = (ushort)(temp);
-
-                    SetRegister(register, result);
-                    break;
-
                 case Instruction.DEC:
+                    alu.Execute(instruction, valueA, valueB);
+
+                    SetRegister(register, alu.Accumulator);
+                    break;
+
+                case Instruction.ADD:
                 case Instruction.SUB:
-                    temp = (uint)(valueA - valueB);
-
-                    result = (ushort)temp;
-
-                    SetRegister(register, result);
-                    break;
-
                 case Instruction.MUL:
-                    temp = (uint)(valueA * valueB);
-
-                    result = (ushort)temp;
-
-                    SetRegister(register, result);
-                    break;
-
                 case Instruction.DIV:
-                    if (valueB == 0)
-                    {
-                        throw new DivideByZeroException();
-                    }
-
-                    temp = (uint)(valueA / valueB);
-
-                    result = (ushort)temp;
-
-                    SetRegister(register, result);
-                    break;
-
                 case Instruction.AND:
-                    result = (ushort)(valueA & valueB);
-
-                    SetRegister(register, result);
-                    break;
-
                 case Instruction.OR:
-                    result = (ushort)(valueA | valueB);
-
-                    SetRegister(register, result);
-                    break;
-
                 case Instruction.XOR:
-                    result = (ushort)(valueA ^ valueB);
-
-                    SetRegister(register, result);
-                    break;
-
                 case Instruction.NOT:
-                    result = (ushort)~value;
-
-                    SetRegister(Register.ACC, result);
-                    break;
-
                 case Instruction.SRL:
                 case Instruction.SRLR:
-                    result = (ushort)(value << shiftAmount);
-
-                    SetRegister(Register.ACC, result);
-                    break;
-
                 case Instruction.SRR:
                 case Instruction.SRRR:
-                    result = (ushort)(value >> shiftAmount);
-
-                    SetRegister(Register.ACC, result);
+                case Instruction.CMP:
+                case Instruction.CMPZ:
+                    alu.Execute(instruction, valueA, valueB);
                     break;
 
                 case Instruction.JUMP:
                 case Instruction.JUMPR:
-                    SetRegister(Register.PC, address);
+                    SetRegister(Register.PC, jumpAddress);
                     break;
 
                 case Instruction.JLT:
@@ -649,22 +451,14 @@ namespace VM
                 case Instruction.JGTR:
                 case Instruction.JE:
                 case Instruction.JER:
-                case Instruction.JZ:
-                case Instruction.JZR:
-                    if (IsSet(flag))
-                    {
-                        SetRegister(Register.PC, address);
-                    }
-                    break;
-
                 case Instruction.JNE:
                 case Instruction.JNER:
+                case Instruction.JZ:
+                case Instruction.JZR:
                 case Instruction.JNZ:
                 case Instruction.JNZR:
-                    if (!IsSet(flag))
-                    {
-                        SetRegister(Register.PC, address);
-                    }
+                    alu.Execute(instruction, jumpAddress, address);
+                    SetRegister(Register.PC, alu.JumpAddress);
                     break;
 
                 case Instruction.CALL:
@@ -717,9 +511,7 @@ namespace VM
             try
             {
                 Decode(instruction);
-                ClearFlags(instruction);
                 Execute(instruction);
-                SetFlags(instruction);
 
                 Tick?.Invoke(this, new EventArgs());
 

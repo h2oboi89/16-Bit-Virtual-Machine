@@ -6,12 +6,17 @@ namespace VM
     {
         public static bool IsPrivate(this Register register)
         {
-            return register < Register.SP;
+            return register < Register.R0;
         }
 
         public static bool IsStack(this Register register)
         {
             return register == Register.SP || register == Register.FP;
+        }
+
+        public static bool IsAlu(this Register register)
+        {
+            return register == Register.ACC || register == Register.FLAG;
         }
 
         public static bool IsValid(this Register register)

@@ -218,29 +218,9 @@ namespace VM.Tests
         [Test]
         public void ModifyingPrivateRegistersDirectly_ResetsAndThrowsException()
         {
-            var privateRegisters = new Register[]
-            {
-                Register.PC, Register.ACC, Register.FLAG
-            };
-
-            foreach (var register in privateRegisters)
-            {
-                flasher.Address = 0;
-
-                LoadValueIntoRegister(0x1234, register);
-
-                AssertExceptionOccursAndProcessorResets(
-                    typeof(InvalidOperationException),
-                    $"{Enum.GetName(typeof(Register), register)} register cannot be modified directly by code.");
-            }
-        }
-
-        [Test]
-        public void ModifyingStackRegisters_ResetsAndThrowsException()
-        {
             var stackRegisters = new Register[]
             {
-                Register.SP, Register.FP
+                Register.PC, Register.ACC, Register.FLAG, Register.SP, Register.FP
             };
 
             foreach (var register in stackRegisters)
@@ -251,7 +231,7 @@ namespace VM.Tests
 
                 AssertExceptionOccursAndProcessorResets(
                     typeof(InvalidOperationException),
-                    $"{Enum.GetName(typeof(Register), register)} is managed by {typeof(Stack)}.");
+                    $"{Enum.GetName(typeof(Register), register)} register cannot be modified directly by code.");
             }
         }
 

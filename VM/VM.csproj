@@ -58,6 +58,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ArithmeticLogicUnit.cs" />
+    <Compile Include="Console.cs" />
     <Compile Include="Flags.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="Flasher.cs" />
@@ -69,6 +70,7 @@
     <Compile Include="ResetEventArgs.cs" />
     <Compile Include="Stack.cs" />
     <Compile Include="Utility.cs" />
+    <Compile Include="MemoryWriteEventArgs.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

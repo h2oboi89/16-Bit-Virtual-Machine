@@ -84,7 +84,7 @@ namespace VM
 
         private void Initialize()
         {
-            registers.Clear();
+            registers.Reset();
 
             stack.Reset();
             alu.Reset();

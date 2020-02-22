@@ -107,7 +107,7 @@ namespace VM.Tests
                 Assert.That(memory.GetU8(i), Is.Not.Zero);
             }
 
-            memory.Clear();
+            memory.Reset();
 
             for (ushort i = 0; i < memory.MaxAddress; i++)
             {

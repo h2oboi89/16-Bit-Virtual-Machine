@@ -82,10 +82,12 @@ namespace VM
         /// </summary>
         public event EventHandler Tick;
 
-        private void Initialize()
+        /// <summary>
+        /// Resets <see cref="Processor"/> to intitial state.
+        /// </summary>
+        public void Initialize()
         {
             registers.Reset();
-
             stack.Reset();
             alu.Reset();
         }

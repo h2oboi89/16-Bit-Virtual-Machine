@@ -4,11 +4,11 @@ PACKAGE_ROOT := $(shell echo $(USERPROFILE))\.nuget\packages
 COMPILER := msbuild
 
 # TDD tools and related variables
-TDD_TOOL := $(PACKAGE_ROOT)\nunit.consolerunner\3.10.0\tools\nunit3-console.exe
+TDD_TOOL := $(PACKAGE_ROOT)\nunit.consolerunner\3.11.0\tools\nunit3-console.exe
 TDD_DIR := .\OpenCover
 
 COVERAGE_TOOL := $(PACKAGE_ROOT)\opencover\4.7.922\tools\OpenCover.Console.exe
-COVERAGE_REPORT_TOOL := $(PACKAGE_ROOT)\reportgenerator\4.4.7\tools\net47\ReportGenerator.exe
+COVERAGE_REPORT_TOOL := $(PACKAGE_ROOT)\reportgenerator\4.5.0\tools\net47\ReportGenerator.exe
 COVERAGE_REPORT := $(TDD_DIR)\results.xml
 
 TESTS = .\VM.Tests\bin\$(CONFIG)\VM.Tests.dll

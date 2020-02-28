@@ -36,6 +36,7 @@
   <ItemGroup>
     <Compile Include="ArithmeticLogicUnitTests.cs" />
     <Compile Include="FibonacciSequenceTest.cs" />
+    <Compile Include="IOTests\SystemConsoleTests.cs" />
     <Compile Include="MemoryTests.cs" />
     <Compile Include="ProcessorTests.cs" />
     <Compile Include="StackTests.cs" />

@@ -13,7 +13,7 @@ namespace VM.HelloWorld
             const byte HEIGHT = 25;
 
             var memory = new Memory(0x10000);
-            var console = new Console(memory, CONSOLEADDRESS, WIDTH, HEIGHT);
+            var console = new IO.SystemConsole(memory, CONSOLEADDRESS, WIDTH, HEIGHT);
 
             var processor = new Processor(memory, 0x800);
 
@@ -55,7 +55,7 @@ namespace VM.HelloWorld
             var instructions = 0;
 
             processor.Tick += (o, e) => instructions++;
-            processor.Halt += (o, e) => console.Stop();
+            processor.Halt += (o, e) => console.Close();
 
             var start = DateTime.Now;
             processor.Run();

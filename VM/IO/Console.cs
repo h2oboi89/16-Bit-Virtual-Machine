@@ -1,11 +1,11 @@
 ﻿using System;
 
-namespace VM
+namespace VM.IO
 {
     /// <summary>
     /// Represents a console that the <see cref="Processor"/> can write to via mapped <see cref="Memory"/>.
     /// </summary>
-    public sealed class Console
+    public abstract class Console
     {
         /// <summary>
         /// Width of the <see cref="Console"/> (one character (byte) per column).
@@ -27,7 +27,7 @@ namespace VM
         /// <param name="baseAddress">Start of region in <paramref name="memory"/> that <see cref="Console"/> is mapped to.</param>
         /// <param name="width">Width of <see cref="Console"/>.</param>
         /// <param name="height">Height of <see cref="Console"/>.</param>
-        public Console(Memory memory, ushort baseAddress, byte width, byte height)
+        protected Console(Memory memory, ushort baseAddress, byte width, byte height)
         {
             this.memory = memory ?? throw new ArgumentNullException(nameof(memory));
 
@@ -37,8 +37,13 @@ namespace VM
             this.baseAddress = baseAddress;
 
             this.memory.MemoryWrite += OnMemoryWrite;
+        }
 
-            InitializeConsole();
+        private bool AddressInRange(ushort address)
+        {
+            var endAddress = (ushort)(baseAddress + (Width * Height));
+
+            return baseAddress <= address && address < endAddress;
         }
 
         private void OnMemoryWrite(object sender, MemoryWriteEventArgs e)
@@ -53,47 +58,23 @@ namespace VM
             var r = address / Width;
             var c = address % Width;
 
-            System.Console.SetCursorPosition(c, r);
-            System.Console.Write((char)e.Value);
-        }
-
-        private void InitializeConsole()
-        {
-            if (System.Console.WindowWidth < Width + 2)
-            {
-                System.Console.WindowWidth = Width + 2;
-            }
-            if (System.Console.WindowHeight < Height + 2)
-            {
-                System.Console.WindowHeight = Height + 2;
-            }
-
-            System.Console.Clear();
-            System.Console.CursorVisible = false;
-
-            for (var i = 0; i < Height; i++)
-            {
-                System.Console.SetCursorPosition(Width, i);
-                System.Console.Write(Environment.NewLine);
-            }
+            Write((char)e.Value, c, r);
         }
 
         /// <summary>
-        /// Resets the <see cref="System.Console"/> by moving cursor past region used by <see cref="Console"/>.
+        /// Writes a character to the specified location on the <see cref="Console"/>.
         /// </summary>
-        public void Stop()
+        /// <param name="value">Character to write to screen.</param>
+        /// <param name="column">Column to write value in (numbered left to right starting at 0).</param>
+        /// <param name="row">Row to write value in (numbered top to bottom starting at 0).</param>
+        protected abstract void Write(char value, int column, int row);
+
+        /// <summary>
+        /// Shuts down the <see cref="Console"/>.
+        /// </summary>
+        public virtual void Close()
         {
             memory.MemoryWrite -= OnMemoryWrite;
-            System.Console.SetCursorPosition(0, Height);
-            System.Console.WriteLine();
-            System.Console.CursorVisible = true;
-        }
-
-        private bool AddressInRange(ushort address)
-        {
-            var endAddress = (ushort)(baseAddress + (Width * Height));
-
-            return baseAddress <= address && address <= endAddress;
         }
     }
 }

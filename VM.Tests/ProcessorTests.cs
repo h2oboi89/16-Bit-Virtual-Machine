@@ -251,6 +251,7 @@ namespace VM.Tests
             {
                 Register.R0, Register.R1, Register.R2, Register.R3,
                 Register.R4, Register.R5, Register.R6, Register.R7,
+
                 Register.T0, Register.T1, Register.T2, Register.T3,
                 Register.T4, Register.T5, Register.T6, Register.T7
             };

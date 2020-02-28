@@ -29,7 +29,7 @@ namespace VM.HelloWorld
 
             var loopAddress = flasher.Address;
 
-            flasher.WriteInstruction(Instruction.SBVR, (byte)'*', Register.R0);
+            flasher.WriteInstruction(Instruction.SBVR, (byte)'#', Register.R0);
             flasher.WriteInstruction(Instruction.INC, Register.R0);
             flasher.WriteInstruction(Instruction.CMP, Register.R0, Register.R1);
             flasher.WriteInstruction(Instruction.JNE, loopAddress);
@@ -42,7 +42,7 @@ namespace VM.HelloWorld
 
             // Increment R0 from 0 -> 65,535
             flasher.WriteInstruction(Instruction.LDVR, (ushort)Flags.CARRY, Register.R1);
-            
+
             loopAddress = flasher.Address;
 
             flasher.WriteInstruction(Instruction.INC, Register.R0);

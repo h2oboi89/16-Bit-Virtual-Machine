@@ -4,7 +4,7 @@ PACKAGE_ROOT := $(shell echo $(USERPROFILE))\.nuget\packages
 COMPILER := msbuild
 
 # TDD tools and related variables
-TDD_TOOL := $(PACKAGE_ROOT)\nunit.consolerunner\3.11.0\tools\nunit3-console.exe
+TDD_TOOL := $(PACKAGE_ROOT)\nunit.consolerunner\3.11.1\tools\nunit3-console.exe
 TDD_DIR := .\OpenCover
 
 COVERAGE_TOOL := $(PACKAGE_ROOT)\opencover\4.7.922\tools\OpenCover.Console.exe
@@ -105,6 +105,7 @@ package: tdd
 	@echo Copying to $(RELEASE_DIR) ...
 	@echo -----------------------------------
 	$(call copy_dll_to_release,VM)
+	$(call copy_exe_to_release,VM.HelloWorld)
 
 # Builds a release build.
 .PHONY: release

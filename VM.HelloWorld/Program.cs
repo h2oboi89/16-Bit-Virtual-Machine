@@ -19,23 +19,22 @@ namespace VM.HelloWorld
 
             var flasher = new Flasher(memory);
 
-            var bytes = Encoding.ASCII.GetBytes("Hello, World!\0");
-
-            var address = CONSOLEADDRESS;
-
-            // write '*' to all console locations
-            flasher.WriteInstruction(Instruction.LDVR, address, Register.R0);
-            flasher.WriteInstruction(Instruction.LDVR, (ushort)(address + (WIDTH * HEIGHT)), Register.R1);
+            // Initialize registers
+            flasher.WriteInstruction(Instruction.LDVR, CONSOLEADDRESS, Register.R0);
+            flasher.WriteInstruction(Instruction.LDVR, CONSOLEADDRESS + (WIDTH * HEIGHT), Register.R1);
 
             var loopAddress = flasher.Address;
 
+            // write '#' to entire console
             flasher.WriteInstruction(Instruction.SBVR, (byte)'#', Register.R0);
             flasher.WriteInstruction(Instruction.INC, Register.R0);
             flasher.WriteInstruction(Instruction.CMP, Register.R0, Register.R1);
             flasher.WriteInstruction(Instruction.JNE, loopAddress);
 
             // write string to Console
-            foreach (var b in bytes)
+            var address = CONSOLEADDRESS;
+
+            foreach (var b in Encoding.ASCII.GetBytes("Hello, World!\0"))
             {
                 flasher.WriteInstruction(Instruction.SBVA, b, address++);
             }

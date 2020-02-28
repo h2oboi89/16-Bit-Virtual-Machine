@@ -106,6 +106,15 @@ namespace VM.Tests
             flasher.Address = 0;
         }
 
+        private void WriteByteToMemory(ushort address, byte value)
+        {
+            flasher.Address = address;
+
+            flasher.WriteU8(value);
+
+            flasher.Address = 0;
+        }
+
         private void Reset()
         {
             flasher.WriteInstruction(Instruction.RESET);
@@ -409,6 +418,45 @@ namespace VM.Tests
 
             Assert.That(processor.GetRegister(Register.R1), Is.EqualTo(0x1234));
         }
+
+        [Test]
+        public void LBVR_LoadsByteValueIntoRegister()
+        {
+            flasher.WriteInstruction(Instruction.LBVR, 0xff, Register.R0);
+
+            ExecuteProgram();
+
+            Assert.That(processor.GetRegister(Register.R0), Is.EqualTo(0x00ff));
+        }
+
+        [Test]
+        public void LBAR_LoadsByteValueFromAddressIntoRegister()
+        {
+            ushort address = 0x10;
+
+            WriteByteToMemory(address, 0xff);
+
+            flasher.WriteInstruction(Instruction.LBAR, address, Register.R0);
+
+            ExecuteProgram();
+
+            Assert.That(processor.GetRegister(Register.R0), Is.EqualTo(0x00ff));
+        }
+
+        [Test]
+        public void LBRR_LoadsByteValueFromAddressInRegisterIntoRegister()
+        {
+            ushort address = 0x10;
+
+            WriteByteToMemory(address, 0xff);
+
+            LoadValueIntoRegisterR0(address);
+            flasher.WriteInstruction(Instruction.LBRR, Register.R0, Register.R1);
+
+            ExecuteProgram();
+
+            Assert.That(processor.GetRegister(Register.R1), Is.EqualTo(0x00ff));
+        }
         #endregion
 
         #region Store
@@ -466,6 +514,62 @@ namespace VM.Tests
             ExecuteProgram();
 
             Assert.That(memory.GetU16(address), Is.EqualTo(0x1234));
+        }
+
+        [Test]
+        public void SBVA_StoresByteValueAtAddress()
+        {
+            ushort address = 0x10;
+
+            flasher.WriteInstruction(Instruction.SBVA, 0xff, address);
+
+            Assert.That(memory.GetU8(address), Is.Zero);
+
+            ExecuteProgram();
+
+            Assert.That(memory.GetU8(address), Is.EqualTo(0xff));
+        }
+
+        [Test]
+        public void SBVR_StoresByteValueAtAddressInRegister()
+        {
+            ushort address = 0x10;
+
+            LoadValueIntoRegisterR0(address);
+            flasher.WriteInstruction(Instruction.SBVR, 0xff, Register.R0);
+
+            Assert.That(memory.GetU8(address), Is.Zero);
+
+            ExecuteProgram();
+
+            Assert.That(memory.GetU8(address), Is.EqualTo(0xff));
+        }
+
+        [Test]
+        public void SBRA_StoresByteValueInRegisterAtAddress()
+        {
+            ushort address = 0x10;
+
+            LoadValueIntoRegisterR0(0x00ff);
+            flasher.WriteInstruction(Instruction.SBRA, Register.R0, address);
+
+            ExecuteProgram();
+
+            Assert.That(memory.GetU8(address), Is.EqualTo(0xff));
+        }
+
+        [Test]
+        public void SBRR_StoresByteValueInRegisterAtAddressInRegister()
+        {
+            ushort address = 0x10;
+
+            LoadValueIntoRegister(0xff, Register.R0);
+            LoadValueIntoRegister(address, Register.R1);
+            flasher.WriteInstruction(Instruction.SBRR, Register.R0, Register.R1);
+
+            ExecuteProgram();
+
+            Assert.That(memory.GetU8(address), Is.EqualTo(0xff));
         }
         #endregion
 

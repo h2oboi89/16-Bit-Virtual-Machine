@@ -8,15 +8,12 @@ namespace VM.HelloWorld
     {
         static void Main(string[] args)
         {
-            ushort consoleAddress = 0xf000;
+            const ushort CONSOLEADDRESS = 0xf000;
+            const byte WIDTH = 80;
+            const byte HEIGHT = 25;
 
             var memory = new Memory(0x10000);
-            var console = new Console(consoleAddress, 80, 25);
-
-            memory.MemoryWrite += (o, e) =>
-            {
-                console.Write(e.Address, e.Value);
-            };
+            var console = new Console(memory, CONSOLEADDRESS, WIDTH, HEIGHT);
 
             var processor = new Processor(memory, 0x800);
 
@@ -24,22 +21,41 @@ namespace VM.HelloWorld
 
             var bytes = Encoding.ASCII.GetBytes("Hello, World!\0");
 
-            var values = new ushort[bytes.Length / 2];
+            var address = CONSOLEADDRESS;
 
-            for (var i = 0; i < bytes.Length - 1; i += 2)
+            // write '*' to all console locations
+            flasher.WriteInstruction(Instruction.LDVR, address, Register.R0);
+            flasher.WriteInstruction(Instruction.LDVR, (ushort)(address + (WIDTH * HEIGHT)), Register.R1);
+
+            var loopAddress = flasher.Address;
+
+            flasher.WriteInstruction(Instruction.SBVR, (byte)'*', Register.R0);
+            flasher.WriteInstruction(Instruction.INC, Register.R0);
+            flasher.WriteInstruction(Instruction.CMP, Register.R0, Register.R1);
+            flasher.WriteInstruction(Instruction.JNE, loopAddress);
+
+            // write string to Console
+            foreach (var b in bytes)
             {
-                values[i / 2] = (ushort)(bytes[i] << 8 | bytes[i + 1]);
+                flasher.WriteInstruction(Instruction.SBVA, b, address++);
             }
 
-            var address = consoleAddress;
+            // Increment R0 from 0 -> 65,535
+            flasher.WriteInstruction(Instruction.LDVR, (ushort)Flags.CARRY, Register.R1);
+            
+            loopAddress = flasher.Address;
 
-            foreach (var value in values)
-            {
-                flasher.WriteInstruction(Instruction.STVA, value, address);
-                address += 2;
-            }
+            flasher.WriteInstruction(Instruction.INC, Register.R0);
+            flasher.WriteInstruction(Instruction.AND, Register.FLAG, Register.R1);
+            flasher.WriteInstruction(Instruction.JZ, loopAddress);
 
+            // Halt program
             flasher.WriteInstruction(Instruction.HALT);
+
+            var instructions = 0;
+
+            processor.Tick += (o, e) => instructions++;
+            processor.Halt += (o, e) => console.Stop();
 
             var start = DateTime.Now;
             processor.Run();
@@ -47,11 +63,10 @@ namespace VM.HelloWorld
 
             var duration = end - start;
 
-            var instructionsPerSecond = flasher.InstructionCount / (duration.TotalMilliseconds / 1000.0);
+            var instructionsPerSecond = instructions / (duration.TotalMilliseconds / 1000.0);
 
-            System.Console.SetCursorPosition(0, 20);
-
-            System.Console.WriteLine($"Ran {flasher.InstructionCount} instructions in {duration} ({instructionsPerSecond} instructions per second)");
+            System.Console.WriteLine($"Ran {instructions} instructions in {duration}");
+            System.Console.WriteLine($"{instructionsPerSecond} instructions per second");
 
             if (Debugger.IsAttached)
             {

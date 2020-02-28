@@ -277,6 +277,26 @@ namespace VM
                     value = memory.GetU16(address);
                     break;
 
+                case Instruction.LBVR:
+                    value = FetchU8();
+                    destination = FetchRegister();
+                    break;
+
+                case Instruction.LBAR:
+                    address = FetchU16();
+                    destination = FetchRegister();
+
+                    value = memory.GetU8(address);
+                    break;
+
+                case Instruction.LBRR:
+                    source = FetchRegister();
+                    destination = FetchRegister();
+
+                    address = GetRegister(source);
+                    value = memory.GetU8(address);
+                    break;
+
                 case Instruction.STVA:
                     value = FetchU16();
                     address = FetchU16();
@@ -290,6 +310,7 @@ namespace VM
                     break;
 
                 case Instruction.STRA:
+                case Instruction.SBRA:
                     source = FetchRegister();
                     address = FetchU16();
 
@@ -297,10 +318,23 @@ namespace VM
                     break;
 
                 case Instruction.STRR:
+                case Instruction.SBRR:
                     source = FetchRegister();
                     destination = FetchRegister();
 
                     value = GetRegister(source);
+                    address = GetRegister(destination);
+                    break;
+
+                case Instruction.SBVA:
+                    value = FetchU8();
+                    address = FetchU16();
+                    break;
+
+                case Instruction.SBVR:
+                    value = FetchU8();
+                    destination = FetchRegister();
+
                     address = GetRegister(destination);
                     break;
 
@@ -408,6 +442,9 @@ namespace VM
                 case Instruction.LDVR:
                 case Instruction.LDAR:
                 case Instruction.LDRR:
+                case Instruction.LBVR:
+                case Instruction.LBAR:
+                case Instruction.LBRR:
                     SetRegister(destination, value, true);
                     break;
 
@@ -416,6 +453,13 @@ namespace VM
                 case Instruction.STRA:
                 case Instruction.STRR:
                     memory.SetU16(address, value);
+                    break;
+
+                case Instruction.SBVA:
+                case Instruction.SBVR:
+                case Instruction.SBRA:
+                case Instruction.SBRR:
+                    memory.SetU8(address, (byte)value);
                     break;
 
                 case Instruction.INC:

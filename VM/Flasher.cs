@@ -113,6 +113,19 @@
         }
 
         /// <summary>
+        /// Writes an <see cref="Instruction"/>, <see cref="byte"/>, and <see cref="Register"/> to memory.
+        /// </summary>
+        /// <param name="instruction"><see cref="Instruction"/> to write to memory.</param>
+        /// <param name="value">Value to write to memory.</param>
+        /// <param name="register"><see cref="Register"/> to write to memory.</param>
+        public void WriteInstruction(Instruction instruction, byte value, Register register)
+        {
+            WriteInstruction(instruction);
+            WriteU8(value);
+            WriteRegister(register);
+        }
+
+        /// <summary>
         /// Writes an <see cref="Instruction"/> and two <see cref="Register"/>s to memory.
         /// </summary>
         /// <param name="instruction"><see cref="Instruction"/> to write to memory.</param>
@@ -161,6 +174,19 @@
         {
             WriteInstruction(instruction);
             WriteU16(value1);
+            WriteU16(value2);
+        }
+
+        /// <summary>
+        /// Writes an <see cref="Instruction"/>, a <see cref="byte"/>, and a <see cref="ushort"/> to memory.
+        /// </summary>
+        /// <param name="instruction"><see cref="Instruction"/> to write to memory.</param>
+        /// <param name="value1">Value to write to memory.</param>
+        /// <param name="value2">Value to write to memory.</param>
+        public void WriteInstruction(Instruction instruction, byte value1, ushort value2)
+        {
+            WriteInstruction(instruction);
+            WriteU8(value1);
             WriteU16(value2);
         }
     }

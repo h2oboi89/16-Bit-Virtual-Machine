@@ -2,8 +2,9 @@
 using NUnit.Framework;
 using System;
 using System.Linq;
+using VM.Hardware;
 
-namespace VM.Tests
+namespace VM.HardwareTests.Tests
 {
     public class ProcessorTests
     {

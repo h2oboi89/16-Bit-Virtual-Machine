@@ -1,8 +1,9 @@
 ﻿#pragma warning disable CA1822 // Mark members as static
 using NUnit.Framework;
 using System;
+using VM.Hardware;
 
-namespace VM.Tests
+namespace VM.HardwareTests.Tests
 {
     [TestFixture]
     public class StackTests

@@ -1,5 +1,6 @@
 ﻿using NUnit.Framework;
 using System.Threading;
+using VM.Hardware;
 
 namespace VM.Tests
 {

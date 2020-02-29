@@ -1,4 +1,4 @@
-﻿namespace VM
+﻿namespace VM.Hardware
 {
     /// <summary>
     /// Utility for writing programs to memory.

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace VM
+namespace VM.Hardware
 {
     /// <summary>
     /// Event arguments for <see cref="Memory.MemoryWrite"/>.

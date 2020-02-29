@@ -1,4 +1,4 @@
-﻿namespace VM
+﻿namespace VM.Hardware
 {
     /// <summary>
     /// Performs Arithmetic, Bitwise, and Logic <see cref="Instruction"/>s for the <see cref="Processor"/>.

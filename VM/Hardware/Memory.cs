@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace VM
+namespace VM.Hardware
 {
     /// <summary>
     /// Represents a block of memory in the Virtual Machine

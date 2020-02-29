@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace VM.IO
+namespace VM.Hardware.IO
 {
     /// <summary>
     /// Implementation of <see cref="Console"/> that wraps the <see cref="System.Console"/>.

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace VM.IO
+namespace VM.Hardware.IO
 {
     /// <summary>
     /// Represents a console that the <see cref="Processor"/> can write to via mapped <see cref="Memory"/>.

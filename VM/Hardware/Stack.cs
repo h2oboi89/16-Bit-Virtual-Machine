@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace VM
+namespace VM.Hardware
 {
     /// <summary>
     /// Represents the call stack in a <see cref="Processor"/>.

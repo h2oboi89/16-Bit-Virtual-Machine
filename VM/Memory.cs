@@ -23,8 +23,16 @@ namespace VM
             memory = new byte[sizeInBytes];
         }
 
+        /// <summary>
+        /// Event handler for <see cref="MemoryWrite"/> event.
+        /// </summary>
+        /// <param name="sender"><see cref="Processor"/> that fired the event.</param>
+        /// <param name="e"><see cref="MemoryWriteEventArgs"/> for the event.</param>
         public delegate void MemoryWriteEventHandler(object sender, MemoryWriteEventArgs e);
 
+        /// <summary>
+        /// Event fired when a location in memory is written to.
+        /// </summary>
         public event MemoryWriteEventHandler MemoryWrite;
 
         /// <summary>

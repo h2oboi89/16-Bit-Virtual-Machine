@@ -13,27 +13,26 @@ namespace VM.HelloWorld
         static void Main(string[] args)
         {
             var memory = new Memory(0x10000);
-            var console = new Console(memory, CONSOLEADDRESS, WIDTH, HEIGHT);
+            var console = new IO.SystemConsole(memory, CONSOLEADDRESS, WIDTH, HEIGHT);
             var processor = new Processor(memory, 0x800);
             var flasher = new Flasher(memory);
 
-            var bytes = Encoding.ASCII.GetBytes("Hello, World!\0");
-
-            var address = CONSOLEADDRESS;
-
-            // write '*' to all console locations
-            flasher.WriteInstruction(Instruction.LDVR, address, Register.R0);
-            flasher.WriteInstruction(Instruction.LDVR, (ushort)(address + (WIDTH * HEIGHT)), Register.R1);
+            // Initialize registers
+            flasher.WriteInstruction(Instruction.LDVR, CONSOLEADDRESS, Register.R0);
+            flasher.WriteInstruction(Instruction.LDVR, CONSOLEADDRESS + (WIDTH * HEIGHT), Register.R1);
 
             var loopAddress = flasher.Address;
 
-            flasher.WriteInstruction(Instruction.SBVR, (byte)'*', Register.R0);
+            // write '#' to entire console
+            flasher.WriteInstruction(Instruction.SBVR, (byte)'#', Register.R0);
             flasher.WriteInstruction(Instruction.INC, Register.R0);
             flasher.WriteInstruction(Instruction.CMP, Register.R0, Register.R1);
             flasher.WriteInstruction(Instruction.JNE, loopAddress);
 
             // write string to Console
-            foreach (var b in bytes)
+            var address = CONSOLEADDRESS;
+
+            foreach (var b in Encoding.ASCII.GetBytes("Hello, World!\0"))
             {
                 flasher.WriteInstruction(Instruction.SBVA, b, address++);
             }
@@ -53,7 +52,7 @@ namespace VM.HelloWorld
             var instructions = 0;
 
             processor.Tick += (o, e) => instructions++;
-            processor.Halt += (o, e) => console.Stop();
+            processor.Halt += (o, e) => console.Close();
 
             var start = DateTime.Now;
             processor.Run();

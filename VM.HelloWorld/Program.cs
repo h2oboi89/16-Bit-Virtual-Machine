@@ -6,17 +6,15 @@ namespace VM.HelloWorld
 {
     class Program
     {
+        const ushort CONSOLEADDRESS = 0xf000;
+        const byte WIDTH = 80;
+        const byte HEIGHT = 25;
+
         static void Main(string[] args)
         {
-            const ushort CONSOLEADDRESS = 0xf000;
-            const byte WIDTH = 80;
-            const byte HEIGHT = 25;
-
             var memory = new Memory(0x10000);
             var console = new Console(memory, CONSOLEADDRESS, WIDTH, HEIGHT);
-
             var processor = new Processor(memory, 0x800);
-
             var flasher = new Flasher(memory);
 
             var bytes = Encoding.ASCII.GetBytes("Hello, World!\0");
@@ -42,7 +40,7 @@ namespace VM.HelloWorld
 
             // Increment R0 from 0 -> 65,535
             flasher.WriteInstruction(Instruction.LDVR, (ushort)Flags.CARRY, Register.R1);
-            
+
             loopAddress = flasher.Address;
 
             flasher.WriteInstruction(Instruction.INC, Register.R0);

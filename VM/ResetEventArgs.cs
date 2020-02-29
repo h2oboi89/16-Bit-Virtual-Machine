@@ -5,7 +5,7 @@ namespace VM
     /// <summary>
     /// Event arguments for <see cref="Processor.Reset"/>.
     /// </summary>
-    public class ResetEventArgs
+    public sealed class ResetEventArgs
     {
         /// <summary>
         /// <see cref="Instruction"/> that caused the reset.

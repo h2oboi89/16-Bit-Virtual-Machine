@@ -1,15 +1,11 @@
 ﻿using NUnit.Framework;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace VM.Tests
 {
     [TestFixture]
     public class FibonacciSequenceTest
     {
-        // FIXME: timing / threading issues?
         [Test, Timeout(2000)]
         public void TestMethod()
         {
@@ -17,54 +13,57 @@ namespace VM.Tests
             var processor = new Processor(memory, 0x10);
             var flasher = new Flasher(memory);
 
-            var sequence = new List<ushort> { 0, 1 };
+            const ushort SEQUENCEADDRESS = 0x00a0;
 
-            var resetEvent = new AutoResetEvent(false);
+            var loopAddress = (ushort)38;
+            var endAddress = (ushort)68;
 
-            processor.Reset += (o, e) =>
-            {
-                Assert.That(e.Exception, Is.Null);
-                Assert.That(e.Instruction, Is.EqualTo(Instruction.RESET));
+            flasher.WriteInstruction(Instruction.LDVR, (ushort)0, Register.R1); // 0
+            flasher.WriteInstruction(Instruction.LDVR, (ushort)1, Register.R2); // 4
+            flasher.WriteInstruction(Instruction.LDVR, (ushort)Flags.CARRY, Register.R3); // 8
+            flasher.WriteInstruction(Instruction.LDVR, SEQUENCEADDRESS, Register.R4); // 12
+            flasher.WriteInstruction(Instruction.LDVR, (ushort)2, Register.R5); // 16
 
-                resetEvent.Set();
-            };
+            // Save R1 and R2 values to memory
+            flasher.WriteInstruction(Instruction.STRR, Register.R1, Register.R4); // 20
+            flasher.WriteInstruction(Instruction.ADD, Register.R4, Register.R5); // 23
+            flasher.WriteInstruction(Instruction.MOVE, Register.ACC, Register.R4); // 26
 
-            var loopAddress = (ushort)12;
-            var endAddress = (ushort)31;
-
-            flasher.WriteInstruction(Instruction.LDVR, (ushort)0, Register.R1);
-            flasher.WriteInstruction(Instruction.LDVR, 1, Register.R2);
-            flasher.WriteInstruction(Instruction.LDVR, (ushort)Flags.CARRY, Register.R3);
+            flasher.WriteInstruction(Instruction.STRR, Register.R2, Register.R4); // 29
+            flasher.WriteInstruction(Instruction.ADD, Register.R4, Register.R5); // 32
+            flasher.WriteInstruction(Instruction.MOVE, Register.ACC, Register.R4); // 35
 
             // LOOP Address
-            flasher.WriteInstruction(Instruction.AND, Register.FLAG, Register.R3);
-            flasher.WriteInstruction(Instruction.JNZ, endAddress);
+            // Check if overflow happened
+            flasher.WriteInstruction(Instruction.AND, Register.T0, Register.R3); // 38
+            flasher.WriteInstruction(Instruction.JNZ, endAddress); // 41
 
-            flasher.WriteInstruction(Instruction.ADD, Register.R1, Register.R2);
-            flasher.WriteInstruction(Instruction.HALT);
-            flasher.WriteInstruction(Instruction.MOVE, Register.R2, Register.R1);
-            flasher.WriteInstruction(Instruction.MOVE, Register.ACC, Register.R2);
-            flasher.WriteInstruction(Instruction.JUMP, loopAddress);
+            // calculate next Fibonacci number (R1 + R2 -> ACC)
+            flasher.WriteInstruction(Instruction.ADD, Register.R1, Register.R2); // 44
+
+            // Save Flag register for check later
+            flasher.WriteInstruction(Instruction.MOVE, Register.FLAG, Register.T0); // 47
+
+            // Write Fibonacci number to memory
+            flasher.WriteInstruction(Instruction.STRR, Register.ACC, Register.R4); // 50
+
+            // Shift all values, R2 -> R1, ACC -> R2
+            flasher.WriteInstruction(Instruction.MOVE, Register.R2, Register.R1); // 53
+            flasher.WriteInstruction(Instruction.MOVE, Register.ACC, Register.R2); // 56
+
+            // Increment address to save fibonnaci values at
+            flasher.WriteInstruction(Instruction.ADD, Register.R4, Register.R5); // 59
+            flasher.WriteInstruction(Instruction.MOVE, Register.ACC, Register.R4); // 62
+
+            // Go to start of loop
+            flasher.WriteInstruction(Instruction.JUMP, loopAddress); // 65
 
             // END Address
-            flasher.WriteInstruction(Instruction.RESET);
-
-            // FUTURE: replace HALT with a write to IO
-            processor.Halt += (o, e) =>
-            {
-                sequence.Add(processor.GetRegister(Register.ACC));
-
-                Task.Run(() => processor.Run());
-            };
+            flasher.WriteInstruction(Instruction.RESET); // 68
 
             processor.Run();
 
-            // wait for reset at end
-            resetEvent.WaitOne(1000);
-
-            Assert.That(sequence.Count(), Is.EqualTo(26));
-
-            Assert.That(sequence, Is.EquivalentTo(new ushort[]
+            var expected = new ushort[]
             {
                 0, 1, 1, 2, 3,
                 5, 8, 13, 21, 34,
@@ -72,9 +71,15 @@ namespace VM.Tests
                 610, 987, 1597, 2584, 4181,
                 6765, 10946, 17711, 28657, 46368,
                 // next value is 75025 which is > ushort max (65535)
-                // 75025 & 0xffff results in value below
-                9489
-            }));
+                9489 // (75025 & 0xffff) => 9489
+            };
+
+            for (var i = 0; i < expected.Length; i++)
+            {
+                ushort address = (ushort)(SEQUENCEADDRESS + (2 * i));
+                var value = expected[i];
+                Assert.That(memory.GetU16(address), Is.EqualTo(value));
+            }
         }
     }
 }

@@ -24,6 +24,18 @@ namespace VM
         }
 
         /// <summary>
+        /// Event handler for <see cref="MemoryWrite"/> event.
+        /// </summary>
+        /// <param name="sender"><see cref="Processor"/> that fired the event.</param>
+        /// <param name="e"><see cref="MemoryWriteEventArgs"/> for the event.</param>
+        public delegate void MemoryWriteEventHandler(object sender, MemoryWriteEventArgs e);
+
+        /// <summary>
+        /// Event fired when a location in memory is written to.
+        /// </summary>
+        public event MemoryWriteEventHandler MemoryWrite;
+
+        /// <summary>
         /// Highest available writeable address
         /// </summary>
         public ushort MaxAddress { get { return (ushort)(memory.Length - 1); } }
@@ -41,13 +53,11 @@ namespace VM
         /// <summary>
         /// Erases all memory contents back to default (zero).
         /// </summary>
-        public void Clear()
+        public void Reset()
         {
-            Address = 0;
             Array.Clear(memory, 0, memory.Length);
         }
 
-        #region data type methods (U8, U16)
         /// <summary>
         /// Retrieves a <see cref="byte"/> from memory at the specified location.
         /// </summary>
@@ -76,6 +86,8 @@ namespace VM
             }
 
             memory[address] = value;
+
+            MemoryWrite?.Invoke(this, new MemoryWriteEventArgs(address, value));
         }
 
         /// <summary>
@@ -110,36 +122,5 @@ namespace VM
                 SetU8(address++, b);
             }
         }
-        #endregion
-
-        #region Used for flashing initial contents
-        /// <summary>
-        /// Address that is currently being written to.
-        /// Used by <see cref="WriteU8(byte)"/> and <see cref="WriteU16(ushort)"/>.
-        /// Automatically increments each time one of those methods is called.
-        /// </summary>
-        internal ushort Address { get; set; }
-
-        /// <summary>
-        /// Writes the specifed <see cref="byte"/> to current memory location as specifed by <see cref="Address"/>.
-        /// </summary>
-        /// <param name="value">Value to write to memory.</param>
-        internal void WriteU8(byte value)
-        {
-            memory[Address++] = value;
-        }
-
-        /// <summary>
-        /// Writes the specifed <see cref="ushort"/> to current memory location as specifed by <see cref="Address"/>.
-        /// </summary>
-        /// <param name="value">Value to write to memory.</param>
-        internal void WriteU16(ushort value)
-        {
-            foreach (var b in Utility.GetBytes(value))
-            {
-                WriteU8(b);
-            }
-        }
-        #endregion
     }
 }

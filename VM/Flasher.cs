@@ -17,16 +17,18 @@
             Address = 0;
         }
 
+        private ushort address = 0;
+
         /// <summary>
         /// Next address in memory that will be written to.
         /// </summary>
         public ushort Address
         {
-            get { return memory.Address; }
+            get { return address; }
             set
             {
+                address = value;
                 InstructionCount = 0;
-                memory.Address = value;
             }
         }
 
@@ -41,7 +43,7 @@
         /// <param name="value">Value to write to memory.</param>
         public void WriteU8(byte value)
         {
-            memory.WriteU8(value);
+            memory.SetU8(address++, value);
         }
 
         /// <summary>
@@ -50,7 +52,10 @@
         /// <param name="value">Value to write to memory.</param>
         public void WriteU16(ushort value)
         {
-            memory.WriteU16(value);
+            foreach (var b in Utility.GetBytes(value))
+            {
+                WriteU8(b);
+            }
         }
 
         /// <summary>
@@ -59,7 +64,7 @@
         /// <param name="register">Identifier to write to memory.</param>
         private void WriteRegister(Register register)
         {
-            memory.WriteU8((byte)register);
+            WriteU8((byte)register);
         }
 
         /// <summary>
@@ -91,7 +96,7 @@
         public void WriteInstruction(Instruction instruction, ushort value)
         {
             WriteInstruction(instruction);
-            memory.WriteU16(value);
+            WriteU16(value);
         }
 
         /// <summary>
@@ -103,7 +108,20 @@
         public void WriteInstruction(Instruction instruction, ushort value, Register register)
         {
             WriteInstruction(instruction);
-            memory.WriteU16(value);
+            WriteU16(value);
+            WriteRegister(register);
+        }
+
+        /// <summary>
+        /// Writes an <see cref="Instruction"/>, <see cref="byte"/>, and <see cref="Register"/> to memory.
+        /// </summary>
+        /// <param name="instruction"><see cref="Instruction"/> to write to memory.</param>
+        /// <param name="value">Value to write to memory.</param>
+        /// <param name="register"><see cref="Register"/> to write to memory.</param>
+        public void WriteInstruction(Instruction instruction, byte value, Register register)
+        {
+            WriteInstruction(instruction);
+            WriteU8(value);
             WriteRegister(register);
         }
 
@@ -130,7 +148,7 @@
         {
             WriteInstruction(instruction);
             WriteRegister(register);
-            memory.WriteU16(value);
+            WriteU16(value);
         }
 
         /// <summary>
@@ -143,7 +161,7 @@
         {
             WriteInstruction(instruction);
             WriteRegister(register);
-            memory.WriteU8(value);
+            WriteU8(value);
         }
 
         /// <summary>
@@ -155,8 +173,21 @@
         public void WriteInstruction(Instruction instruction, ushort value1, ushort value2)
         {
             WriteInstruction(instruction);
-            memory.WriteU16(value1);
-            memory.WriteU16(value2);
+            WriteU16(value1);
+            WriteU16(value2);
+        }
+
+        /// <summary>
+        /// Writes an <see cref="Instruction"/>, a <see cref="byte"/>, and a <see cref="ushort"/> to memory.
+        /// </summary>
+        /// <param name="instruction"><see cref="Instruction"/> to write to memory.</param>
+        /// <param name="value1">Value to write to memory.</param>
+        /// <param name="value2">Value to write to memory.</param>
+        public void WriteInstruction(Instruction instruction, byte value1, ushort value2)
+        {
+            WriteInstruction(instruction);
+            WriteU8(value1);
+            WriteU16(value2);
         }
     }
 }

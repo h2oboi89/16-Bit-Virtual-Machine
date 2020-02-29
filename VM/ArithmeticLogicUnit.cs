@@ -46,7 +46,7 @@
         /// <returns>True if <see cref="Flags"/> is set; otherwise false.</returns>
         public bool IsSet(Flags flag)
         {
-            return (Flag & flag) == flag;
+            return Flag.HasFlag(flag);
         }
 
         private void ClearFlags(Instruction instruction)

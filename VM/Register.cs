@@ -3,7 +3,7 @@
     /// <summary>
     /// Virtual Machine <see cref="Hardware.Processor"/> register identifiers
     /// </summary>
-    public enum Register
+    public enum Register : byte
     {
         #region System Registers
         /// <summary>

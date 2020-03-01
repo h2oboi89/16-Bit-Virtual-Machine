@@ -40,9 +40,9 @@ namespace VM.Hardware.IO
         /// Writes a character to the specified location on the <see cref="SystemConsole"/>.
         /// </summary>
         /// <param name="value">Character to write to screen.</param>
-        /// <param name="column">Column to write value in (numbered left to right starting at 0).</param>
         /// <param name="row">Row to write value in (numbered top to bottom starting at 0).</param>
-        protected override void Write(char value, int column, int row)
+        /// <param name="column">Column to write value in (numbered left to right starting at 0).</param>
+        protected override void Write(char value, int row, int column)
         {
             System.Console.SetCursorPosition(column, row);
             System.Console.Write(value);

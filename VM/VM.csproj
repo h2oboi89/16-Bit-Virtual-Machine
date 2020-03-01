@@ -60,7 +60,7 @@
     <Compile Include="Hardware\ArithmeticLogicUnit.cs" />
     <Compile Include="Hardware\IO\Console.cs" />
     <Compile Include="Flags.cs" />
-    <Compile Include="Hardware\Extensions.cs" />
+    <Compile Include="Extensions.cs" />
     <Compile Include="Hardware\Flasher.cs" />
     <Compile Include="Instruction.cs" />
     <Compile Include="Hardware\IO\SystemConsole.cs" />
@@ -70,8 +70,14 @@
     <Compile Include="Register.cs" />
     <Compile Include="Hardware\ResetEventArgs.cs" />
     <Compile Include="Hardware\Stack.cs" />
-    <Compile Include="Hardware\Utility.cs" />
+    <Compile Include="Software\Assembling\Parser.cs" />
+    <Compile Include="Software\Assembling\Scanning\Scanner.cs" />
+    <Compile Include="Software\Assembling\Scanning\ScanningException.cs" />
+    <Compile Include="Software\Assembling\Scanning\Token.cs" />
+    <Compile Include="Software\Assembling\Scanning\TokenType.cs" />
+    <Compile Include="Utility.cs" />
     <Compile Include="Hardware\MemoryWriteEventArgs.cs" />
+    <Compile Include="Software\Assembling\Assembler.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

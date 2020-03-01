@@ -40,6 +40,7 @@ namespace VM.HelloWorld
             }
 
             // Increment R0 from 0 -> 65,535
+            flasher.WriteInstruction(Instruction.LDVR, (ushort)0, Register.R0);
             flasher.WriteInstruction(Instruction.LDVR, (ushort)Flags.CARRY, Register.R1);
 
             loopAddress = flasher.Address;

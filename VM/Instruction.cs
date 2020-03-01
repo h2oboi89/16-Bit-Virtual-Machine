@@ -3,14 +3,14 @@
     /// <summary>
     /// Instruction Opcodes for the Virtual Machine
     /// </summary>
-    public enum Instruction
+    public enum Instruction : byte
     {
         /// <summary>
         /// No Operation.<br/>
         /// Does nothing aside from increment the <see cref="Register.PC"/>.<br/>
         /// Arguments: NONE.
         /// </summary>
-        NOP = default(ushort),
+        NOP = default(byte),
 
         #region Register Instructions
         /// <summary>

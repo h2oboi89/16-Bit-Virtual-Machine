@@ -40,6 +40,7 @@
     <Compile Include="HardwareTests\MemoryTests.cs" />
     <Compile Include="HardwareTests\ProcessorTests.cs" />
     <Compile Include="HardwareTests\StackTests.cs" />
+    <Compile Include="SoftwareTests\AssemblingTests\ScanningTests\ScannerTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="NUnit">

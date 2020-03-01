@@ -60,7 +60,7 @@ namespace VM.Tests
             flasher.WriteInstruction(Instruction.JUMP, loopAddress); // 65
 
             // END Address
-            flasher.WriteInstruction(Instruction.RESET); // 68
+            flasher.WriteInstruction(Instruction.HALT); // 68
 
             processor.Run();
 

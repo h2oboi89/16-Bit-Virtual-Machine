@@ -34,7 +34,7 @@ namespace VM.HelloWorld
             // write string to Console
             var address = CONSOLEADDRESS;
 
-            foreach (var b in Encoding.ASCII.GetBytes("Hello, World!\0"))
+            foreach (var b in Encoding.ASCII.GetBytes("Hello, World!"))
             {
                 flasher.WriteInstruction(Instruction.SBVA, b, address++);
             }

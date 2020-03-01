@@ -1,9 +1,10 @@
 ﻿using NUnit.Framework;
 using System;
 using System.IO;
-using VM.IO;
+using VM.Hardware;
+using VM.Hardware.IO;
 
-namespace VM.Tests.IOTests
+namespace VM.Tests.HardwareTests.IOTests
 {
     [TestFixture]
     public class SystemConsoleTests

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace VM
+namespace VM.Hardware
 {
     internal static class Extensions
     {

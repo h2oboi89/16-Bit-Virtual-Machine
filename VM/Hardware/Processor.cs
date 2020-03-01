@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace VM
+namespace VM.Hardware
 {
     /// <summary>
     /// Central Processing Unit of the Virtual Machine

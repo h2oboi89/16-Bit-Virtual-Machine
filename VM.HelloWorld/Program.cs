@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Text;
+using VM.Hardware;
+using VM.Hardware.IO;
 
 namespace VM.HelloWorld
 {
@@ -13,7 +15,7 @@ namespace VM.HelloWorld
         static void Main(string[] args)
         {
             var memory = new Memory(0x10000);
-            var console = new IO.SystemConsole(memory, CONSOLEADDRESS, WIDTH, HEIGHT);
+            var console = new SystemConsole(memory, CONSOLEADDRESS, WIDTH, HEIGHT);
             var processor = new Processor(memory, 0x800);
             var flasher = new Flasher(memory);
 
@@ -32,7 +34,7 @@ namespace VM.HelloWorld
             // write string to Console
             var address = CONSOLEADDRESS;
 
-            foreach (var b in Encoding.ASCII.GetBytes("Hello, World!\0"))
+            foreach (var b in Encoding.ASCII.GetBytes("Hello, World!"))
             {
                 flasher.WriteInstruction(Instruction.SBVA, b, address++);
             }

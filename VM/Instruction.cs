@@ -39,13 +39,13 @@
         LDVR,
         /// <summary>
         /// Load value at Address into Register.<br/>
-        /// Load value from <see cref="Memory"/> into <see cref="Register"/>.<br/>
+        /// Load value from <see cref="Hardware.Memory"/> into <see cref="Register"/>.<br/>
         /// Arguments: Address (<see cref="ushort"/>), Destination (<see cref="Register"/>).
         /// </summary>
         LDAR,
         /// <summary>
         /// Load value at address in Register into Register.<br/>
-        /// Load value from <see cref="Memory"/> pointed to by <see cref="Register"/> into another <see cref="Register"/>.<br/>
+        /// Load value from <see cref="Hardware.Memory"/> pointed to by <see cref="Register"/> into another <see cref="Register"/>.<br/>
         /// Arguments: Address (<see cref="Register"/>), Destination (<see cref="Register"/>).
         /// </summary>
         LDRR,
@@ -57,13 +57,13 @@
         LBVR,
         /// <summary>
         /// Load Byte value at Address into Register.<br/>
-        /// Load value from <see cref="Memory"/> into <see cref="Register"/>.<br/>
+        /// Load value from <see cref="Hardware.Memory"/> into <see cref="Register"/>.<br/>
         /// Arguments: Address (<see cref="ushort"/>), Destination (<see cref="Register"/>).
         /// </summary>
         LBAR,
         /// <summary>
         /// Load Byte value at address in Register into Register.<br/>
-        /// Load value from <see cref="Memory"/> pointed to by <see cref="Register"/> into another <see cref="Register"/>.<br/>
+        /// Load value from <see cref="Hardware.Memory"/> pointed to by <see cref="Register"/> into another <see cref="Register"/>.<br/>
         /// Arguments: Address (<see cref="Register"/>), Destination (<see cref="Register"/>).
         /// </summary>
         LBRR,
@@ -72,49 +72,49 @@
         #region Store Instructions
         /// <summary>
         /// Store Value at Address.<br/>
-        /// Store value into <see cref="Memory"/> at address.<br/>
+        /// Store value into <see cref="Hardware.Memory"/> at address.<br/>
         /// Arguments: Value (<see cref="ushort"/>), Address (<see cref="ushort"/>).
         /// </summary>
         STVA,
         /// <summary>
         /// Store Value at address in Register.<br/>
-        /// Store value into <see cref="Memory"/> pointed to by <see cref="Register"/>.<br/>
+        /// Store value into <see cref="Hardware.Memory"/> pointed to by <see cref="Register"/>.<br/>
         /// Arguments: Value (<see cref="ushort"/>), Address (<see cref="Register"/>).
         /// </summary>
         STVR,
         /// <summary>
         /// Store value in Register at Address.<br/>
-        /// Store value from <see cref="Register"/> into <see cref="Memory"/>.<br/>
+        /// Store value from <see cref="Register"/> into <see cref="Hardware.Memory"/>.<br/>
         /// Arguments: Source (<see cref="Register"/>), Address (<see cref="ushort"/>).
         /// </summary>
         STRA,
         /// <summary>
         /// Store value in Register at address in Register.<br/>
-        /// Store value from <see cref="Register"/> into <see cref="Memory"/> pointed to by <see cref="Register"/>.<br/>
+        /// Store value from <see cref="Register"/> into <see cref="Hardware.Memory"/> pointed to by <see cref="Register"/>.<br/>
         /// Arguments: Source (<see cref="Register"/>), Address (<see cref="Register"/>).
         /// </summary>
         STRR,
         /// <summary>
         /// Store Byte value at Address.<br/>
-        /// Store value into <see cref="Memory"/> at address.<br/>
+        /// Store value into <see cref="Hardware.Memory"/> at address.<br/>
         /// Arguments: Value (<see cref="byte"/>), Address (<see cref="ushort"/>).
         /// </summary>
         SBVA,
         /// <summary>
         /// Store Byte value at address in Register.<br/>
-        /// Store value into <see cref="Memory"/> pointed to by <see cref="Register"/>.<br/>
+        /// Store value into <see cref="Hardware.Memory"/> pointed to by <see cref="Register"/>.<br/>
         /// Arguments: Value (<see cref="byte"/>), Address (<see cref="Register"/>).
         /// </summary>
         SBVR,
         /// <summary>
         /// Store Byte value in Register at Address.<br/>
-        /// Store value from <see cref="Register"/> into <see cref="Memory"/>.<br/>
+        /// Store value from <see cref="Register"/> into <see cref="Hardware.Memory"/>.<br/>
         /// Arguments: Source (<see cref="Register"/>), Address (<see cref="ushort"/>).
         /// </summary>
         SBRA,
         /// <summary>
         /// Store Byte value in Register at address in Register.<br/>
-        /// Store value from <see cref="Register"/> into <see cref="Memory"/> pointed to by <see cref="Register"/>.<br/>
+        /// Store value from <see cref="Register"/> into <see cref="Hardware.Memory"/> pointed to by <see cref="Register"/>.<br/>
         /// Arguments: Source (<see cref="Register"/>), Address (<see cref="Register"/>).
         /// </summary>
         SBRR,
@@ -339,7 +339,7 @@
         /// </summary>
         HALT,
         /// <summary>
-        /// Resets <see cref="Processor"/> back to initial state.<br/>
+        /// Resets <see cref="Hardware.Processor"/> back to initial state.<br/>
         /// Arguments: NONE.
         /// </summary>
         RESET

@@ -1,7 +1,7 @@
 ﻿namespace VM
 {
     /// <summary>
-    /// Virtual Machine <see cref="Processor"/> register identifiers
+    /// Virtual Machine <see cref="Hardware.Processor"/> register identifiers
     /// </summary>
     public enum Register
     {

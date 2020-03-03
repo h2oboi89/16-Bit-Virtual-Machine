@@ -12,7 +12,6 @@ namespace VM.HardwareTests.Tests
         private const ushort STACK_SIZE = 0x400;
         private const ushort STACK_START_ADDRESS = (ushort)(MEMORY_SIZE - Processor.DATASIZE);
         private const ushort STACK_END_ADDRESS = STACK_START_ADDRESS - ((STACK_SIZE - 1) * Processor.DATASIZE);
-        private const ushort STATE_SIZE = 18;
 
         private Memory memory;
         private Processor processor;
@@ -89,7 +88,7 @@ namespace VM.HardwareTests.Tests
                 processor.Step();
             }
 
-            Assert.That(processor.GetRegister(Register.PC), Is.EqualTo(expectedAddress.Value));
+            Assert.That(processor.ProgramCounter, Is.EqualTo(expectedAddress.Value));
         }
 
         /// <summary>
@@ -148,7 +147,7 @@ namespace VM.HardwareTests.Tests
 
         private void AssertProcessorIsInInitialState()
         {
-            Assert.That(processor.GetRegister(Register.PC), Is.Zero);
+            Assert.That(processor.ProgramCounter, Is.Zero);
             Assert.That(processor.GetRegister(Register.ACC), Is.Zero);
             Assert.That(processor.GetRegister(Register.FLAG), Is.Zero);
 
@@ -230,7 +229,7 @@ namespace VM.HardwareTests.Tests
         {
             var stackRegisters = new Register[]
             {
-                Register.PC, Register.ACC, Register.FLAG, Register.SP, Register.FP
+                Register.PC, Register.ARG, Register.RET
             };
 
             foreach (var register in stackRegisters)
@@ -250,11 +249,22 @@ namespace VM.HardwareTests.Tests
         {
             var publicRegisters = new Register[]
             {
+                Register.ACC, Register.FLAG, Register.SP, Register.FP,
+                
                 Register.R0, Register.R1, Register.R2, Register.R3,
                 Register.R4, Register.R5, Register.R6, Register.R7,
+                Register.R8, Register.R9, Register.R10, Register.R11,
+                Register.R12, Register.R13, Register.R14, Register.R15,
+
+                Register.S0, Register.S1, Register.S2, Register.S3,
+                Register.S4, Register.S5, Register.S6, Register.S7,
+                Register.S8, Register.S9, Register.S10, Register.S11,
+                Register.S12, Register.S13, Register.S14, Register.S15,
 
                 Register.T0, Register.T1, Register.T2, Register.T3,
-                Register.T4, Register.T5, Register.T6, Register.T7
+                Register.T4, Register.T5, Register.T6, Register.T7,
+                Register.T8, Register.T9, Register.T10, Register.T11,
+                Register.T12, Register.T13, Register.T14, Register.T15,
             };
 
             foreach (var register in publicRegisters)
@@ -284,7 +294,7 @@ namespace VM.HardwareTests.Tests
         {
             processor.Step();
 
-            Assert.That(processor.GetRegister(Register.PC), Is.Not.Zero);
+            Assert.That(processor.ProgramCounter, Is.Not.Zero);
 
             Assert.That(() => processor.GetRegister((Register)0xff), Throws.InvalidOperationException
                 .With.Message.EqualTo("Unknown register 0xFF."));
@@ -1221,37 +1231,112 @@ namespace VM.HardwareTests.Tests
 
         #region Subroutines
         [Test]
-        public void CALL_SavesStateAndSetsPCToValue()
+        public void CALL_PushesArgCountAndSetsPCToValue()
         {
-            flasher.WriteInstruction(Instruction.CALL, 0x1234);
+            flasher.WriteInstruction(Instruction.CALL, (ushort)0, 0x1234);
 
             processor.Step();
 
-            Assert.That(processor.GetRegister(Register.PC), Is.EqualTo(0x1234));
+            Assert.That(processor.ProgramCounter, Is.EqualTo(0x1234));
 
-            Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(STACK_START_ADDRESS - STATE_SIZE));
-            Assert.That(processor.GetRegister(Register.FP), Is.EqualTo(STACK_START_ADDRESS - STATE_SIZE));
+            Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(STACK_START_ADDRESS - 3 * Processor.DATASIZE));
+            Assert.That(processor.GetRegister(Register.FP), Is.EqualTo(STACK_START_ADDRESS - 3 * Processor.DATASIZE));
+
+            var argPointer = processor.GetRegister(Register.ARG);
+            Assert.That(argPointer, Is.EqualTo(STACK_START_ADDRESS));
+            Assert.That(memory.GetU16(argPointer), Is.EqualTo(0));
         }
 
         [Test]
-        public void CALLR_SavesStateAndSetsPCToValueFromRegister()
+        public void CALL_WithArguments_PushesArgCountAndSetsPCToValueFromRegister()
+        {
+            ushort subroutineAddress = 0x4000;
+
+            LoadValueIntoRegister(0x1111, Register.R0);
+            LoadValueIntoRegister(0x2222, Register.R1);
+
+            flasher.WriteInstruction(Instruction.PUSH, Register.R1);
+            flasher.WriteInstruction(Instruction.PUSH, Register.R0);
+            flasher.WriteInstruction(Instruction.CALL, (ushort)2, subroutineAddress);
+
+            // Load values into registers
+            processor.Step();
+            processor.Step();
+
+            // Push arguments and Call
+            processor.Step();
+            processor.Step();
+            processor.Step();
+
+            Assert.That(processor.ProgramCounter, Is.EqualTo(0x4000));
+            Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(STACK_START_ADDRESS - 5 * Processor.DATASIZE));
+            Assert.That(processor.GetRegister(Register.FP), Is.EqualTo(STACK_START_ADDRESS - 5 * Processor.DATASIZE));
+
+            var argPointer = processor.GetRegister(Register.ARG);
+            Assert.That(argPointer, Is.EqualTo(STACK_START_ADDRESS - 2 * Processor.DATASIZE));
+            Assert.That(memory.GetU16(argPointer), Is.EqualTo(2));
+            Assert.That(memory.GetU16((ushort)(argPointer + Processor.DATASIZE)), Is.EqualTo(0x1111));
+            Assert.That(memory.GetU16((ushort)(argPointer + 2 * Processor.DATASIZE)), Is.EqualTo(0x2222));
+        }
+
+        [Test]
+        public void CALLR_PushesArgCountAndSetsPCToValueFromRegister()
         {
             LoadValueIntoRegisterR0(0x1234);
-            flasher.WriteInstruction(Instruction.CALLR, Register.R0);
+            flasher.WriteInstruction(Instruction.CALLR, (ushort)0, Register.R0);
 
             processor.Step();
             processor.Step();
 
-            Assert.That(processor.GetRegister(Register.PC), Is.EqualTo(0x1234));
+            Assert.That(processor.ProgramCounter, Is.EqualTo(0x1234));
 
-            Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(STACK_START_ADDRESS - STATE_SIZE));
-            Assert.That(processor.GetRegister(Register.FP), Is.EqualTo(STACK_START_ADDRESS - STATE_SIZE));
+            Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(STACK_START_ADDRESS - 3 * Processor.DATASIZE));
+            Assert.That(processor.GetRegister(Register.FP), Is.EqualTo(STACK_START_ADDRESS - 3 * Processor.DATASIZE));
+
+            var argPointer = processor.GetRegister(Register.ARG);
+            Assert.That(argPointer, Is.EqualTo(STACK_START_ADDRESS));
+            Assert.That(memory.GetU16(argPointer), Is.EqualTo(0));
+        }
+
+        [Test]
+        public void CALLR_WithArguments_PushesArgCountAndSetsPCToValueFromRegister()
+        {
+            ushort subroutineAddress = 0x4000;
+
+            LoadValueIntoRegister(0x1111, Register.R0);
+            LoadValueIntoRegister(0x2222, Register.R1);
+            LoadValueIntoRegister(subroutineAddress, Register.R2);
+
+            flasher.WriteInstruction(Instruction.PUSH, Register.R1);
+            flasher.WriteInstruction(Instruction.PUSH, Register.R0);
+            flasher.WriteInstruction(Instruction.CALL, (ushort)2, subroutineAddress);
+
+            // Load values into registers
+            processor.Step();
+            processor.Step();
+            processor.Step();
+
+            // Push arguments and Call
+            processor.Step();
+            processor.Step();
+            processor.Step();
+
+            Assert.That(processor.ProgramCounter, Is.EqualTo(0x4000));
+            Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(STACK_START_ADDRESS - 5 * Processor.DATASIZE));
+            Assert.That(processor.GetRegister(Register.FP), Is.EqualTo(STACK_START_ADDRESS - 5 * Processor.DATASIZE));
+
+            var argPointer = processor.GetRegister(Register.ARG);
+            Assert.That(argPointer, Is.EqualTo(STACK_START_ADDRESS - 2 * Processor.DATASIZE));
+            Assert.That(memory.GetU16(argPointer), Is.EqualTo(2));
+            Assert.That(memory.GetU16((ushort)(argPointer + Processor.DATASIZE)), Is.EqualTo(0x1111));
+            Assert.That(memory.GetU16((ushort)(argPointer + 2 * Processor.DATASIZE)), Is.EqualTo(0x2222));
         }
 
         [Test]
         public void CALL_StackOverflow_ResetsAndThrowsException()
         {
-            FillStack();
+            LoadValueIntoRegister(STACK_END_ADDRESS, Register.SP);
+            processor.Step();
 
             flasher.WriteInstruction(Instruction.CALL, 0x1234);
 
@@ -1261,70 +1346,91 @@ namespace VM.HardwareTests.Tests
         [Test]
         public void CALLR_StackOverflow_ResetsAndThrowsException()
         {
-            FillStack();
-
+            LoadValueIntoRegister(STACK_END_ADDRESS, Register.SP);
             LoadValueIntoRegisterR0(0x1234);
-            flasher.WriteInstruction(Instruction.CALLR, Register.R0);
 
             processor.Step();
+            processor.Step();
+
+            flasher.WriteInstruction(Instruction.CALLR, Register.R0);
+
             AssertExceptionOccursAndProcessorResets(typeof(StackOverflowException), "Stack is full.");
         }
 
         [Test]
-        public void RET_LoadsSavedStateAndSetsPCToValueBeforeCall()
+        public void RET_WithOutReturnValues_PushesReturnCountAndResetsPC()
         {
             ushort subroutineAddress = 0x4000;
 
-            LoadValueIntoRegister(0x0123, Register.R0);
-            LoadValueIntoRegister(0x4567, Register.R1);
-            LoadValueIntoRegister(0x89ab, Register.R2);
-            LoadValueIntoRegister(0xcdef, Register.R3);
-            flasher.WriteInstruction(Instruction.CALL, subroutineAddress);
+            flasher.WriteInstruction(Instruction.CALL, (ushort)0, subroutineAddress);
 
             var returnAddress = flasher.Address;
 
             flasher.Address = subroutineAddress;
-            LoadValueIntoRegister(0xffff, Register.R0);
-            LoadValueIntoRegister(0xffff, Register.R1);
-            LoadValueIntoRegister(0xffff, Register.R2);
-            LoadValueIntoRegister(0xffff, Register.R3);
-            flasher.WriteInstruction(Instruction.RET);
+            flasher.WriteInstruction(Instruction.RET, (ushort)0);
+
+            // Call
+            processor.Step();
+
+            Assert.That(processor.ProgramCounter, Is.EqualTo(0x4000));
+            Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(STACK_START_ADDRESS - 3 * Processor.DATASIZE));
+            Assert.That(processor.GetRegister(Register.FP), Is.EqualTo(STACK_START_ADDRESS - 3 * Processor.DATASIZE));
+
+            // Return
+            processor.Step();
+
+            Assert.That(processor.ProgramCounter, Is.EqualTo(returnAddress));
+            Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(STACK_START_ADDRESS - Processor.DATASIZE));
+            Assert.That(processor.GetRegister(Register.FP), Is.EqualTo(STACK_START_ADDRESS));
+
+            var retPointer = processor.GetRegister(Register.RET);
+            Assert.That(retPointer, Is.EqualTo(STACK_START_ADDRESS - 3 * Processor.DATASIZE));
+            Assert.That(memory.GetU16(retPointer), Is.EqualTo(0));
+        }
+
+        [Test]
+        public void RET_WithReturnValues_PushesReturnCountAndResetsPC()
+        {
+            ushort subroutineAddress = 0x4000;
+
+            LoadValueIntoRegister(0x1111, Register.R0);
+            LoadValueIntoRegister(0x2222, Register.R1);
+            flasher.WriteInstruction(Instruction.CALL, (ushort)0, subroutineAddress);
+
+            var returnAddress = flasher.Address;
+
+            flasher.Address = subroutineAddress;
+            flasher.WriteInstruction(Instruction.PUSH, Register.R1);
+            flasher.WriteInstruction(Instruction.PUSH, Register.R0);
+            flasher.WriteInstruction(Instruction.RET, 2);
 
             // Load values into registers
-            processor.Step();
-            processor.Step();
             processor.Step();
             processor.Step();
 
             // Call
             processor.Step();
 
-            Assert.That(processor.GetRegister(Register.PC), Is.EqualTo(0x4000));
-            Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(STACK_START_ADDRESS - 18));
-            Assert.That(processor.GetRegister(Register.FP), Is.EqualTo(STACK_START_ADDRESS - 18));
+            Assert.That(processor.ProgramCounter, Is.EqualTo(0x4000));
+            Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(STACK_START_ADDRESS - 3 * Processor.DATASIZE));
+            Assert.That(processor.GetRegister(Register.FP), Is.EqualTo(STACK_START_ADDRESS - 3 * Processor.DATASIZE));
 
-            // Overwrite registers
+            // Push Return values
             processor.Step();
             processor.Step();
-            processor.Step();
-            processor.Step();
-
-            Assert.That(processor.GetRegister(Register.R0), Is.EqualTo(0xffff));
-            Assert.That(processor.GetRegister(Register.R1), Is.EqualTo(0xffff));
-            Assert.That(processor.GetRegister(Register.R2), Is.EqualTo(0xffff));
-            Assert.That(processor.GetRegister(Register.R3), Is.EqualTo(0xffff));
 
             // Return
             processor.Step();
 
-            Assert.That(processor.GetRegister(Register.PC), Is.EqualTo(returnAddress));
-            Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(STACK_START_ADDRESS));
+            Assert.That(processor.ProgramCounter, Is.EqualTo(returnAddress));
+            Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(STACK_START_ADDRESS - Processor.DATASIZE));
             Assert.That(processor.GetRegister(Register.FP), Is.EqualTo(STACK_START_ADDRESS));
 
-            Assert.That(processor.GetRegister(Register.R0), Is.EqualTo(0x0123));
-            Assert.That(processor.GetRegister(Register.R1), Is.EqualTo(0x4567));
-            Assert.That(processor.GetRegister(Register.R2), Is.EqualTo(0x89ab));
-            Assert.That(processor.GetRegister(Register.R3), Is.EqualTo(0xcdef));
+            var retPointer = processor.GetRegister(Register.RET);
+            Assert.That(retPointer, Is.EqualTo(STACK_START_ADDRESS - 5 * Processor.DATASIZE));
+            Assert.That(memory.GetU16(retPointer), Is.EqualTo(2));
+            Assert.That(memory.GetU16((ushort)(retPointer + Processor.DATASIZE)), Is.EqualTo(0x1111));
+            Assert.That(memory.GetU16((ushort)(retPointer + 2 * Processor.DATASIZE)), Is.EqualTo(0x2222));
         }
 
         [Test]
@@ -1332,45 +1438,61 @@ namespace VM.HardwareTests.Tests
         {
             flasher.WriteInstruction(Instruction.RET);
 
-            AssertExceptionOccursAndProcessorResets(typeof(InvalidOperationException), "Stack is empty.");
+            AssertExceptionOccursAndProcessorResets(typeof(InvalidOperationException), "In base frame, nothing to return to.");
         }
 
         [Test]
         public void Subroutine_AcceptsArgumentsAndReturnsValues()
         {
-            var instructionCount = 0;
-            ushort subroutineAddress = 0x1000;
+            ushort subroutineAddress = 0x4000;
 
-            LoadValueIntoRegister(1, Register.R0);
-            LoadValueIntoRegister(2, Register.R1);
-            LoadValueIntoRegister(3, Register.R2);
-            LoadValueIntoRegister(4, Register.R3);
-            flasher.WriteInstruction(Instruction.MOVE, Register.R0, Register.A0);
-            flasher.WriteInstruction(Instruction.MOVE, Register.R1, Register.A1);
-            flasher.WriteInstruction(Instruction.MOVE, Register.R2, Register.A2);
-            flasher.WriteInstruction(Instruction.MOVE, Register.R3, Register.A3);
+            LoadValueIntoRegister(0x1111, Register.R0);
+            LoadValueIntoRegister(0x2222, Register.R1);
 
-            flasher.WriteInstruction(Instruction.CALL, subroutineAddress);
+            flasher.WriteInstruction(Instruction.PUSH, Register.R1);
+            flasher.WriteInstruction(Instruction.PUSH, Register.R0);
+            flasher.WriteInstruction(Instruction.CALL, (ushort)2, subroutineAddress);
 
-            flasher.WriteInstruction(Instruction.ADD, Register.V0, Register.V1);
+            var returnAddress = flasher.Address;
 
-            instructionCount += flasher.InstructionCount;
             flasher.Address = subroutineAddress;
+            flasher.WriteInstruction(Instruction.PUSH, Register.R1);
+            flasher.WriteInstruction(Instruction.PUSH, Register.R0);
+            flasher.WriteInstruction(Instruction.RET, 2);
 
-            flasher.WriteInstruction(Instruction.ADD, Register.A0, Register.A1);
-            flasher.WriteInstruction(Instruction.MOVE, Register.ACC, Register.V0);
-            flasher.WriteInstruction(Instruction.ADD, Register.A2, Register.A3);
-            flasher.WriteInstruction(Instruction.MOVE, Register.ACC, Register.V1);
-            flasher.WriteInstruction(Instruction.RET);
+            // Load values into registers
+            processor.Step();
+            processor.Step();
 
-            instructionCount += flasher.InstructionCount;
+            // Push arguments and Call
+            processor.Step();
+            processor.Step();
+            processor.Step();
 
-            for (var i = 0; i < instructionCount; i++)
-            {
-                processor.Step();
-            }
+            Assert.That(processor.ProgramCounter, Is.EqualTo(0x4000));
+            Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(STACK_START_ADDRESS - 5 * Processor.DATASIZE));
+            Assert.That(processor.GetRegister(Register.FP), Is.EqualTo(STACK_START_ADDRESS - 5 * Processor.DATASIZE));
 
-            Assert.That(processor.GetRegister(Register.ACC), Is.EqualTo(10));
+            var argPointer = processor.GetRegister(Register.ARG);
+            Assert.That(argPointer, Is.EqualTo(STACK_START_ADDRESS - 2 * Processor.DATASIZE));
+            Assert.That(memory.GetU16(argPointer), Is.EqualTo(2));
+            Assert.That(memory.GetU16((ushort)(argPointer + Processor.DATASIZE)), Is.EqualTo(0x1111));
+            Assert.That(memory.GetU16((ushort)(argPointer + 2 * Processor.DATASIZE)), Is.EqualTo(0x2222));
+
+            // Push return values and Return
+            processor.Step();
+            processor.Step();
+            processor.Step();
+
+            Assert.That(processor.ProgramCounter, Is.EqualTo(returnAddress));
+            Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(STACK_START_ADDRESS - 3 * Processor.DATASIZE));
+            Assert.That(processor.GetRegister(Register.FP), Is.EqualTo(STACK_START_ADDRESS));
+
+            var retPointer = processor.GetRegister(Register.RET);
+            Assert.That(retPointer, Is.EqualTo(STACK_START_ADDRESS - 7 * Processor.DATASIZE));
+            Assert.That(memory.GetU16(retPointer), Is.EqualTo(2));
+            Assert.That(memory.GetU16((ushort)(retPointer + Processor.DATASIZE)), Is.EqualTo(0x1111));
+            Assert.That(memory.GetU16((ushort)(retPointer + 2 * Processor.DATASIZE)), Is.EqualTo(0x2222));
         }
 
         [Test]
@@ -1383,7 +1505,7 @@ namespace VM.HardwareTests.Tests
                 0x1000, 0x2000, 0x3000, 0x4000, 0x5000
             };
 
-            flasher.WriteInstruction(Instruction.CALL, addresses[0]);
+            flasher.WriteInstruction(Instruction.CALL, (ushort)0, addresses[0]);
             instructionCount += flasher.InstructionCount;
 
             for (ushort i = 0; i < addresses.Length; i++)
@@ -1396,10 +1518,10 @@ namespace VM.HardwareTests.Tests
 
                 if (i != addresses.Length - 1)
                 {
-                    flasher.WriteInstruction(Instruction.CALL, addresses[i + 1]);
+                    flasher.WriteInstruction(Instruction.CALL, (ushort)0, addresses[i + 1]);
                 }
 
-                flasher.WriteInstruction(Instruction.RET);
+                flasher.WriteInstruction(Instruction.RET, (ushort)0);
                 instructionCount += flasher.InstructionCount;
             }
 
@@ -1500,7 +1622,7 @@ namespace VM.HardwareTests.Tests
 
             processor.Run();
 
-            Assert.That(processor.GetRegister(Register.PC), Is.EqualTo(flasher.Address));
+            Assert.That(processor.ProgramCounter, Is.EqualTo(flasher.Address));
 
             Assert.That(haltOccured, Is.True);
         }

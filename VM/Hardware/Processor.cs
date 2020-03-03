@@ -22,6 +22,7 @@ namespace VM.Hardware
         private ushort valueA;
         private ushort valueB;
 
+        private ushort count;
         private ushort address;
         private ushort jumpAddress;
 
@@ -117,24 +118,16 @@ namespace VM.Hardware
         {
             ValidateRegister(register);
 
-            if (register == Register.SP)
+            switch (register)
             {
-                return stack.StackPointer;
+                case Register.SP: return stack.StackPointer;
+                case Register.FP: return stack.FramePointer;
+                case Register.ARG: return stack.ArgumentsPointer;
+                case Register.RET: return stack.ReturnsPointer;
+                case Register.ACC: return alu.Accumulator;
+                case Register.FLAG: return (ushort)alu.Flag;
+                default: return registers.GetU16((ushort)((byte)register * DATASIZE));
             }
-            if (register == Register.FP)
-            {
-                return stack.FramePointer;
-            }
-            if (register == Register.ACC)
-            {
-                return alu.Accumulator;
-            }
-            if (register == Register.FLAG)
-            {
-                return (ushort)alu.Flag;
-            }
-
-            return registers.GetU16((ushort)((byte)register * DATASIZE));
         }
 
         /// <summary>
@@ -151,13 +144,16 @@ namespace VM.Hardware
                 throw new InvalidOperationException($"{register.Name()} register cannot be modified directly by code.");
             }
 
-            // stop develop from accidentally modifying Stack and ALU registers
-            if (register.IsStack() || register.IsAlu())
+            switch (register)
             {
-                throw new InvalidOperationException($"{register.Name()} is managed by another class.");
+                case Register.SP: stack.StackPointer = value; break;
+                case Register.FP: stack.FramePointer = value; break;
+                case Register.ACC: alu.Accumulator = value; break;
+                case Register.FLAG: alu.Flag = (Flags)value; break;
+                default:
+                    registers.SetU16((ushort)((byte)register * DATASIZE), value);
+                    break;
             }
-
-            registers.SetU16((ushort)((byte)register * DATASIZE), value);
         }
 
         private byte FetchU8()
@@ -187,38 +183,6 @@ namespace VM.Hardware
             SetRegister(Register.PC, (ushort)(address + sizeof(ushort)));
 
             return value;
-        }
-
-        private void PushState()
-        {
-            stack.Push(GetRegister(Register.R0));
-            stack.Push(GetRegister(Register.R1));
-            stack.Push(GetRegister(Register.R2));
-            stack.Push(GetRegister(Register.R3));
-            stack.Push(GetRegister(Register.R4));
-            stack.Push(GetRegister(Register.R5));
-            stack.Push(GetRegister(Register.R6));
-            stack.Push(GetRegister(Register.R7));
-
-            stack.Push(GetRegister(Register.PC));
-
-            stack.PushFrame();
-        }
-
-        private void PopState()
-        {
-            stack.PopFrame();
-
-            SetRegister(Register.PC, stack.Pop());
-
-            SetRegister(Register.R7, stack.Pop());
-            SetRegister(Register.R6, stack.Pop());
-            SetRegister(Register.R5, stack.Pop());
-            SetRegister(Register.R4, stack.Pop());
-            SetRegister(Register.R3, stack.Pop());
-            SetRegister(Register.R2, stack.Pop());
-            SetRegister(Register.R1, stack.Pop());
-            SetRegister(Register.R0, stack.Pop());
         }
 
         /// <summary>
@@ -417,13 +381,19 @@ namespace VM.Hardware
                     break;
 
                 case Instruction.CALL:
+                    count = FetchU16();
                     address = FetchU16();
                     break;
 
                 case Instruction.CALLR:
+                    count = FetchU16();
                     register = FetchRegister();
 
                     address = GetRegister(register);
+                    break;
+
+                case Instruction.RET:
+                    count = FetchU16();
                     break;
 
                 case Instruction.PUSH:
@@ -509,13 +479,13 @@ namespace VM.Hardware
 
                 case Instruction.CALL:
                 case Instruction.CALLR:
-                    PushState();
+                    stack.Call(count, GetRegister(Register.PC));
 
                     SetRegister(Register.PC, address);
                     break;
 
                 case Instruction.RET:
-                    PopState();
+                    SetRegister(Register.PC, stack.Return(count));
                     break;
 
                 case Instruction.PUSH:

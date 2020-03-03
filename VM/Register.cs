@@ -12,6 +12,16 @@
         /// </summary>
         PC,
         /// <summary>
+        /// Pointer to Subroutine argument count.
+        /// Arguments will be below this value (higher address) on the <see cref="Hardware.Stack"/>.
+        /// </summary>
+        ARG,
+        /// <summary>
+        /// Pointer to Subroutine return values count.
+        /// Return values will be below this value (higher address) on the <see cref="Hardware.Stack"/>.
+        /// </summary>
+        RET,
+        /// <summary>
         /// Accumulator.
         /// Where result of all Arithmetic and Bitwise <see cref="Instruction"/>s is stored.
         /// </summary>
@@ -63,76 +73,166 @@
         /// General purpose register.
         /// </summary>
         R7,
-        #endregion
-
-        #region Temporary Registers
         /// <summary>
         /// General purpose register.
-        /// Not preserved during subroutines.
+        /// </summary>
+        R8,
+        /// <summary>
+        /// General purpose register.
+        /// </summary>
+        R9,
+        /// <summary>
+        /// General purpose register.
+        /// </summary>
+        R10,
+        /// <summary>
+        /// General purpose register.
+        /// </summary>
+        R11,
+        /// <summary>
+        /// General purpose register.
+        /// </summary>
+        R12,
+        /// <summary>
+        /// General purpose register.
+        /// </summary>
+        R13,
+        /// <summary>
+        /// General purpose register.
+        /// </summary>
+        R14,
+        /// <summary>
+        /// General purpose register.
+        /// </summary>
+        R15,
+        /// <summary>
+        /// General purpose register.
+        /// </summary>
+        S0,
+        /// <summary>
+        /// General purpose register.
+        /// </summary>
+        S1,
+        /// <summary>
+        /// General purpose register.
+        /// </summary>
+        S2,
+        /// <summary>
+        /// General purpose register.
+        /// </summary>
+        S3,
+        /// <summary>
+        /// General purpose register.
+        /// </summary>
+        S4,
+        /// <summary>
+        /// General purpose register.
+        /// </summary>
+        S5,
+        /// <summary>
+        /// General purpose register.
+        /// </summary>
+        S6,
+        /// <summary>
+        /// General purpose register.
+        /// </summary>
+        S7,
+        /// <summary>
+        /// General purpose register.
+        /// </summary>
+        S8,
+        /// <summary>
+        /// General purpose register.
+        /// </summary>
+        S9,
+        /// <summary>
+        /// General purpose register.
+        /// </summary>
+        S10,
+        /// <summary>
+        /// General purpose register.
+        /// </summary>
+        S11,
+        /// <summary>
+        /// General purpose register.
+        /// </summary>
+        S12,
+        /// <summary>
+        /// General purpose register.
+        /// </summary>
+        S13,
+        /// <summary>
+        /// General purpose register.
+        /// </summary>
+        S14,
+        /// <summary>
+        /// General purpose register.
+        /// </summary>
+        S15,
+        /// <summary>
+        /// General purpose register.
         /// </summary>
         T0,
         /// <summary>
         /// General purpose register.
-        /// Not preserved during subroutines.
         /// </summary>
         T1,
         /// <summary>
         /// General purpose register.
-        /// Not preserved during subroutines.
         /// </summary>
         T2,
         /// <summary>
         /// General purpose register.
-        /// Not preserved during subroutines.
         /// </summary>
         T3,
         /// <summary>
         /// General purpose register.
-        /// Not preserved during subroutines.
         /// </summary>
         T4,
         /// <summary>
         /// General purpose register.
-        /// Not preserved during subroutines.
         /// </summary>
         T5,
         /// <summary>
         /// General purpose register.
-        /// Not preserved during subroutines.
         /// </summary>
         T6,
         /// <summary>
         /// General purpose register.
-        /// Not preserved during subroutines.
         /// </summary>
         T7,
-        #endregion
-
-        #region Subroutine Registers
         /// <summary>
-        /// Subroutine Argument Register
+        /// General purpose register.
         /// </summary>
-        A0,
+        T8,
         /// <summary>
-        /// Subroutine Argument Register
+        /// General purpose register.
         /// </summary>
-        A1,
+        T9,
         /// <summary>
-        /// Subroutine Argument Register
+        /// General purpose register.
         /// </summary>
-        A2,
+        T10,
         /// <summary>
-        /// Subroutine Argument Register
+        /// General purpose register.
         /// </summary>
-        A3,
+        T11,
         /// <summary>
-        /// Subroutine Return Value Register
+        /// General purpose register.
         /// </summary>
-        V0,
+        T12,
         /// <summary>
-        /// Subroutine Return Value Register
+        /// General purpose register.
         /// </summary>
-        V1
+        T13,
+        /// <summary>
+        /// General purpose register.
+        /// </summary>
+        T14,
+        /// <summary>
+        /// General purpose register.
+        /// </summary>
+        T15,
         #endregion
     }
 }

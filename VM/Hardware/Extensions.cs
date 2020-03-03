@@ -6,22 +6,17 @@ namespace VM.Hardware
     {
         public static bool IsPrivate(this Register register)
         {
-            return register < Register.R0;
+            return register < Register.ACC;
         }
 
-        public static bool IsStack(this Register register)
+        private static bool IsValid<T>(T value)
         {
-            return register == Register.SP || register == Register.FP;
-        }
-
-        public static bool IsAlu(this Register register)
-        {
-            return register == Register.ACC || register == Register.FLAG;
+            return Enum.IsDefined(value.GetType(), value);
         }
 
         public static bool IsValid(this Register register)
         {
-            return Enum.IsDefined(typeof(Register), register);
+            return IsValid<Register>(register);
         }
 
         public static string Name(this Register register)
@@ -29,9 +24,14 @@ namespace VM.Hardware
             return Enum.GetName(typeof(Register), register);
         }
 
+        public static ushort MemoryAddress(this Register register)
+        {
+            return (ushort)((register - Register.R0) * Processor.DATASIZE);
+        } 
+
         public static bool IsValid(this Instruction instruction)
         {
-            return Enum.IsDefined(typeof(Instruction), instruction);
+            return IsValid<Instruction>(instruction);
         }
 
         public static bool IsCarryFlag(this Instruction instruction)

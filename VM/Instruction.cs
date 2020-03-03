@@ -298,17 +298,17 @@
         #region Subroutine Instructions
         /// <summary>
         /// Call subroutine at address.<br/>
-        /// Arguments: Address (<see cref="ushort"/>).
+        /// Arguments: Arguments Count (<see cref="ushort"/>), Address (<see cref="ushort"/>).
         /// </summary>
         CALL,
         /// <summary>
         /// Call subroutine at address in Register.<br/>
-        /// Arguments: Address (<see cref="Register"/>).
+        /// Arguments: Arguments Count (<see cref="ushort"/>), Address (<see cref="Register"/>).
         /// </summary>
         CALLR,
         /// <summary>
         /// Return from subroutine.<br/>
-        /// Arguments: NONE
+        /// Arguments: Return Values Count (<see cref="ushort"/>).
         /// </summary>
         RET,
         #endregion

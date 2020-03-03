@@ -8,12 +8,12 @@
         /// <summary>
         /// Result of all <see cref="Instruction"/>s are stored here.
         /// </summary>
-        public ushort Accumulator { get; private set; }
+        public ushort Accumulator { get; set; }
 
         /// <summary>
         /// <see cref="Flags"/> indicating results of <see cref="Instruction"/>s.
         /// </summary>
-        public Flags Flag { get; private set; }
+        public Flags Flag { get; set; }
 
         /// <summary>
         /// Next Address to following a Conditional Jump <see cref="Instruction"/>.

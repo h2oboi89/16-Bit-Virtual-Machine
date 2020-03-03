@@ -70,7 +70,7 @@
     <Compile Include="Register.cs" />
     <Compile Include="Hardware\ResetEventArgs.cs" />
     <Compile Include="Hardware\Stack.cs" />
-    <Compile Include="Hardware\Utility.cs" />
+    <Compile Include="Utility.cs" />
     <Compile Include="Hardware\MemoryWriteEventArgs.cs" />
   </ItemGroup>
   <ItemGroup>

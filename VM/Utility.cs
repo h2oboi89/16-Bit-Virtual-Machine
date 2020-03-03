@@ -1,7 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Linq;
+using System.Collections.Generic;
 using System.Globalization;
+using VM.Hardware;
 
-namespace VM.Hardware
+namespace VM
 {
     class Utility
     {
@@ -23,6 +26,11 @@ namespace VM.Hardware
         public static IEnumerable<byte> GetBytes(ushort value)
         {
             return new byte[] { (byte)((value >> 8) & 0xff), (byte)(value & 0xff) };
+        }
+
+        public static ushort GeneralPurposeRegisterMemorySize()
+        {
+            return (ushort)((Enum.GetValues(typeof(Register)).Length - (int)Register.R0) * Processor.DATASIZE);
         }
     }
 }

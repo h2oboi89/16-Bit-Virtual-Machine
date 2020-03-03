@@ -88,7 +88,7 @@ namespace VM.HardwareTests.Tests
                 processor.Step();
             }
 
-            Assert.That(processor.GetRegister(Register.PC), Is.EqualTo(expectedAddress.Value));
+            Assert.That(processor.ProgramCounter, Is.EqualTo(expectedAddress.Value));
         }
 
         /// <summary>
@@ -147,7 +147,7 @@ namespace VM.HardwareTests.Tests
 
         private void AssertProcessorIsInInitialState()
         {
-            Assert.That(processor.GetRegister(Register.PC), Is.Zero);
+            Assert.That(processor.ProgramCounter, Is.Zero);
             Assert.That(processor.GetRegister(Register.ACC), Is.Zero);
             Assert.That(processor.GetRegister(Register.FLAG), Is.Zero);
 
@@ -249,11 +249,22 @@ namespace VM.HardwareTests.Tests
         {
             var publicRegisters = new Register[]
             {
+                Register.ACC, Register.FLAG, Register.SP, Register.FP,
+                
                 Register.R0, Register.R1, Register.R2, Register.R3,
                 Register.R4, Register.R5, Register.R6, Register.R7,
+                Register.R8, Register.R9, Register.R10, Register.R11,
+                Register.R12, Register.R13, Register.R14, Register.R15,
+
+                Register.S0, Register.S1, Register.S2, Register.S3,
+                Register.S4, Register.S5, Register.S6, Register.S7,
+                Register.S8, Register.S9, Register.S10, Register.S11,
+                Register.S12, Register.S13, Register.S14, Register.S15,
 
                 Register.T0, Register.T1, Register.T2, Register.T3,
-                Register.T4, Register.T5, Register.T6, Register.T7
+                Register.T4, Register.T5, Register.T6, Register.T7,
+                Register.T8, Register.T9, Register.T10, Register.T11,
+                Register.T12, Register.T13, Register.T14, Register.T15,
             };
 
             foreach (var register in publicRegisters)
@@ -283,7 +294,7 @@ namespace VM.HardwareTests.Tests
         {
             processor.Step();
 
-            Assert.That(processor.GetRegister(Register.PC), Is.Not.Zero);
+            Assert.That(processor.ProgramCounter, Is.Not.Zero);
 
             Assert.That(() => processor.GetRegister((Register)0xff), Throws.InvalidOperationException
                 .With.Message.EqualTo("Unknown register 0xFF."));
@@ -1226,7 +1237,7 @@ namespace VM.HardwareTests.Tests
 
             processor.Step();
 
-            Assert.That(processor.GetRegister(Register.PC), Is.EqualTo(0x1234));
+            Assert.That(processor.ProgramCounter, Is.EqualTo(0x1234));
 
             Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(STACK_START_ADDRESS - 3 * Processor.DATASIZE));
             Assert.That(processor.GetRegister(Register.FP), Is.EqualTo(STACK_START_ADDRESS - 3 * Processor.DATASIZE));
@@ -1257,7 +1268,7 @@ namespace VM.HardwareTests.Tests
             processor.Step();
             processor.Step();
 
-            Assert.That(processor.GetRegister(Register.PC), Is.EqualTo(0x4000));
+            Assert.That(processor.ProgramCounter, Is.EqualTo(0x4000));
             Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(STACK_START_ADDRESS - 5 * Processor.DATASIZE));
             Assert.That(processor.GetRegister(Register.FP), Is.EqualTo(STACK_START_ADDRESS - 5 * Processor.DATASIZE));
 
@@ -1277,7 +1288,7 @@ namespace VM.HardwareTests.Tests
             processor.Step();
             processor.Step();
 
-            Assert.That(processor.GetRegister(Register.PC), Is.EqualTo(0x1234));
+            Assert.That(processor.ProgramCounter, Is.EqualTo(0x1234));
 
             Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(STACK_START_ADDRESS - 3 * Processor.DATASIZE));
             Assert.That(processor.GetRegister(Register.FP), Is.EqualTo(STACK_START_ADDRESS - 3 * Processor.DATASIZE));
@@ -1310,7 +1321,7 @@ namespace VM.HardwareTests.Tests
             processor.Step();
             processor.Step();
 
-            Assert.That(processor.GetRegister(Register.PC), Is.EqualTo(0x4000));
+            Assert.That(processor.ProgramCounter, Is.EqualTo(0x4000));
             Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(STACK_START_ADDRESS - 5 * Processor.DATASIZE));
             Assert.That(processor.GetRegister(Register.FP), Is.EqualTo(STACK_START_ADDRESS - 5 * Processor.DATASIZE));
 
@@ -1361,14 +1372,14 @@ namespace VM.HardwareTests.Tests
             // Call
             processor.Step();
 
-            Assert.That(processor.GetRegister(Register.PC), Is.EqualTo(0x4000));
+            Assert.That(processor.ProgramCounter, Is.EqualTo(0x4000));
             Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(STACK_START_ADDRESS - 3 * Processor.DATASIZE));
             Assert.That(processor.GetRegister(Register.FP), Is.EqualTo(STACK_START_ADDRESS - 3 * Processor.DATASIZE));
 
             // Return
             processor.Step();
 
-            Assert.That(processor.GetRegister(Register.PC), Is.EqualTo(returnAddress));
+            Assert.That(processor.ProgramCounter, Is.EqualTo(returnAddress));
             Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(STACK_START_ADDRESS - Processor.DATASIZE));
             Assert.That(processor.GetRegister(Register.FP), Is.EqualTo(STACK_START_ADDRESS));
 
@@ -1400,7 +1411,7 @@ namespace VM.HardwareTests.Tests
             // Call
             processor.Step();
 
-            Assert.That(processor.GetRegister(Register.PC), Is.EqualTo(0x4000));
+            Assert.That(processor.ProgramCounter, Is.EqualTo(0x4000));
             Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(STACK_START_ADDRESS - 3 * Processor.DATASIZE));
             Assert.That(processor.GetRegister(Register.FP), Is.EqualTo(STACK_START_ADDRESS - 3 * Processor.DATASIZE));
 
@@ -1411,7 +1422,7 @@ namespace VM.HardwareTests.Tests
             // Return
             processor.Step();
 
-            Assert.That(processor.GetRegister(Register.PC), Is.EqualTo(returnAddress));
+            Assert.That(processor.ProgramCounter, Is.EqualTo(returnAddress));
             Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(STACK_START_ADDRESS - Processor.DATASIZE));
             Assert.That(processor.GetRegister(Register.FP), Is.EqualTo(STACK_START_ADDRESS));
 
@@ -1458,7 +1469,7 @@ namespace VM.HardwareTests.Tests
             processor.Step();
             processor.Step();
 
-            Assert.That(processor.GetRegister(Register.PC), Is.EqualTo(0x4000));
+            Assert.That(processor.ProgramCounter, Is.EqualTo(0x4000));
             Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(STACK_START_ADDRESS - 5 * Processor.DATASIZE));
             Assert.That(processor.GetRegister(Register.FP), Is.EqualTo(STACK_START_ADDRESS - 5 * Processor.DATASIZE));
 
@@ -1473,7 +1484,7 @@ namespace VM.HardwareTests.Tests
             processor.Step();
             processor.Step();
 
-            Assert.That(processor.GetRegister(Register.PC), Is.EqualTo(returnAddress));
+            Assert.That(processor.ProgramCounter, Is.EqualTo(returnAddress));
             Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(STACK_START_ADDRESS - 3 * Processor.DATASIZE));
             Assert.That(processor.GetRegister(Register.FP), Is.EqualTo(STACK_START_ADDRESS));
 
@@ -1611,7 +1622,7 @@ namespace VM.HardwareTests.Tests
 
             processor.Run();
 
-            Assert.That(processor.GetRegister(Register.PC), Is.EqualTo(flasher.Address));
+            Assert.That(processor.ProgramCounter, Is.EqualTo(flasher.Address));
 
             Assert.That(haltOccured, Is.True);
         }

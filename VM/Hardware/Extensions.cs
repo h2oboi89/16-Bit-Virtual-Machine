@@ -24,6 +24,11 @@ namespace VM.Hardware
             return Enum.GetName(typeof(Register), register);
         }
 
+        public static ushort MemoryAddress(this Register register)
+        {
+            return (ushort)((register - Register.R0) * Processor.DATASIZE);
+        } 
+
         public static bool IsValid(this Instruction instruction)
         {
             return IsValid<Instruction>(instruction);

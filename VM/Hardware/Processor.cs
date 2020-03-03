@@ -39,6 +39,11 @@ namespace VM.Hardware
         public const int DATASIZE = sizeof(ushort);
 
         /// <summary>
+        /// Address of the next value to fetch from <see cref="Memory"/>.
+        /// </summary>
+        public ushort ProgramCounter { get; private set; }
+
+        /// <summary>
         /// Creates a new <see cref="Processor"/> with the specified <see cref="Memory"/>
         /// </summary>
         /// <param name="memory"><see cref="Memory"/> that this <see cref="Processor"/> can utilize.</param>
@@ -48,7 +53,7 @@ namespace VM.Hardware
             // TODO: memory map? (program, static data, dynamic data, stack, IO) 
             this.memory = memory ?? throw new ArgumentNullException(nameof(memory));
 
-            registers = new Memory((ushort)((Enum.GetValues(typeof(Register)).Length + 1) * DATASIZE));
+            registers = new Memory(Utility.GeneralPurposeRegisterMemorySize());
 
             var startAddress = (ushort)(memory.MaxAddress - DATASIZE / 2);
             var endAddress = (ushort)(startAddress - ((stackSize - 1) * DATASIZE));
@@ -88,6 +93,7 @@ namespace VM.Hardware
         /// </summary>
         public void Initialize()
         {
+            ProgramCounter = 0;
             registers.Reset();
             stack.Reset();
             alu.Reset();
@@ -120,13 +126,14 @@ namespace VM.Hardware
 
             switch (register)
             {
-                case Register.SP: return stack.StackPointer;
-                case Register.FP: return stack.FramePointer;
+                case Register.PC: return ProgramCounter;
                 case Register.ARG: return stack.ArgumentsPointer;
                 case Register.RET: return stack.ReturnsPointer;
                 case Register.ACC: return alu.Accumulator;
                 case Register.FLAG: return (ushort)alu.Flag;
-                default: return registers.GetU16((ushort)((byte)register * DATASIZE));
+                case Register.SP: return stack.StackPointer;
+                case Register.FP: return stack.FramePointer;
+                default: return registers.GetU16(register.MemoryAddress());
             }
         }
 
@@ -146,22 +153,19 @@ namespace VM.Hardware
 
             switch (register)
             {
-                case Register.SP: stack.StackPointer = value; break;
-                case Register.FP: stack.FramePointer = value; break;
                 case Register.ACC: alu.Accumulator = value; break;
                 case Register.FLAG: alu.Flag = (Flags)value; break;
-                default:
-                    registers.SetU16((ushort)((byte)register * DATASIZE), value);
-                    break;
+                case Register.SP: stack.StackPointer = value; break;
+                case Register.FP: stack.FramePointer = value; break;
+                default: registers.SetU16(register.MemoryAddress(), value); break;
             }
         }
 
         private byte FetchU8()
         {
-            var addresss = GetRegister(Register.PC);
-            var value = memory.GetU8(addresss);
+            var value = memory.GetU8(ProgramCounter);
 
-            SetRegister(Register.PC, (ushort)(addresss + sizeof(byte)));
+            ProgramCounter += sizeof(byte);
 
             return value;
         }
@@ -177,10 +181,9 @@ namespace VM.Hardware
 
         private ushort FetchU16()
         {
-            var address = GetRegister(Register.PC);
-            var value = memory.GetU16(address);
+            var value = memory.GetU16(ProgramCounter);
 
-            SetRegister(Register.PC, (ushort)(address + sizeof(ushort)));
+            ProgramCounter += sizeof(ushort);
 
             return value;
         }
@@ -458,7 +461,7 @@ namespace VM.Hardware
 
                 case Instruction.JUMP:
                 case Instruction.JUMPR:
-                    SetRegister(Register.PC, jumpAddress);
+                    ProgramCounter = jumpAddress;
                     break;
 
                 case Instruction.JLT:
@@ -474,18 +477,19 @@ namespace VM.Hardware
                 case Instruction.JNZ:
                 case Instruction.JNZR:
                     alu.Execute(instruction, jumpAddress, address);
-                    SetRegister(Register.PC, alu.JumpAddress);
+
+                    ProgramCounter = alu.JumpAddress;
                     break;
 
                 case Instruction.CALL:
                 case Instruction.CALLR:
                     stack.Call(count, GetRegister(Register.PC));
 
-                    SetRegister(Register.PC, address);
+                    ProgramCounter = address;
                     break;
 
                 case Instruction.RET:
-                    SetRegister(Register.PC, stack.Return(count));
+                    ProgramCounter = stack.Return(count);
                     break;
 
                 case Instruction.PUSH:

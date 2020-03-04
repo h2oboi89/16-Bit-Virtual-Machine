@@ -10,7 +10,7 @@
         /// Does nothing aside from increment the <see cref="Register.PC"/>.<br/>
         /// Arguments: NONE.
         /// </summary>
-        NOP = default(byte),
+        NOP = default,
 
         #region Register Instructions
         /// <summary>
@@ -221,6 +221,7 @@
         /// Arguments: A (<see cref="Register"/>).
         /// </summary>
         CMPZ,
+        // TODO: CMPNZ?
         /// <summary>
         /// Jump if Less Than.<br/>
         /// Jumps to address if <see cref="Flags.LESSTHAN"/> is set.<br/>

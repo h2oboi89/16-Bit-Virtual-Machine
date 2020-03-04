@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
-using System.Text;
 
 namespace VM.Software.Assembling.Scanning
 {
+    /// <summary>
+    /// Scans source code and generates a collection of <see cref="Token"/>s for the following compilation steps.
+    /// </summary>
     public static class Scanner
     {
         private static string _source;
@@ -50,7 +51,7 @@ namespace VM.Software.Assembling.Scanning
                     // ignore whitespace
                     break;
                 case '\n': _line++; break;
-                case '#':
+                case ';':
                     // ignore comments
                     SkipToEndOfLine();
                     break;
@@ -64,11 +65,11 @@ namespace VM.Software.Assembling.Scanning
                     }
                     else if (IsAlpha(c))
                     {
-                        IdentifierOrLabel();
+                        Text();
                     }
                     else
                     {
-                        throw new ScanningException($"Unexpected character '{c}' on line {_line}.");
+                        ThrowException($"Unexpected character '{c}'");
                     }
                     break;
             }
@@ -84,8 +85,6 @@ namespace VM.Software.Assembling.Scanning
 
         private static void IdentifierToken(TokenType type)
         {
-            Advance();
-
             Identifier();
 
             AddToken(type);
@@ -95,34 +94,61 @@ namespace VM.Software.Assembling.Scanning
 
         private static void Character()
         {
-            if (!IsCharacter(Advance())) {
-                throw new ScanningException($"Unexpected non-printable ASCII character '{_source[_current - 1]}' on line {_line}.");
+            if (!IsCharacter(Advance()))
+            {
+                ThrowException($"Unexpected non-printable ASCII character '{_source[_current - 1]}'");
             }
 
             if (Advance() == '\'')
             {
-                AddToken(TokenType.NUMBER, _source[_current - 2]);
-            } else
+                AddToken(TokenType.CHARACTER, _source[_current - 2]);
+            }
+            else
             {
-                throw new ScanningException($"Expected ''' but got '{_source[_current - 1]}' on line {_line}.");
+                ThrowException($"Expected ''' but got '{_source[_current - 1]}'");
             }
         }
 
-        private static void Register() => IdentifierToken(TokenType.REGISTER);
-
-        private static void IdentifierOrLabel()
+        private static void Register()
         {
             Identifier();
 
-            var type = TokenType.IDENTIFIER;
+
+            try
+            {
+                var lexeme = _source.Extract(_start + 1, _current);
+                var register = Utility.ParseRegister(lexeme);
+
+                AddToken(TokenType.REGISTER, register);
+            } catch (ArgumentException e)
+            {
+                ThrowException(e.Message);
+            }
+        }
+
+        private static void Text()
+        {
+            Identifier();
+
+            try
+            {
+                var lexeme = _source.Extract(_start, _current);
+                var instruction = Utility.ParseInstruction(lexeme);
+
+                AddToken(TokenType.INSTRUCTION, instruction);
+                return;
+            }
+            catch (ArgumentException) { }
 
             if (Peek() == ':')
             {
                 Advance();
-                type = TokenType.LABEL;
+                AddToken(TokenType.LABEL);
             }
-
-            AddToken(type);
+            else
+            {
+                AddToken(TokenType.IDENTIFIER);
+            }
         }
 
         private static void Number()
@@ -139,7 +165,7 @@ namespace VM.Software.Assembling.Scanning
 
         private static void Base10()
         {
-            while(IsDigit(Peek()))
+            while (IsDigit(Peek()))
             {
                 Advance();
             }
@@ -148,13 +174,14 @@ namespace VM.Software.Assembling.Scanning
             {
                 if (_source[_start] == '0')
                 {
-                    throw new ScanningException($"Invalid leading '0' on line {_line}.");
+                    ThrowException($"Invalid leading '0'");
                 }
 
                 AddToken(TokenType.NUMBER, ushort.Parse(_source.Extract(_start, _current), NumberStyles.Integer, CultureInfo.InvariantCulture));
-            } catch (OverflowException e)
+            }
+            catch (OverflowException e)
             {
-                throw new ScanningException("Value was too large for U16.", e);
+                ThrowException("Value was too large for U16", e);
             }
         }
 
@@ -162,7 +189,11 @@ namespace VM.Software.Assembling.Scanning
         {
             // get past "0x"
             Advance();
-            Advance();
+
+            if (!IsHex(Peek()))
+            {
+                ThrowException("Missing digits for hex value");
+            }
 
             while (IsHex(Peek()))
             {
@@ -175,7 +206,7 @@ namespace VM.Software.Assembling.Scanning
             }
             catch (OverflowException e)
             {
-                throw new ScanningException("Value was too large for U16.", e);
+                ThrowException("Value was too large for U16", e);
             }
         }
 
@@ -203,11 +234,16 @@ namespace VM.Software.Assembling.Scanning
 
         private static char Advance() => _source[_current++];
 
-        private static void AddToken(TokenType type, ushort? literal = null)
+        private static void AddToken(TokenType type, object literal = null)
         {
             var lexeme = _source.Extract(_start, _current);
 
             _tokens.Add(new Token(_line, type, lexeme, literal));
+        }
+
+        private static void ThrowException(string message, Exception e = null)
+        {
+            throw new ScanningException($"{message} on line {_line}.", e);
         }
     }
 }

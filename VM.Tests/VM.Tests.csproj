@@ -41,6 +41,7 @@
     <Compile Include="HardwareTests\ProcessorTests.cs" />
     <Compile Include="HardwareTests\StackTests.cs" />
     <Compile Include="SoftwareTests\AssemblingTests\ScanningTests\ScannerTests.cs" />
+    <Compile Include="SoftwareTests\AssemblingTests\ScanningTests\TokenTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="NUnit">

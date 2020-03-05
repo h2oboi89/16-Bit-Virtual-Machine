@@ -89,6 +89,17 @@
         }
 
         /// <summary>
+        /// Writes an <see cref="Instruction"/> and <see cref="byte"/> to memory.
+        /// </summary>
+        /// <param name="instruction"><see cref="Instruction"/> to write to memory.</param>
+        /// <param name="value">Value to write to memory.</param>
+        public void WriteInstruction(Instruction instruction, byte value)
+        {
+            WriteInstruction(instruction);
+            WriteU8(value);
+        }
+
+        /// <summary>
         /// Writes an <see cref="Instruction"/> and <see cref="ushort"/> to memory.
         /// </summary>
         /// <param name="instruction"><see cref="Instruction"/> to write to memory.</param>

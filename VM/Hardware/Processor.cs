@@ -384,19 +384,19 @@ namespace VM.Hardware
                     break;
 
                 case Instruction.CALL:
-                    count = FetchU16();
+                    count = FetchU8();
                     address = FetchU16();
                     break;
 
                 case Instruction.CALLR:
-                    count = FetchU16();
+                    count = FetchU8();
                     register = FetchRegister();
 
                     address = GetRegister(register);
                     break;
 
                 case Instruction.RET:
-                    count = FetchU16();
+                    count = FetchU8();
                     break;
 
                 case Instruction.PUSH:

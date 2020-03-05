@@ -113,7 +113,6 @@ namespace VM.Software.Assembling.Scanning
         {
             Identifier();
 
-
             try
             {
                 var lexeme = _source.Extract(_start + 1, _current);

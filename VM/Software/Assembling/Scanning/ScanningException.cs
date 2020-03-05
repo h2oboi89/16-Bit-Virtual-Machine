@@ -10,6 +10,5 @@ namespace VM.Software.Assembling.Scanning
         public ScanningException(string message) : base(message) { }
 
         public ScanningException(string message, Exception innerException) : base(message, innerException) { }
-
     }
 }

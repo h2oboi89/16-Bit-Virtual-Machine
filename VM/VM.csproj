@@ -70,6 +70,12 @@
     <Compile Include="Register.cs" />
     <Compile Include="Hardware\ResetEventArgs.cs" />
     <Compile Include="Hardware\Stack.cs" />
+    <Compile Include="Software\Assembling\Parsing\Argument.cs" />
+    <Compile Include="Software\Assembling\Parsing\InstructionStatement.cs" />
+    <Compile Include="Software\Assembling\Parsing\LabelStatement.cs" />
+    <Compile Include="Software\Assembling\Parsing\Parser.cs" />
+    <Compile Include="Software\Assembling\Parsing\ParsingException.cs" />
+    <Compile Include="Software\Assembling\Parsing\Statement.cs" />
     <Compile Include="Software\Assembling\Scanning\Scanner.cs" />
     <Compile Include="Software\Assembling\Scanning\ScanningException.cs" />
     <Compile Include="Software\Assembling\Scanning\Token.cs" />

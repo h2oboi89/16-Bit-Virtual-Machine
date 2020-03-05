@@ -996,7 +996,7 @@ namespace VM.HardwareTests.Tests
         public void JLT_LessThanFlagIsSet_ChangesPC()
         {
             SetupBinaryInstruction(Instruction.CMP, 0x1234, 0x4321);
-            flasher.WriteInstruction(Instruction.JLT, 0x008f);
+            flasher.WriteInstruction(Instruction.JLT, (ushort)0x008f);
 
             ExecuteProgram(0x008f);
         }
@@ -1005,7 +1005,7 @@ namespace VM.HardwareTests.Tests
         public void JLT_LessThanFlagIsNotSet_DoesNothing()
         {
             SetupBinaryInstruction(Instruction.CMP, 0x4321, 0x1234);
-            flasher.WriteInstruction(Instruction.JLT, 0x008f);
+            flasher.WriteInstruction(Instruction.JLT, (ushort)0x008f);
 
             ExecuteProgram();
         }
@@ -1034,7 +1034,7 @@ namespace VM.HardwareTests.Tests
         public void JGT_GreaterThanFlagIsSet_ChangesPC()
         {
             SetupBinaryInstruction(Instruction.CMP, 0x4321, 0x1234);
-            flasher.WriteInstruction(Instruction.JGT, 0x008f);
+            flasher.WriteInstruction(Instruction.JGT, (ushort)0x008f);
 
             ExecuteProgram(0x008f);
         }
@@ -1043,7 +1043,7 @@ namespace VM.HardwareTests.Tests
         public void JGT_GreaterThanFlagIsNotSet_ChangesPC()
         {
             SetupBinaryInstruction(Instruction.CMP, 0x1234, 0x4321);
-            flasher.WriteInstruction(Instruction.JGT, 0x008f);
+            flasher.WriteInstruction(Instruction.JGT, (ushort)0x008f);
 
             ExecuteProgram();
         }
@@ -1072,7 +1072,7 @@ namespace VM.HardwareTests.Tests
         public void JE_EqualFlagIsSet_ChangesPC()
         {
             SetupBinaryInstruction(Instruction.CMP, 0x1234, 0x1234);
-            flasher.WriteInstruction(Instruction.JE, 0x008f);
+            flasher.WriteInstruction(Instruction.JE, (ushort)0x008f);
 
             ExecuteProgram(0x008f);
         }
@@ -1081,7 +1081,7 @@ namespace VM.HardwareTests.Tests
         public void JE_EqualFlagIsNotSet_DoesNothing()
         {
             SetupBinaryInstruction(Instruction.CMP, 0x1234, 0x4321);
-            flasher.WriteInstruction(Instruction.JE, 0x008f);
+            flasher.WriteInstruction(Instruction.JE, (ushort)0x008f);
 
             ExecuteProgram();
         }
@@ -1110,7 +1110,7 @@ namespace VM.HardwareTests.Tests
         public void JNE_EqualFlagIsNotSet_ChangesPC()
         {
             SetupBinaryInstruction(Instruction.CMP, 0x1234, 0x4321);
-            flasher.WriteInstruction(Instruction.JNE, 0x008f);
+            flasher.WriteInstruction(Instruction.JNE, (ushort)0x008f);
 
             ExecuteProgram(0x008f);
         }
@@ -1119,7 +1119,7 @@ namespace VM.HardwareTests.Tests
         public void JNE_EqualFlagIsSet_DoesNothing()
         {
             SetupBinaryInstruction(Instruction.CMP, 0x1234, 0x1234);
-            flasher.WriteInstruction(Instruction.JNE, 0x008f);
+            flasher.WriteInstruction(Instruction.JNE, (ushort)0x008f);
 
             ExecuteProgram();
         }
@@ -1149,7 +1149,7 @@ namespace VM.HardwareTests.Tests
         {
             LoadValueIntoRegisterR0(0x0000);
             flasher.WriteInstruction(Instruction.CMPZ, Register.R0);
-            flasher.WriteInstruction(Instruction.JZ, 0x008f);
+            flasher.WriteInstruction(Instruction.JZ, (ushort)0x008f);
 
             ExecuteProgram(0x008f);
         }
@@ -1159,7 +1159,7 @@ namespace VM.HardwareTests.Tests
         {
             LoadValueIntoRegisterR0(0xffff);
             flasher.WriteInstruction(Instruction.CMPZ, Register.R0);
-            flasher.WriteInstruction(Instruction.JZ, 0x008f);
+            flasher.WriteInstruction(Instruction.JZ, (ushort)0x008f);
 
             ExecuteProgram();
         }
@@ -1191,7 +1191,7 @@ namespace VM.HardwareTests.Tests
         {
             LoadValueIntoRegisterR0(0xffff);
             flasher.WriteInstruction(Instruction.CMPZ, Register.R0);
-            flasher.WriteInstruction(Instruction.JNZ, 0x008f);
+            flasher.WriteInstruction(Instruction.JNZ, (ushort)0x008f);
 
             ExecuteProgram(0x008f);
         }
@@ -1201,7 +1201,7 @@ namespace VM.HardwareTests.Tests
         {
             LoadValueIntoRegisterR0(0x0000);
             flasher.WriteInstruction(Instruction.CMPZ, Register.R0);
-            flasher.WriteInstruction(Instruction.JNZ, 0x008f);
+            flasher.WriteInstruction(Instruction.JNZ, (ushort)0x008f);
 
             ExecuteProgram();
         }
@@ -1233,7 +1233,7 @@ namespace VM.HardwareTests.Tests
         [Test]
         public void CALL_PushesArgCountAndSetsPCToValue()
         {
-            flasher.WriteInstruction(Instruction.CALL, (ushort)0, 0x1234);
+            flasher.WriteInstruction(Instruction.CALL, (byte)0, 0x1234);
 
             processor.Step();
 
@@ -1257,7 +1257,7 @@ namespace VM.HardwareTests.Tests
 
             flasher.WriteInstruction(Instruction.PUSH, Register.R1);
             flasher.WriteInstruction(Instruction.PUSH, Register.R0);
-            flasher.WriteInstruction(Instruction.CALL, (ushort)2, subroutineAddress);
+            flasher.WriteInstruction(Instruction.CALL, 2, subroutineAddress);
 
             // Load values into registers
             processor.Step();
@@ -1283,7 +1283,7 @@ namespace VM.HardwareTests.Tests
         public void CALLR_PushesArgCountAndSetsPCToValueFromRegister()
         {
             LoadValueIntoRegisterR0(0x1234);
-            flasher.WriteInstruction(Instruction.CALLR, (ushort)0, Register.R0);
+            flasher.WriteInstruction(Instruction.CALLR, (byte)0, Register.R0);
 
             processor.Step();
             processor.Step();
@@ -1309,7 +1309,7 @@ namespace VM.HardwareTests.Tests
 
             flasher.WriteInstruction(Instruction.PUSH, Register.R1);
             flasher.WriteInstruction(Instruction.PUSH, Register.R0);
-            flasher.WriteInstruction(Instruction.CALL, (ushort)2, subroutineAddress);
+            flasher.WriteInstruction(Instruction.CALL, 2, subroutineAddress);
 
             // Load values into registers
             processor.Step();
@@ -1338,7 +1338,7 @@ namespace VM.HardwareTests.Tests
             LoadValueIntoRegister(STACK_END_ADDRESS, Register.SP);
             processor.Step();
 
-            flasher.WriteInstruction(Instruction.CALL, 0x1234);
+            flasher.WriteInstruction(Instruction.CALL, 12);
 
             AssertExceptionOccursAndProcessorResets(typeof(StackOverflowException), "Stack is full.");
         }
@@ -1362,12 +1362,12 @@ namespace VM.HardwareTests.Tests
         {
             ushort subroutineAddress = 0x4000;
 
-            flasher.WriteInstruction(Instruction.CALL, (ushort)0, subroutineAddress);
+            flasher.WriteInstruction(Instruction.CALL, (byte)0, subroutineAddress);
 
             var returnAddress = flasher.Address;
 
             flasher.Address = subroutineAddress;
-            flasher.WriteInstruction(Instruction.RET, (ushort)0);
+            flasher.WriteInstruction(Instruction.RET, (byte)0);
 
             // Call
             processor.Step();
@@ -1395,7 +1395,7 @@ namespace VM.HardwareTests.Tests
 
             LoadValueIntoRegister(0x1111, Register.R0);
             LoadValueIntoRegister(0x2222, Register.R1);
-            flasher.WriteInstruction(Instruction.CALL, (ushort)0, subroutineAddress);
+            flasher.WriteInstruction(Instruction.CALL, (byte)0, subroutineAddress);
 
             var returnAddress = flasher.Address;
 
@@ -1436,7 +1436,7 @@ namespace VM.HardwareTests.Tests
         [Test]
         public void RET_EmptyCallStack_ResetsAndThrowsException()
         {
-            flasher.WriteInstruction(Instruction.RET);
+            flasher.WriteInstruction(Instruction.RET, (byte)0);
 
             AssertExceptionOccursAndProcessorResets(typeof(InvalidOperationException), "In base frame, nothing to return to.");
         }
@@ -1451,7 +1451,7 @@ namespace VM.HardwareTests.Tests
 
             flasher.WriteInstruction(Instruction.PUSH, Register.R1);
             flasher.WriteInstruction(Instruction.PUSH, Register.R0);
-            flasher.WriteInstruction(Instruction.CALL, (ushort)2, subroutineAddress);
+            flasher.WriteInstruction(Instruction.CALL, 2, subroutineAddress);
 
             var returnAddress = flasher.Address;
 
@@ -1505,7 +1505,7 @@ namespace VM.HardwareTests.Tests
                 0x1000, 0x2000, 0x3000, 0x4000, 0x5000
             };
 
-            flasher.WriteInstruction(Instruction.CALL, (ushort)0, addresses[0]);
+            flasher.WriteInstruction(Instruction.CALL, (byte)0, addresses[0]);
             instructionCount += flasher.InstructionCount;
 
             for (ushort i = 0; i < addresses.Length; i++)
@@ -1518,10 +1518,10 @@ namespace VM.HardwareTests.Tests
 
                 if (i != addresses.Length - 1)
                 {
-                    flasher.WriteInstruction(Instruction.CALL, (ushort)0, addresses[i + 1]);
+                    flasher.WriteInstruction(Instruction.CALL, (byte)0, addresses[i + 1]);
                 }
 
-                flasher.WriteInstruction(Instruction.RET, (ushort)0);
+                flasher.WriteInstruction(Instruction.RET, (byte)0);
                 instructionCount += flasher.InstructionCount;
             }
 

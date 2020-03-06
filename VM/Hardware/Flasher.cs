@@ -1,4 +1,6 @@
-﻿namespace VM.Hardware
+﻿using System.Collections.Generic;
+
+namespace VM.Hardware
 {
     /// <summary>
     /// Utility for writing programs to memory.
@@ -29,6 +31,16 @@
             {
                 address = value;
                 InstructionCount = 0;
+            }
+        }
+
+        public void Flash(IEnumerable<byte> binary)
+        {
+            ushort address = 0;
+
+            foreach(var b in binary)
+            {
+                memory.SetU8(address++, b);
             }
         }
 

@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace VM.Software.Assembling.Parsing
 {
@@ -11,7 +9,7 @@ namespace VM.Software.Assembling.Parsing
         public Instruction Instruction { get; }
         public IEnumerable<Argument> Arguments { get; }
 
-        public override int Size => sizeof(Instruction) + Arguments.Sum(a => a.Size);
+        public override byte Size => (byte)(sizeof(Instruction) + Arguments.Sum(a => a.Size));
 
         public InstructionStatement(Instruction instruction, params Argument[] arguments)
         {
@@ -19,9 +17,27 @@ namespace VM.Software.Assembling.Parsing
             Arguments = arguments;
         }
 
-        public override IEnumerable<byte> GetBytes()
+        public override void SetIdentifiers(IEnumerable<LabelStatement> labels)
         {
-            throw new NotImplementedException();
+            foreach(var argument in Arguments)
+            {
+                argument.SetValue(labels);
+            }
+        }
+
+        protected override IEnumerable<byte> GetBytes()
+        {
+            var bytes = new List<byte>
+            {
+                (byte)Instruction
+            };
+
+            foreach(var argument in Arguments)
+            {
+                bytes.AddRange(argument.GetBytes());
+            }
+
+            return bytes;
         }
     }
 }

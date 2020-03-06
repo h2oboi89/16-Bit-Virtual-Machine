@@ -95,6 +95,7 @@ namespace VM.Software.Assembling.Parsing
                 case Instruction.JGT:
                 case Instruction.JE:
                 case Instruction.JNE:
+                case Instruction.JZ:
                 case Instruction.JNZ:
                     return new InstructionStatement(instruction, JumpTarget());
                 case Instruction.INC:
@@ -164,12 +165,16 @@ namespace VM.Software.Assembling.Parsing
         {
             if (Match(TokenType.NUMBER))
             {
-                return new Argument((ushort)Advance().Literal, sizeof(ushort));
+                var number = (ushort)Advance().Literal;
+
+                return new Argument(number, sizeof(ushort));
             }
 
             if (Match(TokenType.IDENTIFIER))
             {
-                return new Argument(0, sizeof(ushort), true);
+                var identifier = (string)Advance().Literal;
+
+                return new Argument(0, sizeof(ushort), identifier);
             }
 
             throw Error(Peek, "Expected U16 or label name.");
@@ -177,25 +182,35 @@ namespace VM.Software.Assembling.Parsing
 
         private static Argument Register()
         {
-            var register = Consume(TokenType.REGISTER, "Expected register.");
+            var register = (byte)Consume(TokenType.REGISTER, "Expected register.").Literal;
 
-            return new Argument((ushort)register.Literal, sizeof(Register));
+            return new Argument(register, sizeof(Register));
         }
 
         private static Argument U8()
         {
-            if (!Match(TokenType.NUMBER, TokenType.CHARACTER))
+            ushort value;
+
+            if (Match(TokenType.NUMBER))
+            {
+                var number = Advance();
+
+                value = (byte)number.Literal;
+
+                if (value > byte.MaxValue)
+                {
+                    throw Error(number, $"{value} too large for U8.");
+                }
+            }
+            else if (Match(TokenType.CHARACTER))
+            {
+                var character = Advance();
+
+                value = (char)character.Literal;
+            }
+            else
             {
                 throw Error(Peek, "Expected U8 or character.");
-            }
-
-            var number = Advance();
-
-            var value = (ushort)number.Literal;
-
-            if (value > byte.MaxValue)
-            {
-                throw Error(number, $"{value} too large for U8.");
             }
 
             return new Argument(value, sizeof(byte));

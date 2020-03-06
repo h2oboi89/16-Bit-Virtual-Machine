@@ -146,7 +146,9 @@ namespace VM.Software.Assembling.Scanning
             }
             else
             {
-                AddToken(TokenType.IDENTIFIER);
+                var lexeme = _source.Extract(_start, _current);
+
+                AddToken(TokenType.IDENTIFIER, lexeme);
             }
         }
 
@@ -171,7 +173,7 @@ namespace VM.Software.Assembling.Scanning
 
             try
             {
-                if (_source[_start] == '0')
+                if (_source[_start] == '0' && _current != _start + 1)
                 {
                     ThrowException($"Invalid leading '0'");
                 }

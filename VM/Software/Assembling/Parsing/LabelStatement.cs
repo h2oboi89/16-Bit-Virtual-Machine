@@ -7,8 +7,6 @@ namespace VM.Software.Assembling.Parsing
     {
         public string Identifier { get; }
 
-        public override int Size => sizeof(ushort);
-
         public LabelStatement(string lexeme)
         {
             if (lexeme == null)
@@ -19,9 +17,6 @@ namespace VM.Software.Assembling.Parsing
             Identifier = lexeme.TrimEnd(':');
         }
 
-        public override IEnumerable<byte> GetBytes()
-        {
-            throw new System.NotImplementedException();
-        }
+        protected override IEnumerable<byte> GetBytes() => Array.Empty<byte>();
     }
 }

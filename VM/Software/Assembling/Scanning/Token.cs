@@ -76,15 +76,9 @@ namespace VM.Software.Assembling.Scanning
         /// <returns>True if <paramref name="token"/> is equal to this instance; otherwise, false.</returns>
         public bool Equals(Token token)
         {
-            if (token is null)
-            {
-                return false;
-            }
+            if (token is null) return false;
 
-            if (ReferenceEquals(token, this))
-            {
-                return true;
-            }
+            if (ReferenceEquals(token, this)) return true;
 
             if (!(Type == token.Type &&
                 Lexeme == token.Lexeme &&
@@ -93,10 +87,7 @@ namespace VM.Software.Assembling.Scanning
                 return false;
             }
 
-            if (Literal == null)
-            {
-                return token.Literal == null;
-            }
+            if (Literal == null) return token.Literal == null;
 
             return Literal.Equals(token.Literal);
         }

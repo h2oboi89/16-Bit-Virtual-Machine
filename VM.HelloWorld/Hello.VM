@@ -1,0 +1,44 @@
+﻿; Simple Hello World style program
+
+	LDVR 0xf000 $R0
+	LDVR 0xf7d0 $R1
+
+; write '#' to entire console
+
+CONSOLE_LOOP:
+
+	SBVR '#' $R0
+	INC $R0
+	CMP $R0 $R1
+	JNE CONSOLE_LOOP
+
+; Write "Hello, World!" to console
+
+	SBVA	'H'		0xf058
+	SBVA	'e'		0xf059
+	SBVA	'l'		0xf05a
+	SBVA	'l'		0xf05b
+	SBVA	'o'		0xf05c
+	SBVA	','		0xf05d
+	SBVA	' '		0xf05e
+	SBVA	'W'		0xf05f
+	SBVA	'o'		0xf060
+	SBVA	'r'		0xf061
+	SBVA	'l'		0xf062
+	SBVA	'd'		0xf063
+	SBVA	'!'		0xf064
+
+; increment $R0 from 0 to 65,535 + 1
+
+	LDVR 	0		$R0
+	LDVR	0x0010 	$R1 ; Carry flag
+
+ITERATION_LOOP:
+
+	INC 	$R0
+	AND		$FLAG	$R1
+	JZ 		ITERATION_LOOP
+
+; Halt program
+
+	HALT

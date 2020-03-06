@@ -70,6 +70,8 @@
     <Compile Include="Register.cs" />
     <Compile Include="Hardware\ResetEventArgs.cs" />
     <Compile Include="Hardware\Stack.cs" />
+    <Compile Include="Software\Assembling\Assembler.cs" />
+    <Compile Include="Software\Assembling\AssemblingException.cs" />
     <Compile Include="Software\Assembling\Parsing\Argument.cs" />
     <Compile Include="Software\Assembling\Parsing\InstructionStatement.cs" />
     <Compile Include="Software\Assembling\Parsing\LabelStatement.cs" />

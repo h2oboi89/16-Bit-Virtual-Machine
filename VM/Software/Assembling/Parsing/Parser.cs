@@ -156,6 +156,10 @@ namespace VM.Software.Assembling.Parsing
             }
         }
 
+        // FUTURE: All places that accept a number (u8 or u16) can be raw or identifier
+        // Value : u8, 16, variable
+        // JumpTarget : can be u16 or label name (could also be defined as u8 in variable form)
+
         private static Argument JumpTarget()
         {
             if (Match(TokenType.NUMBER))

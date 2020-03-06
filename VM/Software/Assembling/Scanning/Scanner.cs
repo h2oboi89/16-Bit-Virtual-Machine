@@ -148,7 +148,7 @@ namespace VM.Software.Assembling.Scanning
             {
                 var lexeme = _source.Extract(_start, _current);
 
-                AddToken(TokenType.IDENTIFIER, lexeme);
+                AddToken(TokenType.IDENTIFIER);
             }
         }
 

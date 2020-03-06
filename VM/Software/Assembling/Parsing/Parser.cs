@@ -165,16 +165,12 @@ namespace VM.Software.Assembling.Parsing
         {
             if (Match(TokenType.NUMBER))
             {
-                var number = (ushort)Advance().Literal;
-
-                return new Argument(number, sizeof(ushort));
+                return new Argument((ushort)Advance().Literal, sizeof(ushort));
             }
 
             if (Match(TokenType.IDENTIFIER))
             {
-                var identifier = (string)Advance().Literal;
-
-                return new Argument(0, sizeof(ushort), identifier);
+                return new Argument(0, sizeof(ushort), Advance().Lexeme);
             }
 
             throw Error(Peek, "Expected U16 or label name.");

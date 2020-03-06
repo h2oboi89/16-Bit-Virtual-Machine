@@ -26,7 +26,7 @@ namespace VM.Tests.SoftwareTests.AssemblingTests.ParsingTests
                 { "LDVR 0xf000 $R0", new byte[] { 0x04, 0xf0, 0x00, 0x07 } },
                 { "LDVR	0xf7d0 $R1", new byte[] { 0x04, 0xf7, 0xd0, 0x08 } },
 
-                { "LOOP:",           new byte[] { 0x00, 0x00 } },    
+                { "LOOP:",           new byte[] { } },
                 { "SBVR '#' $R0",    new byte[] { 0x0f, 0x23, 0x07 } },
                 { "INC $R0",         new byte[] { 0x02, 0x07 } },
                 { "CMP $R0 $R1",     new byte[] { 0x20, 0x07, 0x08 } },

@@ -10,15 +10,15 @@ namespace VM
     {
         public static string FormatU8(byte value)
         {
-            return FormatDateType(value.ToString("X", CultureInfo.InvariantCulture), sizeof(byte));
+            return FormatDataType(value.ToString("X", CultureInfo.InvariantCulture), sizeof(byte));
         }
 
         public static string FormatU16(ushort value)
         {
-            return FormatDateType(value.ToString("X", CultureInfo.InvariantCulture), sizeof(ushort));
+            return FormatDataType(value.ToString("X", CultureInfo.InvariantCulture), sizeof(ushort));
         }
 
-        private static string FormatDateType(string hexValue, int size)
+        private static string FormatDataType(string hexValue, int size)
         {
             return $"0x{hexValue.PadLeft(size * 2, '0')}";
         }
@@ -28,9 +28,11 @@ namespace VM
             return new byte[] { (byte)((value >> 8) & 0xff), (byte)(value & 0xff) };
         }
 
+        private static int SpecialPurposeRegisterCount => (byte)Register.FP + 1;
+
         public static ushort GeneralPurposeRegisterMemorySize()
         {
-            return (ushort)((Enum.GetValues(typeof(Register)).Length - (int)Register.R0) * Processor.DATASIZE);
+            return (ushort)((Enum.GetValues(typeof(Register)).Length - SpecialPurposeRegisterCount) * Processor.DATASIZE);
         }
 
         private static T Parse<T>(string value)

@@ -10,7 +10,7 @@
         /// Program Counter. 
         /// Address of next value to fetch from memory.
         /// </summary>
-        PC,
+        PC = 0x00,
         /// <summary>
         /// Pointer to Subroutine argument count.
         /// Arguments will be below this value (higher address) on the <see cref="Hardware.Stack"/>.
@@ -44,7 +44,7 @@
         /// <summary>
         /// General purpose register.
         /// </summary>
-        R0,
+        R0 = 0x10,
         /// <summary>
         /// General purpose register.
         /// </summary>
@@ -105,10 +105,11 @@
         /// General purpose register.
         /// </summary>
         R15,
+
         /// <summary>
         /// General purpose register.
         /// </summary>
-        S0,
+        S0 = 0x20,
         /// <summary>
         /// General purpose register.
         /// </summary>
@@ -169,10 +170,11 @@
         /// General purpose register.
         /// </summary>
         S15,
+
         /// <summary>
         /// General purpose register.
         /// </summary>
-        T0,
+        T0 = 0x30,
         /// <summary>
         /// General purpose register.
         /// </summary>

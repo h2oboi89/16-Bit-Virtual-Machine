@@ -1,9 +1,7 @@
 ﻿using System;
-using VM.Software.Assembling.Scanning;
 
 namespace VM.Software.Assembling.Parsing
 {
-    [Serializable]
     public sealed class ParsingException : Exception
     {
         public ParsingException() { }

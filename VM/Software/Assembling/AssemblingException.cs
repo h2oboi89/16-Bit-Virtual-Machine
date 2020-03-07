@@ -2,7 +2,6 @@
 
 namespace VM.Software.Assembling
 {
-    [Serializable]
     public class AssemblingException : Exception
     {
         public AssemblingException() { }

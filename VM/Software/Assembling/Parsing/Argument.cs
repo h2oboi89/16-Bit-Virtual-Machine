@@ -7,14 +7,14 @@ namespace VM.Software.Assembling.Parsing
     {
         public ushort Value { get; private set; }
 
-        public int Size { get; }
+        public int size;
 
         private readonly string identifier;
 
         public Argument(ushort value, int size, string identifier = null)
         {
             Value = value;
-            Size = size;
+            this.size = size;
             this.identifier = identifier;
         }
 
@@ -36,13 +36,20 @@ namespace VM.Software.Assembling.Parsing
         {
             var bytes = new List<byte>();
             
-            for(var i = 0; i < Size; i++)
+            for(var i = 0; i < size; i++)
             {
-                var shiftAmount = (Size - 1 - i) * 8;
+                var shiftAmount = (size - 1 - i) * 8;
                 bytes.Add((byte)((Value >> shiftAmount) & 0xff));
             }
 
             return bytes;
+        }
+
+        public override string ToString()
+        {
+            var value = size == 1 ? Utility.FormatU8((byte)Value) : Utility.FormatU16(Value);
+
+            return identifier == null ? value : $"{identifier} ({value})";
         }
     }
 }

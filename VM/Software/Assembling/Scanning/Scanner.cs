@@ -50,27 +50,24 @@ namespace VM.Software.Assembling.Scanning
                 case '\t':
                     // ignore whitespace
                     break;
-                case '\n': _line++; break;
+                case '\n':
+                    _line++;
+                    break;
                 case ';':
                     // ignore comments
                     SkipToEndOfLine();
                     break;
-                case '.': Section(); break;
-                case '\'': Character(); break;
-                case '$': Register(); break;
+                case '.':
+                    Section();
+                    break;
+                case '\'':
+                    Character();
+                    break;
+                case '$':
+                    Register();
+                    break;
                 default:
-                    if (IsDigit(c))
-                    {
-                        Number();
-                    }
-                    else if (IsAlpha(c))
-                    {
-                        Text();
-                    }
-                    else
-                    {
-                        ThrowException($"Unexpected character '{c}'");
-                    }
+                    Default(c);
                     break;
             }
         }
@@ -119,37 +116,27 @@ namespace VM.Software.Assembling.Scanning
                 var register = Utility.ParseRegister(lexeme);
 
                 AddToken(TokenType.REGISTER, register);
-            } catch (ArgumentException e)
+            }
+            catch (ArgumentException e)
             {
                 ThrowException(e.Message);
             }
         }
 
-        private static void Text()
+        private static void Default(char c)
         {
-            Identifier();
-
-            try
+            if (IsDigit(c))
             {
-                var lexeme = _source.Extract(_start, _current);
-                var instruction = Utility.ParseInstruction(lexeme);
-
-                AddToken(TokenType.INSTRUCTION, instruction);
+                Number();
                 return;
             }
-            catch (ArgumentException) { }
-
-            if (Peek() == ':')
+            if (IsAlpha(c))
             {
-                Advance();
-                AddToken(TokenType.LABEL);
+                Text();
+                return;
             }
-            else
-            {
-                var lexeme = _source.Extract(_start, _current);
 
-                AddToken(TokenType.IDENTIFIER);
-            }
+            ThrowException($"Unexpected character '{c}'");
         }
 
         private static void Number()
@@ -208,6 +195,31 @@ namespace VM.Software.Assembling.Scanning
             catch (OverflowException e)
             {
                 ThrowException("Value was too large for U16", e);
+            }
+        }
+
+        private static void Text()
+        {
+            Identifier();
+
+            try
+            {
+                var lexeme = _source.Extract(_start, _current);
+                var instruction = Utility.ParseInstruction(lexeme);
+
+                AddToken(TokenType.INSTRUCTION, instruction);
+                return;
+            }
+            catch (ArgumentException) { }
+
+            if (Peek() == ':')
+            {
+                Advance();
+                AddToken(TokenType.LABEL);
+            }
+            else
+            {
+                AddToken(TokenType.IDENTIFIER);
             }
         }
 

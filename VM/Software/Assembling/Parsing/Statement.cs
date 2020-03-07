@@ -1,23 +1,18 @@
 ﻿using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
 
 namespace VM.Software.Assembling.Parsing
 {
     public abstract class Statement
     {
-        public ushort Address { get; private set; }
-
-        public virtual byte Size => 0;
+        public ushort Address { get; internal set; }
 
         protected abstract IEnumerable<byte> GetBytes();
 
         public IEnumerable<byte> ToBytes() => GetBytes();
 
-        public ushort SetAddress(ushort address)
-        {
-            Address = address;
-
-            return (ushort)(Address + Size);
-        }
+        public ushort Size => (ushort)ToBytes().Count();
 
         public virtual void SetIdentifiers(IEnumerable<LabelStatement> labels) { }
 
@@ -32,5 +27,12 @@ namespace VM.Software.Assembling.Parsing
 
             return ToBytes().Equals(statement.ToBytes());
         }
+
+        public override int GetHashCode()
+        {
+            return 17 * Address.GetHashCode() * 31 * ToBytes().GetHashCode();
+        }
+
+        public override string ToString() => Utility.FormatU16(Address);
     }
 }

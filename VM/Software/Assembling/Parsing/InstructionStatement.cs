@@ -9,8 +9,6 @@ namespace VM.Software.Assembling.Parsing
         public Instruction Instruction { get; }
         public IEnumerable<Argument> Arguments { get; }
 
-        public override byte Size => (byte)(sizeof(Instruction) + Arguments.Sum(a => a.Size));
-
         public InstructionStatement(Instruction instruction, params Argument[] arguments)
         {
             Instruction = instruction;
@@ -38,6 +36,18 @@ namespace VM.Software.Assembling.Parsing
             }
 
             return bytes;
+        }
+
+        public override string ToString()
+        {
+            var parts = new List<string> { $"{Instruction}" };
+
+            foreach(var argument in Arguments)
+            {
+                parts.Add(argument.ToString());
+            }
+
+            return $"{base.ToString()} : " + string.Join(" ", parts);
         }
     }
 }

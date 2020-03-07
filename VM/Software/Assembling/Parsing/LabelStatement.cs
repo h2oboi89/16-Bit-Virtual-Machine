@@ -18,5 +18,7 @@ namespace VM.Software.Assembling.Parsing
         }
 
         protected override IEnumerable<byte> GetBytes() => Array.Empty<byte>();
+
+        public override string ToString() => $"{base.ToString()} : {Identifier}";
     }
 }

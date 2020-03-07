@@ -14,7 +14,7 @@ namespace VM.HelloWorld
         const byte HEIGHT = 25;
         const string PROGRAM_FILE = "Hello.VM";
 
-        static void Main(string[] args)
+        static void Main()
         {
             var memory = new Memory(0x10000);
             var console = new SystemConsole(memory, CONSOLE_ADDRESS, WIDTH, HEIGHT);

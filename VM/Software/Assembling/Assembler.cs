@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using VM.Software.Assembling.Parsing;
 using VM.Software.Assembling.Scanning;
 
@@ -22,16 +21,17 @@ namespace VM.Software.Assembling
                 {
                     throw new AssemblingException(e.Message, e);
                 }
-                else
-                {
-                    throw new AssemblingException("Unexpected error during assembly.", e);
-                }
+
+                throw;
             }
 
-            var size = statements.Sum(s => s.Size);
+            var labels = DetermineAddresses(statements);
 
-            var binary = new byte[size];
+            return GenerateBinary(statements, labels);
+        }
 
+        private static IEnumerable<LabelStatement> DetermineAddresses(IEnumerable<Statement> statements)
+        {
             ushort address = 0;
             var labels = new List<LabelStatement>();
 
@@ -44,21 +44,12 @@ namespace VM.Software.Assembling
                     labels.Add(label);
                 }
 
-                address = statement.SetAddress(address);
+                statement.Address = address;
+
+                address += statement.Size;
             }
 
-            address = 0;
-            foreach (var statement in statements)
-            {
-                statement.SetIdentifiers(labels);
-
-                foreach(var b in statement.ToBytes())
-                {
-                    binary[address++] = b;
-                }
-            }
-
-            return binary;
+            return labels;
         }
 
         private static void CheckForDuplicate(this List<LabelStatement> labels, LabelStatement label)
@@ -70,6 +61,20 @@ namespace VM.Software.Assembling
                     throw new AssemblingException($"Label '{label.Identifier}' is already defined.");
                 }
             }
+        }
+
+        private static IEnumerable<byte> GenerateBinary(IEnumerable<Statement> statements, IEnumerable<LabelStatement> labels)
+        {
+            var binary = new List<byte>();
+
+            foreach (var statement in statements)
+            {
+                statement.SetIdentifiers(labels);
+
+                binary.AddRange(statement.ToBytes());
+            }
+
+            return binary;
         }
     }
 }

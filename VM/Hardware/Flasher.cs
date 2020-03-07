@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace VM.Hardware
 {
@@ -36,6 +37,11 @@ namespace VM.Hardware
 
         public void Flash(IEnumerable<byte> binary)
         {
+            if (binary == null)
+            {
+                throw new ArgumentNullException(nameof(binary));
+            }
+            
             ushort address = 0;
 
             foreach(var b in binary)

@@ -25,19 +25,6 @@ namespace VM.Software.Assembling.Parsing
         }
 
         #region Utility Methods
-        private static bool Match(params TokenType[] tokenTypes)
-        {
-            foreach (var tokenType in tokenTypes)
-            {
-                if (Check(tokenType))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
         private static bool Check(TokenType tokenType) => IsAtEnd ? false : Peek.Type == tokenType;
 
         private static Token Advance()
@@ -52,18 +39,6 @@ namespace VM.Software.Assembling.Parsing
 
         private static Token PreviousToken => _tokens[_current - 1];
 
-        private static Token Consume(TokenType tokenType, string message)
-        {
-            if (Check(tokenType))
-            {
-                return Advance();
-            }
-            else
-            {
-                throw Error(Peek, message);
-            }
-        }
-
         private static ParsingException Error(Token token, string message)
         {
             var where = token.Type == TokenType.EOF ? "end" : token.Lexeme;
@@ -74,10 +49,10 @@ namespace VM.Software.Assembling.Parsing
 
         private static Statement Statement()
         {
-            if (Peek.Type == TokenType.LABEL) return new LabelStatement(Advance().Lexeme);
-            if (Peek.Type == TokenType.INSTRUCTION) return InstructionStatement();
+            if (Check(TokenType.LABEL)) return new LabelStatement(Advance().Lexeme);
+            if (Check(TokenType.INSTRUCTION)) return InstructionStatement();
 
-            throw Error(Peek, $"Unexpected token {Peek}, expected {TokenType.LABEL} or {TokenType.INSTRUCTION}");
+            throw Error(Peek, $"Expected {TokenType.LABEL} or {TokenType.INSTRUCTION}");
         }
 
         private static Statement InstructionStatement()
@@ -153,7 +128,8 @@ namespace VM.Software.Assembling.Parsing
                 case Instruction.STVA:
                     return new InstructionStatement(instruction, U16(), U16());
                 default:
-                    throw new NotImplementedException($"Unknown instruction: {instruction}.");
+                    // should only reach this if Scanner knows about an Instruction that we don't.
+                    throw new NotImplementedException($"Unknown instruction: '{instruction}'.");
             }
         }
 
@@ -163,50 +139,36 @@ namespace VM.Software.Assembling.Parsing
 
         private static Argument JumpTarget()
         {
-            if (Match(TokenType.NUMBER))
+            if (Check(TokenType.NUMBER))
             {
                 return new Argument((ushort)Advance().Literal, sizeof(ushort));
             }
 
-            if (Match(TokenType.IDENTIFIER))
+            if (Check(TokenType.IDENTIFIER))
             {
                 return new Argument(0, sizeof(ushort), Advance().Lexeme);
             }
 
-            throw Error(Peek, "Expected U16 or label name.");
+            throw Error(Peek, "Expected U16 or label name");
         }
 
         private static Argument Register()
         {
-            var register = (byte)Consume(TokenType.REGISTER, "Expected register.").Literal;
+            if (Check(TokenType.REGISTER))
+            {
+                return new Argument((byte)Advance().Literal, sizeof(Register));
+            }
 
-            return new Argument(register, sizeof(Register));
+            throw Error(Peek, $"Expected register");
         }
 
         private static Argument U8()
         {
-            ushort value;
+            var (value, token) = NumberOrCharacter("U8");
 
-            if (Match(TokenType.NUMBER))
+            if (value > byte.MaxValue)
             {
-                var number = Advance();
-
-                value = (byte)number.Literal;
-
-                if (value > byte.MaxValue)
-                {
-                    throw Error(number, $"{value} too large for U8.");
-                }
-            }
-            else if (Match(TokenType.CHARACTER))
-            {
-                var character = Advance();
-
-                value = (char)character.Literal;
-            }
-            else
-            {
-                throw Error(Peek, "Expected U8 or character.");
+                throw Error(token, $"{value} too large for U8");
             }
 
             return new Argument(value, sizeof(byte));
@@ -214,12 +176,28 @@ namespace VM.Software.Assembling.Parsing
 
         private static Argument U16()
         {
-            if (!Match(TokenType.NUMBER, TokenType.CHARACTER))
+            var (value, _) = NumberOrCharacter("U16");
+
+            return new Argument(value, sizeof(ushort));
+        }
+
+        private static (ushort, Token) NumberOrCharacter(string expectedType)
+        {
+            if (Check(TokenType.NUMBER))
             {
-                throw Error(Peek, "Expected U16 or character.");
+                var token = Advance();
+
+                return ((ushort)token.Literal, token);
             }
 
-            return new Argument((ushort)Advance().Literal, sizeof(ushort));
+            if (Check(TokenType.CHARACTER))
+            {
+                var token = Advance();
+
+                return ((char)token.Literal, token);
+            }
+
+            throw Error(Peek, $"Expected {expectedType} or character");
         }
     }
 }

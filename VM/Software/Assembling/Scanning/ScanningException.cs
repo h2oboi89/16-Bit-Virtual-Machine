@@ -2,7 +2,6 @@
 
 namespace VM.Software.Assembling.Scanning
 {
-    [Serializable]
     public sealed class ScanningException : Exception
     {
         public ScanningException() { }

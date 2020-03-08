@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 
 namespace VM.Software.Assembling.Parsing
@@ -16,22 +15,13 @@ namespace VM.Software.Assembling.Parsing
 
         public virtual void SetIdentifiers(IEnumerable<LabelStatement> labels) { }
 
-        public override bool Equals(object obj)
-        {
-            return Equals(obj as Statement);
-        }
+        public override bool Equals(object obj) => Equals(obj as Statement);
 
-        public bool Equals(Statement statement)
-        {
-            if (statement == null) return false;
+        public bool Equals(Statement statement) => statement == null
+            ? false
+            : ToBytes().Equals(statement.ToBytes());
 
-            return ToBytes().Equals(statement.ToBytes());
-        }
-
-        public override int GetHashCode()
-        {
-            return 17 * Address.GetHashCode() * 31 * ToBytes().GetHashCode();
-        }
+        public override int GetHashCode() => 61 * Address.GetHashCode() * 31 * ToBytes().GetHashCode();
 
         public override string ToString() => Utility.FormatU16(Address);
     }

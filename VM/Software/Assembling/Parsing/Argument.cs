@@ -5,15 +5,13 @@ namespace VM.Software.Assembling.Parsing
 {
     public class Argument
     {
-        public ushort Value { get; private set; }
-
-        public int size;
-
+        private ushort value;
+        private readonly int size;
         private readonly string identifier;
 
         public Argument(ushort value, int size, string identifier = null)
         {
-            Value = value;
+            this.value = value;
             this.size = size;
             this.identifier = identifier;
         }
@@ -22,13 +20,26 @@ namespace VM.Software.Assembling.Parsing
         {
             if (identifier == null) return;
 
+            if (labels == null)
+            {
+                throw new ArgumentNullException(nameof(labels));
+            }
+
+            var found = false;
+
             foreach(var label in labels)
             {
                 if (identifier == label.Identifier)
                 {
-                    Value = label.Address;
+                    value = label.Address;
+                    found = true;
                     break;
                 }
+            }
+
+            if (!found)
+            {
+                throw new AssemblingException($"Undefined identifier '{identifier}'");
             }
         }
 
@@ -39,7 +50,7 @@ namespace VM.Software.Assembling.Parsing
             for(var i = 0; i < size; i++)
             {
                 var shiftAmount = (size - 1 - i) * 8;
-                bytes.Add((byte)((Value >> shiftAmount) & 0xff));
+                bytes.Add((byte)((value >> shiftAmount) & 0xff));
             }
 
             return bytes;
@@ -47,7 +58,7 @@ namespace VM.Software.Assembling.Parsing
 
         public override string ToString()
         {
-            var value = size == 1 ? Utility.FormatU8((byte)Value) : Utility.FormatU16(Value);
+            var value = size == 1 ? Utility.FormatU8((byte)this.value) : Utility.FormatU16(this.value);
 
             return identifier == null ? value : $"{identifier} ({value})";
         }

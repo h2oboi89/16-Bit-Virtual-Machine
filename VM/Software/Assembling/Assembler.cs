@@ -5,8 +5,16 @@ using VM.Software.Assembling.Scanning;
 
 namespace VM.Software.Assembling
 {
+    /// <summary>
+    /// Converts assembly into executable program for the <see cref="VM.Hardware.Processor"/> to run.
+    /// </summary>
     public static class Assembler
     {
+        /// <summary>
+        /// Converts assembly source code into executable binary.
+        /// </summary>
+        /// <param name="source">Assembly source code.</param>
+        /// <returns>Collection of bytes representing executable.</returns>
         public static IEnumerable<byte> Assemble(string source)
         {
             IEnumerable<Statement> statements;
@@ -46,7 +54,10 @@ namespace VM.Software.Assembling
 
                 statement.Address = address;
 
-                address += statement.Size;
+                if (statement is InstructionStatement instruction)
+                {
+                    address += instruction.Size;
+                }
             }
 
             return labels;
@@ -69,9 +80,11 @@ namespace VM.Software.Assembling
 
             foreach (var statement in statements)
             {
-                statement.SetIdentifiers(labels);
+                if (statement is InstructionStatement instructionStatement) {
+                    instructionStatement.SetIdentifiers(labels);
+                    binary.AddRange(instructionStatement.ToBytes());
+                }
 
-                binary.AddRange(statement.ToBytes());
             }
 
             return binary;

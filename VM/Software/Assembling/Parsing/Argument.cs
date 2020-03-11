@@ -56,6 +56,19 @@ namespace VM.Software.Assembling.Parsing
             return bytes;
         }
 
+        public override bool Equals(object obj) => Equals(obj as Argument);
+
+        public bool Equals(Argument other)
+        {
+            if (other == null) return false;
+            
+            return value == other.value &&
+                size == other.size &&
+                identifier == other.identifier;
+        }
+
+        public override int GetHashCode() => 31 * value + 17 * size + 89 * identifier.GetHashCode();
+
         public override string ToString()
         {
             var value = size == 1 ? Utility.FormatU8((byte)this.value) : Utility.FormatU16(this.value);

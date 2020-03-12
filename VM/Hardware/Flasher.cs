@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace VM.Hardware
 {
@@ -20,203 +21,80 @@ namespace VM.Hardware
             Address = 0;
         }
 
-        private ushort address = 0;
-
         /// <summary>
         /// Next address in memory that will be written to.
         /// </summary>
-        public ushort Address
+        public ushort Address { get; set; }
+
+        #region U8
+        /// <summary>
+        /// Flashes byte(s) to the next available spot in <see cref="Memory"/> as specified by <see cref="Address"/>.
+        /// </summary>
+        /// <param name="values">Byte(s) to write.</param>
+        public void Flash(params byte[] values)
         {
-            get { return address; }
-            set
+            foreach (var value in values)
             {
-                address = value;
-                InstructionCount = 0;
+                memory.SetU8(Address++, value);
             }
         }
 
+        /// <summary>
+        /// Flashes byte(s) to the specified location in <see cref="Memory"/>.
+        /// This updates <see cref="Address"/>.
+        /// </summary>
+        /// <param name="address">Location in <see cref="Memory"/> to write to.</param>
+        /// <param name="values">Byte(s) to write.</param>
+        public void Flash(ushort address, params byte[] values)
+        {
+            Address = address;
+
+            Flash(values);
+        }
+
+        /// <summary>
+        /// Flashes a collection of bytes to the next available spot in <see cref="Memory"/> as specified by <see cref="Address"/>.
+        /// </summary>
+        /// <param name="binary">Bytes to write.</param>
         public void Flash(IEnumerable<byte> binary)
         {
             if (binary == null)
             {
                 throw new ArgumentNullException(nameof(binary));
             }
-            
-            ushort address = 0;
 
-            foreach(var b in binary)
+            foreach (var value in binary)
             {
-                memory.SetU8(address++, b);
+                Flash(value);
+            }
+        }
+        #endregion
+
+        #region U16
+        /// <summary>
+        /// Flashes ushort(s) to the next available spot in <see cref="Memory"/> as specified by <see cref="Address"/>.
+        /// </summary>
+        /// <param name="values">Ushort(s) to write.</param>
+        public void Flash(params ushort[] values)
+        {
+            foreach (var value in values)
+            {
+                Flash(Utility.GetBytes(value).ToArray());
             }
         }
 
         /// <summary>
-        /// Number of <see cref="Instruction"/>s that were written to memory since <see cref="Address"/> was set.
+        /// Flashes ushort(s) to the specified location in <see cref="Memory"/>.
+        /// This updates <see cref="Address"/>.
         /// </summary>
-        public int InstructionCount { get; private set; }
-
-        /// <summary>
-        /// Writes a U8 to memory.
-        /// </summary>
-        /// <param name="value">Value to write to memory.</param>
-        public void WriteU8(byte value)
+        /// <param name="address">Location in <see cref="Memory"/> to write to.</param>
+        /// <param name="values">Ushort(s) to write.</param>
+        public void Flash(ushort address, params ushort[] values)
         {
-            memory.SetU8(address++, value);
-        }
+            Address = address;
 
-        /// <summary>
-        /// Writes a U16 to memory.
-        /// </summary>
-        /// <param name="value">Value to write to memory.</param>
-        public void WriteU16(ushort value)
-        {
-            foreach (var b in Utility.GetBytes(value))
-            {
-                WriteU8(b);
-            }
+            Flash(values);
         }
-
-        /// <summary>
-        /// Writes a <see cref="Register"/> identifier to memory.
-        /// </summary>
-        /// <param name="register">Identifier to write to memory.</param>
-        private void WriteRegister(Register register)
-        {
-            WriteU8((byte)register);
-        }
-
-        /// <summary>
-        /// Writes an <see cref="Instruction"/> identifier to memory.
-        /// </summary>
-        /// <param name="instruction">Identifier to write to memory.</param>
-        public void WriteInstruction(Instruction instruction)
-        {
-            InstructionCount++;
-            WriteU8((byte)instruction);
-        }
-
-        /// <summary>
-        /// Writes an <see cref="Instruction"/> and <see cref="Register"/> to memory.
-        /// </summary>
-        /// <param name="instruction"><see cref="Instruction"/> to write to memory.</param>
-        /// <param name="register"><see cref="Register"/> to write to memory.</param>
-        public void WriteInstruction(Instruction instruction, Register register)
-        {
-            WriteInstruction(instruction);
-            WriteRegister(register);
-        }
-
-        /// <summary>
-        /// Writes an <see cref="Instruction"/> and <see cref="byte"/> to memory.
-        /// </summary>
-        /// <param name="instruction"><see cref="Instruction"/> to write to memory.</param>
-        /// <param name="value">Value to write to memory.</param>
-        public void WriteInstruction(Instruction instruction, byte value)
-        {
-            WriteInstruction(instruction);
-            WriteU8(value);
-        }
-
-        /// <summary>
-        /// Writes an <see cref="Instruction"/> and <see cref="ushort"/> to memory.
-        /// </summary>
-        /// <param name="instruction"><see cref="Instruction"/> to write to memory.</param>
-        /// <param name="value">Value to write to memory.</param>
-        public void WriteInstruction(Instruction instruction, ushort value)
-        {
-            WriteInstruction(instruction);
-            WriteU16(value);
-        }
-
-        /// <summary>
-        /// Writes an <see cref="Instruction"/>, <see cref="ushort"/>, and <see cref="Register"/> to memory.
-        /// </summary>
-        /// <param name="instruction"><see cref="Instruction"/> to write to memory.</param>
-        /// <param name="value">Value to write to memory.</param>
-        /// <param name="register"><see cref="Register"/> to write to memory.</param>
-        public void WriteInstruction(Instruction instruction, ushort value, Register register)
-        {
-            WriteInstruction(instruction);
-            WriteU16(value);
-            WriteRegister(register);
-        }
-
-        /// <summary>
-        /// Writes an <see cref="Instruction"/>, <see cref="byte"/>, and <see cref="Register"/> to memory.
-        /// </summary>
-        /// <param name="instruction"><see cref="Instruction"/> to write to memory.</param>
-        /// <param name="value">Value to write to memory.</param>
-        /// <param name="register"><see cref="Register"/> to write to memory.</param>
-        public void WriteInstruction(Instruction instruction, byte value, Register register)
-        {
-            WriteInstruction(instruction);
-            WriteU8(value);
-            WriteRegister(register);
-        }
-
-        /// <summary>
-        /// Writes an <see cref="Instruction"/> and two <see cref="Register"/>s to memory.
-        /// </summary>
-        /// <param name="instruction"><see cref="Instruction"/> to write to memory.</param>
-        /// <param name="register1"><see cref="Register"/> to write to memory.</param>
-        /// <param name="register2"><see cref="Register"/> to write to memory.</param>
-        public void WriteInstruction(Instruction instruction, Register register1, Register register2)
-        {
-            WriteInstruction(instruction);
-            WriteRegister(register1);
-            WriteRegister(register2);
-        }
-
-        /// <summary>
-        /// Writes an <see cref="Instruction"/>, <see cref="Register"/>, and <see cref="ushort"/> to memory.
-        /// </summary>
-        /// <param name="instruction"><see cref="Instruction"/> to write to memory.</param>
-        /// <param name="register"><see cref="Register"/> to write to memory.</param>
-        /// <param name="value">Value to write to memory.</param>
-        public void WriteInstruction(Instruction instruction, Register register, ushort value)
-        {
-            WriteInstruction(instruction);
-            WriteRegister(register);
-            WriteU16(value);
-        }
-
-        /// <summary>
-        /// Writes an <see cref="Instruction"/>, <see cref="Register"/>, and <see cref="byte"/> to memory.
-        /// </summary>
-        /// <param name="instruction"><see cref="Instruction"/> to write to memory.</param>
-        /// <param name="register"><see cref="Register"/> to write to memory.</param>
-        /// <param name="value">Value to write to memory.</param>
-        public void WriteInstruction(Instruction instruction, Register register, byte value)
-        {
-            WriteInstruction(instruction);
-            WriteRegister(register);
-            WriteU8(value);
-        }
-
-        /// <summary>
-        /// Writes an <see cref="Instruction"/> and two <see cref="ushort"/>s to memory.
-        /// </summary>
-        /// <param name="instruction"><see cref="Instruction"/> to write to memory.</param>
-        /// <param name="value1">Value to write to memory.</param>
-        /// <param name="value2">Value to write to memory.</param>
-        public void WriteInstruction(Instruction instruction, ushort value1, ushort value2)
-        {
-            WriteInstruction(instruction);
-            WriteU16(value1);
-            WriteU16(value2);
-        }
-
-        /// <summary>
-        /// Writes an <see cref="Instruction"/>, a <see cref="byte"/>, and a <see cref="ushort"/> to memory.
-        /// </summary>
-        /// <param name="instruction"><see cref="Instruction"/> to write to memory.</param>
-        /// <param name="value1">Value to write to memory.</param>
-        /// <param name="value2">Value to write to memory.</param>
-        public void WriteInstruction(Instruction instruction, byte value1, ushort value2)
-        {
-            WriteInstruction(instruction);
-            WriteU8(value1);
-            WriteU16(value2);
-        }
+        #endregion
     }
 }

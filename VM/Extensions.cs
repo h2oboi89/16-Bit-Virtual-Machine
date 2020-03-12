@@ -20,21 +20,6 @@ namespace VM
             return IsValid<Register>(register);
         }
 
-        private static string Name(Type type, object value)
-        {
-            return Enum.GetName(type, value);
-        }
-
-        public static string Name(this Register register)
-        {
-            return Name(typeof(Register), register);
-        }
-
-        public static string Name(this Instruction instruction)
-        {
-            return Name(typeof(Instruction), instruction);
-        }
-
         public static ushort MemoryAddress(this Register register)
         {
             return (ushort)((register - Register.R0) * Processor.DATASIZE);

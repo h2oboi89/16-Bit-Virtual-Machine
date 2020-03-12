@@ -35,6 +35,9 @@ namespace VM.Software.Assembling
 
             var labels = DetermineAddresses(statements);
 
+            // FUTURE: optimizations;
+            // - replace U16 values with U8 values where possible to save a byte?
+
             return GenerateBinary(statements, labels);
         }
 

@@ -3,14 +3,14 @@
     /// <summary>
     /// Virtual Machine <see cref="Hardware.Processor"/> register identifiers
     /// </summary>
-    public enum Register : byte
+    public enum Register
     {
         #region System Registers
         /// <summary>
         /// Program Counter. 
         /// Address of next value to fetch from memory.
         /// </summary>
-        PC = 0x00,
+        PC = default(byte),
         /// <summary>
         /// Pointer to Subroutine argument count.
         /// Arguments will be below this value (higher address) on the <see cref="Hardware.Stack"/>.

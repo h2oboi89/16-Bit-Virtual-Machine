@@ -4,11 +4,19 @@ using VM.Software.Assembling.Scanning;
 
 namespace VM.Software.Assembling.Parsing
 {
+    /// <summary>
+    /// Parses scanned <see cref="Token"/>s and generates an Abstract Syntax Tree that can be converted into an executable binary.
+    /// </summary>
     public static class Parser
     {
         private static List<Token> _tokens;
         private static int _current = 0;
 
+        /// <summary>
+        /// Parses the provided <see cref="Token"/>s and converts them into an Abstract Syntax Tree.
+        /// </summary>
+        /// <param name="tokens"><see cref="Token"/>s to parse.</param>
+        /// <returns>Abstract Syntax Tree that can be converted into binary.</returns>
         public static IEnumerable<Statement> Parse(IEnumerable<Token> tokens)
         {
             _tokens = new List<Token>(tokens);
@@ -156,7 +164,7 @@ namespace VM.Software.Assembling.Parsing
         {
             if (Check(TokenType.REGISTER))
             {
-                return new Argument((byte)Advance().Literal, sizeof(Register));
+                return new Argument((byte)(Register)Advance().Literal, sizeof(byte));
             }
 
             throw Error(Peek, $"Expected register");

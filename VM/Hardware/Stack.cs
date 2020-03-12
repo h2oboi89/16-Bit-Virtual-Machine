@@ -60,7 +60,7 @@ namespace VM.Hardware
 
             if (startAddress <= endAddress)
             {
-                throw new ArgumentOutOfRangeException(nameof(startAddress), "Start Address must be less than End Address.");
+                throw new ArgumentOutOfRangeException(nameof(startAddress), Resources.Stack_InvalidStartAddressMessage);
             }
 
             StartAddress = startAddress;
@@ -97,7 +97,7 @@ namespace VM.Hardware
         {
             if (StackPointer < EndAddress)
             {
-                throw new StackOverflowException("Stack is full.");
+                throw new StackOverflowException(Resources.Stack_FullMessage);
             }
         }
 
@@ -105,7 +105,7 @@ namespace VM.Hardware
         {
             if (StackPointer == FramePointer)
             {
-                throw new InvalidOperationException("Stack frame is empty.");
+                throw new InvalidOperationException(Resources.Stack_EmptyFrameMessage);
             }
         }
 
@@ -171,7 +171,7 @@ namespace VM.Hardware
         {
             if (FramePointer == StartAddress)
             {
-                throw new InvalidOperationException("In base frame, nothing to return to.");
+                throw new InvalidOperationException(Resources.Stack_BaseFrameReturnMessage);
             }
 
             ReturnsPointer = StackPointer;

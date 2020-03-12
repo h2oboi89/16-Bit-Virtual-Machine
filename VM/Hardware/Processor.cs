@@ -89,6 +89,15 @@ namespace VM.Hardware
         public event EventHandler Tick;
 
         /// <summary>
+        /// Resets processor back to initial state.
+        /// </summary>
+        public void ResetProcessor()
+        {
+            Initialize();
+            Reset(this, new ResetEventArgs(Instruction.NOP));
+        }
+
+        /// <summary>
         /// Resets <see cref="Processor"/> to intitial state.
         /// </summary>
         public void Initialize()
@@ -115,12 +124,7 @@ namespace VM.Hardware
             }
         }
 
-        /// <summary>
-        /// Gets value of <see cref="Register"/>.
-        /// </summary>
-        /// <param name="register"><see cref="Register"/> to get value from.</param>
-        /// <returns>value of the <see cref="Register"/></returns>
-        public ushort GetRegister(Register register)
+        private ushort GetRegister(Register register)
         {
             ValidateRegister(register);
 
@@ -135,7 +139,7 @@ namespace VM.Hardware
                 case Register.FP: return stack.FramePointer;
                 default: return registers.GetU16(register.MemoryAddress());
             }
-        }
+        } 
 
         /// <summary>
         /// Sets the value of <see cref="Register"/> to <paramref name="value"/>.
@@ -148,7 +152,7 @@ namespace VM.Hardware
         {
             if (direct && register.IsPrivate())
             {
-                throw new InvalidOperationException($"{register.Name()} register cannot be modified directly by code.");
+                throw new InvalidOperationException($"{register} register cannot be modified directly by code.");
             }
 
             switch (register)
@@ -160,6 +164,13 @@ namespace VM.Hardware
                 default: registers.SetU16(register.MemoryAddress(), value); break;
             }
         }
+
+        /// <summary>
+        /// Gets value of <see cref="Register"/>.
+        /// </summary>
+        /// <param name="register"><see cref="Register"/> to get value from.</param>
+        /// <returns>value of the <paramref name="register"/>.</returns>
+        public ushort this[Register register] => GetRegister(register);
 
         private byte FetchU8()
         {
@@ -189,19 +200,13 @@ namespace VM.Hardware
         }
 
         /// <summary>
-        /// Determines if <see cref="Flags"/> is set.
+        /// Determines if <paramref name="flag"/> is set.
         /// </summary>
         /// <param name="flag"><see cref="Flags"/> to check.</param>
-        /// <returns>True if <see cref="Flags"/> is set; otherwise false.</returns>
-        public bool IsSet(Flags flag)
-        {
-            return alu.IsSet(flag);
-        }
+        /// <returns>True if <paramref name="flag"/> is set; otherwise, false.</returns>
+        public bool this[Flags flag] => alu.IsSet(flag);
 
-        private Instruction Fetch()
-        {
-            return (Instruction)FetchU8();
-        }
+        private Instruction Fetch() => (Instruction)FetchU8();
 
         private void Decode(Instruction instruction)
         {
@@ -384,19 +389,19 @@ namespace VM.Hardware
                     break;
 
                 case Instruction.CALL:
-                    count = FetchU16();
+                    count = FetchU8();
                     address = FetchU16();
                     break;
 
                 case Instruction.CALLR:
-                    count = FetchU16();
+                    count = FetchU8();
                     register = FetchRegister();
 
                     address = GetRegister(register);
                     break;
 
                 case Instruction.RET:
-                    count = FetchU16();
+                    count = FetchU8();
                     break;
 
                 case Instruction.PUSH:

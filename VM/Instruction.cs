@@ -10,7 +10,7 @@
         /// Does nothing aside from increment the <see cref="Register.PC"/>.<br/>
         /// Arguments: NONE.
         /// </summary>
-        NOP = default(ushort),
+        NOP = default(byte),
 
         #region Register Instructions
         /// <summary>
@@ -221,6 +221,7 @@
         /// Arguments: A (<see cref="Register"/>).
         /// </summary>
         CMPZ,
+        // TODO: CMPNZ?
         /// <summary>
         /// Jump if Less Than.<br/>
         /// Jumps to address if <see cref="Flags.LESSTHAN"/> is set.<br/>
@@ -298,17 +299,17 @@
         #region Subroutine Instructions
         /// <summary>
         /// Call subroutine at address.<br/>
-        /// Arguments: Arguments Count (<see cref="ushort"/>), Address (<see cref="ushort"/>).
+        /// Arguments: Arguments Count (<see cref="byte"/>), Address (<see cref="ushort"/>).
         /// </summary>
         CALL,
         /// <summary>
         /// Call subroutine at address in Register.<br/>
-        /// Arguments: Arguments Count (<see cref="ushort"/>), Address (<see cref="Register"/>).
+        /// Arguments: Arguments Count (<see cref="byte"/>), Address (<see cref="Register"/>).
         /// </summary>
         CALLR,
         /// <summary>
         /// Return from subroutine.<br/>
-        /// Arguments: Return Values Count (<see cref="ushort"/>).
+        /// Arguments: Return Values Count (<see cref="byte"/>).
         /// </summary>
         RET,
         #endregion

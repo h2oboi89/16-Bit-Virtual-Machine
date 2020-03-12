@@ -1,6 +1,8 @@
 ﻿using NUnit.Framework;
+using System;
 using System.Threading;
 using VM.Hardware;
+using VM.Software.Assembling;
 
 namespace VM.Tests
 {
@@ -8,7 +10,7 @@ namespace VM.Tests
     public class FibonacciSequenceTest
     {
         [Test, Timeout(2000)]
-        public void TestMethod()
+        public void AllU16FibonacciNumbers()
         {
             var memory = new Memory(0x100);
             var processor = new Processor(memory, 0x10);
@@ -16,51 +18,61 @@ namespace VM.Tests
 
             const ushort SEQUENCEADDRESS = 0x00a0;
 
-            var loopAddress = (ushort)38;
-            var endAddress = (ushort)68;
+            var source = new string[]
+            {
+                "START:",
+                    // initialize register values
+                    "LDVR 0 $R0",
+                    "LDVR 1 $R1",
+                    "LDVR 0x10 $R2",
+                   $"LDVR {SEQUENCEADDRESS} $R3",
+                    "LDVR 2 $R4",
 
-            flasher.WriteInstruction(Instruction.LDVR, (ushort)0, Register.R1); // 0
-            flasher.WriteInstruction(Instruction.LDVR, (ushort)1, Register.R2); // 4
-            flasher.WriteInstruction(Instruction.LDVR, (ushort)Flags.CARRY, Register.R3); // 8
-            flasher.WriteInstruction(Instruction.LDVR, SEQUENCEADDRESS, Register.R4); // 12
-            flasher.WriteInstruction(Instruction.LDVR, (ushort)2, Register.R5); // 16
+                    // Save R0 and R1 value to memory
+                    "STRR $R0 $R3",
+                    "CALL 0 INCREMENT",
+                    "POP $T1", // return value count (0)
 
-            // Save R1 and R2 values to memory
-            flasher.WriteInstruction(Instruction.STRR, Register.R1, Register.R4); // 20
-            flasher.WriteInstruction(Instruction.ADD, Register.R4, Register.R5); // 23
-            flasher.WriteInstruction(Instruction.MOVE, Register.ACC, Register.R4); // 26
+                    "STRR $R1 $R3",
+                    "CALL 0 INCREMENT",
+                    "POP $T1", // return value count (0)
 
-            flasher.WriteInstruction(Instruction.STRR, Register.R2, Register.R4); // 29
-            flasher.WriteInstruction(Instruction.ADD, Register.R4, Register.R5); // 32
-            flasher.WriteInstruction(Instruction.MOVE, Register.ACC, Register.R4); // 35
+                "LOOP:",
+                    // Check for overflow
+                    "AND $T0 $R2",
+                    "JNZ END",
 
-            // LOOP Address
-            // Check if overflow happened
-            flasher.WriteInstruction(Instruction.AND, Register.T0, Register.R3); // 38
-            flasher.WriteInstruction(Instruction.JNZ, endAddress); // 41
+                    // calculate next Fibonacci number (R0 + R1 -> ACC)
+                    "ADD $R0 $R1",
+                
+                    // Save Flag register for check later
+                    "MOVE $FLAG $T0",
 
-            // calculate next Fibonacci number (R1 + R2 -> ACC)
-            flasher.WriteInstruction(Instruction.ADD, Register.R1, Register.R2); // 44
+                    // Write Fibonacci number to memory
+                    "STRR $ACC $R3",
 
-            // Save Flag register for check later
-            flasher.WriteInstruction(Instruction.MOVE, Register.FLAG, Register.T0); // 47
+                    // Shift all values, R1 -> R0, ACC -> R1
+                    "MOVE $R1 $R0",
+                    "MOVE $ACC $R1",
 
-            // Write Fibonacci number to memory
-            flasher.WriteInstruction(Instruction.STRR, Register.ACC, Register.R4); // 50
+                    // Increment address to save fibonnaci values at
+                    "CALL 0 INCREMENT",
+                    "POP $T1", // return value count (0)
 
-            // Shift all values, R2 -> R1, ACC -> R2
-            flasher.WriteInstruction(Instruction.MOVE, Register.R2, Register.R1); // 53
-            flasher.WriteInstruction(Instruction.MOVE, Register.ACC, Register.R2); // 56
+                    "JUMP LOOP",
 
-            // Increment address to save fibonnaci values at
-            flasher.WriteInstruction(Instruction.ADD, Register.R4, Register.R5); // 59
-            flasher.WriteInstruction(Instruction.MOVE, Register.ACC, Register.R4); // 62
+                "END:",
+                    "HALT",
 
-            // Go to start of loop
-            flasher.WriteInstruction(Instruction.JUMP, loopAddress); // 65
+                "INCREMENT:",
+                    "ADD $R3 $R4",
+                    "MOVE $ACC $R3",
+                    "RET 0"
+            };
 
-            // END Address
-            flasher.WriteInstruction(Instruction.RESET); // 68
+            var binary = Assembler.Assemble(string.Join(Environment.NewLine, source));
+
+            flasher.Flash(binary);
 
             processor.Run();
 

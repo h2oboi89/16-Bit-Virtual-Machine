@@ -20,7 +20,7 @@ namespace VM.HardwareTests.Tests
         public void Constructor_InvalidSize_ThrowsException()
         {
             Assert.That(() => new Memory(0x10001),
-                Throws.InstanceOf<ArgumentOutOfRangeException>().With.Message.StartsWith("Must be in range [0x0000, 0x10000]"));
+                Throws.InstanceOf<ArgumentOutOfRangeException>().With.Message.StartsWith("Must be in range [0x0000, 0x10000]."));
         }
 
         [Test]

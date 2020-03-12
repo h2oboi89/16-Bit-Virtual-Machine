@@ -1,59 +1,40 @@
 ﻿using System;
 using System.Diagnostics;
-using System.Text;
+using System.IO;
 using VM.Hardware;
 using VM.Hardware.IO;
+using VM.Software.Assembling;
 
 namespace VM.HelloWorld
 {
     class Program
     {
-        const ushort CONSOLEADDRESS = 0xf000;
+        const ushort CONSOLE_ADDRESS = 0xf000;
         const byte WIDTH = 80;
         const byte HEIGHT = 25;
+        const string PROGRAM_FILE = "Hello.VM";
 
-        static void Main(string[] args)
+        static void Main()
         {
             var memory = new Memory(0x10000);
-            var console = new SystemConsole(memory, CONSOLEADDRESS, WIDTH, HEIGHT);
+            var console = new SystemConsole(memory, CONSOLE_ADDRESS, WIDTH, HEIGHT);
             var processor = new Processor(memory, 0x800);
             var flasher = new Flasher(memory);
 
-            // Initialize registers
-            flasher.WriteInstruction(Instruction.LDVR, CONSOLEADDRESS, Register.R0);
-            flasher.WriteInstruction(Instruction.LDVR, CONSOLEADDRESS + (WIDTH * HEIGHT), Register.R1);
+            var programFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, PROGRAM_FILE);
 
-            var loopAddress = flasher.Address;
+            string source = File.ReadAllText(programFile);
 
-            // write '#' to entire console
-            flasher.WriteInstruction(Instruction.SBVR, (byte)'#', Register.R0);
-            flasher.WriteInstruction(Instruction.INC, Register.R0);
-            flasher.WriteInstruction(Instruction.CMP, Register.R0, Register.R1);
-            flasher.WriteInstruction(Instruction.JNE, loopAddress);
+            var binary = Assembler.Assemble(source);
 
-            // write string to Console
-            var address = CONSOLEADDRESS;
-
-            foreach (var b in Encoding.ASCII.GetBytes("Hello, World!"))
-            {
-                flasher.WriteInstruction(Instruction.SBVA, b, address++);
-            }
-
-            // Increment R0 from 0 -> 65,535
-            flasher.WriteInstruction(Instruction.LDVR, (ushort)Flags.CARRY, Register.R1);
-
-            loopAddress = flasher.Address;
-
-            flasher.WriteInstruction(Instruction.INC, Register.R0);
-            flasher.WriteInstruction(Instruction.AND, Register.FLAG, Register.R1);
-            flasher.WriteInstruction(Instruction.JZ, loopAddress);
-
-            // Halt program
-            flasher.WriteInstruction(Instruction.HALT);
+            flasher.Flash(binary);
 
             var instructions = 0;
 
-            processor.Tick += (o, e) => instructions++;
+            processor.Tick += (o, e) =>
+            {
+                instructions++;
+            };
             processor.Halt += (o, e) => console.Close();
 
             var start = DateTime.Now;

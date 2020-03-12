@@ -58,16 +58,16 @@ namespace VM.Hardware.IO
             var r = address / Width;
             var c = address % Width;
 
-            Write((char)e.Value, c, r);
+            Write((char)e.Value, r, c);
         }
 
         /// <summary>
         /// Writes a character to the specified location on the <see cref="Console"/>.
         /// </summary>
         /// <param name="value">Character to write to screen.</param>
-        /// <param name="column">Column to write value in (numbered left to right starting at 0).</param>
         /// <param name="row">Row to write value in (numbered top to bottom starting at 0).</param>
-        protected abstract void Write(char value, int column, int row);
+        /// <param name="column">Column to write value in (numbered left to right starting at 0).</param>
+        protected abstract void Write(char value, int row, int column);
 
         /// <summary>
         /// Shuts down the <see cref="Console"/>.

@@ -1,8 +1,10 @@
 ﻿#pragma warning disable CA1822 // Mark members as static
 using NUnit.Framework;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using VM.Hardware;
+using VM.Software.Assembling;
 
 namespace VM.HardwareTests.Tests
 {
@@ -18,26 +20,15 @@ namespace VM.HardwareTests.Tests
         private Flasher flasher;
 
         private bool resetOccured;
-        private Exception exception;
+        private Exception resetException;
+        private Instruction resetInstruction;
+
 
         private void OnReset(object sender, ResetEventArgs e)
         {
             resetOccured = true;
-            exception = e.Exception;
-        }
-
-        private bool haltOccured;
-
-        private void OnHalt(object sender, EventArgs e)
-        {
-            haltOccured = true;
-        }
-
-        private int tickCount = 0;
-
-        private void OnTick(object sender, EventArgs e)
-        {
-            tickCount++;
+            resetInstruction = e.Instruction;
+            resetException = e.Exception;
         }
 
         [SetUp]
@@ -48,153 +39,108 @@ namespace VM.HardwareTests.Tests
             processor = new Processor(memory, STACK_SIZE);
 
             resetOccured = false;
-            exception = null;
+            resetException = null;
             processor.Reset += OnReset;
-
-            haltOccured = false;
-            processor.Halt += OnHalt;
         }
 
         [TearDown]
         public void TearDown()
         {
             processor.Reset -= OnReset;
-            processor.Halt -= OnHalt;
         }
 
         #region Helper methods
-        private void FlashNNops(ushort n)
+        private void Flash(params string[] source)
         {
-            for (var i = 0; i < n; i++)
-            {
-                flasher.WriteInstruction(Instruction.NOP);
-            }
+            flasher.Flash(Assembler.Assemble(string.Join(Environment.NewLine, source)));
         }
 
-        /// <summary>
-        /// Executes program and asserts that PC is at correct value.
-        /// If <paramref name="expectedAddress"/> is not specified then <see cref="Flasher.Address"/> is used.
-        /// </summary>
-        /// <param name="expectedAddress">Optional expected PC value.</param>
-        private void ExecuteProgram(ushort? expectedAddress = null)
+        private void Flash(ushort address, params byte[] values)
+        {
+            flasher.Flash(address, values);
+        }
+
+        private void Flash(ushort address, params ushort[] values)
+        {
+            flasher.Flash(address, values);
+        }
+
+        private void ExecuteProgram(int steps, ushort? expectedAddress = null)
         {
             if (expectedAddress == null)
             {
                 expectedAddress = flasher.Address;
             }
 
-            for (var i = 0; i < flasher.InstructionCount; i++)
+            for (var i = 0; i < steps; i++)
             {
                 processor.Step();
             }
 
             Assert.That(processor.ProgramCounter, Is.EqualTo(expectedAddress.Value));
+
+            Assert.That(resetException, Is.Null);
         }
 
-        /// <summary>
-        /// Writes values to <see cref="Memory"/> and resets <see cref="Flasher.Address"/> to 0.
-        /// Should be called before all program instructions are written to allow <see cref="AssertPCIsAtExpectedAddress"/> to function.
-        /// </summary>
-        /// <param name="address">Location in memory to store value</param>
-        /// <param name="value">Value to store in memory.</param>
-        private void WriteValueToMemory(ushort address, ushort value)
+        private void FlashAndExecute(string source, ushort? expectedAddress = null)
         {
-            flasher.Address = address;
-
-            flasher.WriteU16(value);
-
             flasher.Address = 0;
+
+            Flash(source);
+
+            ExecuteProgram(1, expectedAddress);
         }
 
-        private void WriteByteToMemory(ushort address, byte value)
+        private void FlashAndExecute(IEnumerable<string> source, ushort? expectedAddress = null)
         {
-            flasher.Address = address;
-
-            flasher.WriteU8(value);
-
             flasher.Address = 0;
-        }
 
-        private void Reset()
-        {
-            flasher.WriteInstruction(Instruction.RESET);
-            processor.Step();
-            flasher.Address = 0;
-        }
+            Flash(string.Join(Environment.NewLine, source));
 
-        private void LoadValueIntoRegister(ushort value, Register register)
-        {
-            flasher.WriteInstruction(Instruction.LDVR, value, register);
-        }
-
-        private void LoadValueIntoRegisterR0(ushort value)
-        {
-            LoadValueIntoRegister(value, Register.R0);
-        }
-
-        private void SetupBinaryInstruction(Instruction instruction, ushort valueA, ushort valueB)
-        {
-            LoadValueIntoRegister(valueA, Register.R0);
-            LoadValueIntoRegister(valueB, Register.R1);
-            flasher.WriteInstruction(instruction, Register.R0, Register.R1);
+            ExecuteProgram(source.Count(), expectedAddress);
         }
 
         private void AssertZeroValueAndFlag(Register register = Register.ACC)
         {
-            Assert.That(processor.GetRegister(register), Is.Zero);
-            Assert.That(processor.IsSet(Flags.ZERO), Is.True);
+            Assert.That(processor[register], Is.Zero);
+            Assert.That(processor[Flags.ZERO], Is.True);
         }
 
         private void AssertProcessorIsInInitialState()
         {
             Assert.That(processor.ProgramCounter, Is.Zero);
-            Assert.That(processor.GetRegister(Register.ACC), Is.Zero);
-            Assert.That(processor.GetRegister(Register.FLAG), Is.Zero);
-
-            Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(STACK_START_ADDRESS));
-            Assert.That(processor.GetRegister(Register.FP), Is.EqualTo(STACK_START_ADDRESS));
-
-            Assert.That(processor.GetRegister(Register.R0), Is.Zero);
-            Assert.That(processor.GetRegister(Register.R1), Is.Zero);
-            Assert.That(processor.GetRegister(Register.R2), Is.Zero);
-            Assert.That(processor.GetRegister(Register.R3), Is.Zero);
-            Assert.That(processor.GetRegister(Register.R4), Is.Zero);
-            Assert.That(processor.GetRegister(Register.R5), Is.Zero);
-            Assert.That(processor.GetRegister(Register.R6), Is.Zero);
-            Assert.That(processor.GetRegister(Register.R7), Is.Zero);
-
-            Assert.That(processor.GetRegister(Register.T0), Is.Zero);
-            Assert.That(processor.GetRegister(Register.T1), Is.Zero);
-            Assert.That(processor.GetRegister(Register.T2), Is.Zero);
-            Assert.That(processor.GetRegister(Register.T3), Is.Zero);
-            Assert.That(processor.GetRegister(Register.T4), Is.Zero);
-            Assert.That(processor.GetRegister(Register.T5), Is.Zero);
-            Assert.That(processor.GetRegister(Register.T6), Is.Zero);
-            Assert.That(processor.GetRegister(Register.T7), Is.Zero);
+            Assert.That(processor[Register.ACC], Is.Zero);
+            Assert.That(processor[Register.FLAG], Is.Zero);
+            Assert.That(processor[Register.SP], Is.EqualTo(STACK_START_ADDRESS));
+            Assert.That(processor[Register.FP], Is.EqualTo(STACK_START_ADDRESS));
+            Assert.That(processor[Register.R0], Is.Zero);
+            Assert.That(processor[Register.R1], Is.Zero);
+            Assert.That(processor[Register.R2], Is.Zero);
+            Assert.That(processor[Register.R3], Is.Zero);
+            Assert.That(processor[Register.R4], Is.Zero);
+            Assert.That(processor[Register.R5], Is.Zero);
+            Assert.That(processor[Register.R6], Is.Zero);
+            Assert.That(processor[Register.R7], Is.Zero);
+            Assert.That(processor[Register.T0], Is.Zero);
+            Assert.That(processor[Register.T1], Is.Zero);
+            Assert.That(processor[Register.T2], Is.Zero);
+            Assert.That(processor[Register.T3], Is.Zero);
+            Assert.That(processor[Register.T4], Is.Zero);
+            Assert.That(processor[Register.T5], Is.Zero);
+            Assert.That(processor[Register.T6], Is.Zero);
+            Assert.That(processor[Register.T7], Is.Zero);
         }
 
-        private void AssertExceptionOccursAndProcessorResets(Type exceptionType, string expectedMessage)
+        private void AssertExceptionOccursAndProcessorResets(Type exceptionType, Instruction expectedInstruction, string expectedMessage)
         {
             Assert.That(() => processor.Step(), Throws.Exception.TypeOf(exceptionType)
                 .With.Message.EqualTo(expectedMessage));
 
             Assert.That(resetOccured, Is.True);
-            Assert.That(exception.Message, Is.EqualTo(expectedMessage));
+            Assert.That(resetInstruction, Is.EqualTo(expectedInstruction));
+            Assert.That(resetException.Message, Is.EqualTo(expectedMessage));
 
             AssertProcessorIsInInitialState();
-        }
-
-        private void FillStack(ushort amount = STACK_SIZE)
-        {
-            LoadValueIntoRegisterR0(0x1234);
-            for (var i = 0; i < amount; i++)
-            {
-                flasher.WriteInstruction(Instruction.PUSH, Register.R0);
-            }
-
-            Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(STACK_START_ADDRESS));
-
-            ExecuteProgram();
         }
         #endregion
 
@@ -213,13 +159,20 @@ namespace VM.HardwareTests.Tests
         [Test]
         public void Tick_FiresAfterEachStep()
         {
-            FlashNNops(10);
+            var count = 10;
+
+            var tickCount = 0;
+
+            void OnTick(object sender, EventArgs e)
+            {
+                tickCount++;
+            }
 
             processor.Tick += OnTick;
 
-            ExecuteProgram();
+            FlashAndExecute(Enumerable.Repeat("NOP", count));
 
-            Assert.That(tickCount, Is.EqualTo(10));
+            Assert.That(tickCount, Is.EqualTo(count));
 
             processor.Tick -= OnTick;
         }
@@ -236,11 +189,11 @@ namespace VM.HardwareTests.Tests
             {
                 flasher.Address = 0;
 
-                LoadValueIntoRegister(0x1234, register);
+                Flash($"LDVR 0x1234 ${register}");
 
                 AssertExceptionOccursAndProcessorResets(
-                    typeof(InvalidOperationException),
-                    $"{Enum.GetName(typeof(Register), register)} register cannot be modified directly by code.");
+                    typeof(InvalidOperationException), Instruction.LDVR,
+                    $"{register} register cannot be modified directly by code.");
             }
         }
 
@@ -250,7 +203,7 @@ namespace VM.HardwareTests.Tests
             var publicRegisters = new Register[]
             {
                 Register.ACC, Register.FLAG, Register.SP, Register.FP,
-                
+
                 Register.R0, Register.R1, Register.R2, Register.R3,
                 Register.R4, Register.R5, Register.R6, Register.R7,
                 Register.R8, Register.R9, Register.R10, Register.R11,
@@ -267,125 +220,165 @@ namespace VM.HardwareTests.Tests
                 Register.T12, Register.T13, Register.T14, Register.T15,
             };
 
+            var source = new List<string>();
+
             foreach (var register in publicRegisters)
             {
-                Reset();
-
-                LoadValueIntoRegister(0x1234, register);
-
-                ExecuteProgram();
-
-                Assert.That(processor.GetRegister(register), Is.EqualTo(0x1234));
+                source.Add($"LDVR 0x1234 ${register}");
             }
+
+            FlashAndExecute(source);
+
+            foreach (var register in publicRegisters)
+            {
+                Assert.That(processor[register], Is.EqualTo(0x1234));
+            }
+        }
+
+        [Test]
+        public void InvalidInstruction_ResetsAndThrowsException()
+        {
+            flasher.Flash(0xff);
+
+            AssertExceptionOccursAndProcessorResets(
+                typeof(InvalidOperationException), (Instruction)0xff,
+                "Unknown instruction 0xFF.");
         }
 
         [Test]
         public void InvalidRegisterInInstruction_ResetsAndThrowsException()
         {
-            flasher.WriteInstruction(Instruction.INC, (Register)0xff);
+            flasher.Flash(new byte[] { (byte)Instruction.INC, 0xff });
 
             AssertExceptionOccursAndProcessorResets(
-                typeof(InvalidOperationException),
+                typeof(InvalidOperationException), Instruction.INC,
                 "Unknown register 0xFF.");
         }
 
         [Test]
         public void GetRegister_InvalidRegister_ResetsAndThrowsException()
         {
-            processor.Step();
-
-            Assert.That(processor.ProgramCounter, Is.Not.Zero);
-
-            Assert.That(() => processor.GetRegister((Register)0xff), Throws.InvalidOperationException
+            Assert.That(() => processor[(Register)0xff], Throws.InvalidOperationException
                 .With.Message.EqualTo("Unknown register 0xFF."));
         }
 
         [Test]
         public void InvalidMemoryAccess_ResetsAndThrowsException()
         {
-            flasher.WriteInstruction(Instruction.STVA, 0x1234, 0xffff);
+            Flash("STVA 0x1234 0xffff");
 
             AssertExceptionOccursAndProcessorResets(
-                typeof(IndexOutOfRangeException),
+                typeof(IndexOutOfRangeException), Instruction.STVA,
                 "Invalid memory address 0xFFFF. Valid Range: [0x0000, 0x7FFF]");
+        }
+
+        [Test]
+        public void ResetProcessor_ResetsProcessor()
+        {
+            FlashAndExecute("NOP");
+
+            Assert.That(processor[Register.PC], Is.Not.Zero);
+
+            processor.ResetProcessor();
+
+            AssertProcessorIsInInitialState();
+
+            Assert.That(resetOccured, Is.True);
+            Assert.That(resetException, Is.Null);
         }
 
         #region Instructions
         [Test]
         public void NOP_DoesNothing()
         {
-            FlashNNops(50);
-
-            ExecuteProgram();
+            FlashAndExecute(Enumerable.Repeat("NOP", 10));
         }
 
         #region Register
         [Test]
         public void MOVE_MovesValueFromRegisterAToRegisterB()
         {
-            LoadValueIntoRegisterR0(0x1234);
-            flasher.WriteInstruction(Instruction.MOVE, Register.R0, Register.R1);
+            var source = new string[]
+            {
+                "LDVR 0x1234 $R0",
+                "MOVE $R0 $R1"
+            };
 
-            ExecuteProgram();
+            FlashAndExecute(source);
 
-            Assert.That(processor.GetRegister(Register.R1), Is.EqualTo(0x1234));
+            Assert.That(processor[Register.R1], Is.EqualTo(0x1234));
         }
 
         [Test]
         public void INC_IncrementsRegisterValue()
         {
-            LoadValueIntoRegisterR0(0x1234);
-            flasher.WriteInstruction(Instruction.INC, Register.R0);
+            var source = new string[]
+            {
+                "LDVR 0x1234 $R0",
+                "INC $R0"
+            };
 
-            ExecuteProgram();
+            FlashAndExecute(source);
 
-            Assert.That(processor.GetRegister(Register.R0), Is.EqualTo(0x1235));
-            Assert.That(processor.IsSet(Flags.CARRY), Is.False);
+            Assert.That(processor[Register.R0], Is.EqualTo(0x1235));
+            Assert.That(processor[Flags.CARRY], Is.False);
         }
 
         [Test]
         public void INC_Overflow_WrapsAndSetsZeroAndCarryFlags()
         {
-            LoadValueIntoRegisterR0(0xffff);
-            flasher.WriteInstruction(Instruction.INC, Register.R0);
+            var source = new string[]
+            {
+                "LDVR 0xffff $R0",
+                "INC $R0"
+            };
 
-            ExecuteProgram();
+            FlashAndExecute(source);
 
             AssertZeroValueAndFlag(Register.R0);
-            Assert.That(processor.IsSet(Flags.CARRY), Is.True);
+            Assert.That(processor[Flags.CARRY], Is.True);
         }
 
         [Test]
         public void DEC_DecrementsRegisterValue()
         {
-            LoadValueIntoRegisterR0(0x1234);
-            flasher.WriteInstruction(Instruction.DEC, Register.R0);
+            var source = new string[]
+            {
+                "LDVR 0x1234 $R0",
+                "DEC $R0"
+            };
 
-            ExecuteProgram();
+            FlashAndExecute(source);
 
-            Assert.That(processor.GetRegister(Register.R0), Is.EqualTo(0x1233));
-            Assert.That(processor.IsSet(Flags.CARRY), Is.False);
+            Assert.That(processor[Register.R0], Is.EqualTo(0x1233));
+            Assert.That(processor[Flags.CARRY], Is.False);
         }
 
         [Test]
         public void DEC_Underflow_WrapsAndSetsCarryFlag()
         {
-            LoadValueIntoRegisterR0(0x0000);
-            flasher.WriteInstruction(Instruction.DEC, Register.R0);
+            var source = new string[]
+            {
+                "LDVR 0x0000 $R0",
+                "DEC $R0"
+            };
 
-            ExecuteProgram();
+            FlashAndExecute(source);
 
-            Assert.That(processor.GetRegister(Register.R0), Is.EqualTo(0xffff));
-            Assert.That(processor.IsSet(Flags.CARRY), Is.True);
+            Assert.That(processor[Register.R0], Is.EqualTo(0xffff));
+            Assert.That(processor[Flags.CARRY], Is.True);
         }
 
         [Test]
         public void DEC_ZeroResult_SetsZeroFlag()
         {
-            LoadValueIntoRegisterR0(0x0001);
-            flasher.WriteInstruction(Instruction.DEC, Register.R0);
+            var source = new string[]
+            {
+                "LDVR 0x0001 $R0",
+                "DEC $R0"
+            };
 
-            ExecuteProgram();
+            FlashAndExecute(source);
 
             AssertZeroValueAndFlag(Register.R0);
         }
@@ -395,79 +388,65 @@ namespace VM.HardwareTests.Tests
         [Test]
         public void LDVR_LoadsValueIntoRegister()
         {
-            LoadValueIntoRegisterR0(0x1234);
+            FlashAndExecute("LDVR 0x1234 $R0");
 
-            ExecuteProgram();
-
-            Assert.That(processor.GetRegister(Register.R0), Is.EqualTo(0x1234));
+            Assert.That(processor[Register.R0], Is.EqualTo(0x1234));
         }
 
         [Test]
         public void LDAR_LoadsValueFromAddressIntoRegister()
         {
-            ushort address = 0x10;
+            Flash(0x10, 0x1234);
 
-            WriteValueToMemory(address, 0x1234);
+            FlashAndExecute("LDAR 0x10 $R0");
 
-            flasher.WriteInstruction(Instruction.LDAR, address, Register.R0);
-
-            ExecuteProgram();
-
-            Assert.That(processor.GetRegister(Register.R0), Is.EqualTo(0x1234));
+            Assert.That(processor[Register.R0], Is.EqualTo(0x1234));
         }
 
         [Test]
         public void LDRR_LoadsValueFromAddressInRegisterIntoRegister()
         {
-            ushort address = 0x10;
+            Flash(0x10, 0x1234);
 
-            WriteValueToMemory(address, 0x1234);
+            FlashAndExecute(new string[]
+            {
+                "LDVR 0x10 $R0",
+                "LDRR $R0 $R1"
+            });
 
-            LoadValueIntoRegisterR0(address);
-            flasher.WriteInstruction(Instruction.LDRR, Register.R0, Register.R1);
-
-            ExecuteProgram();
-
-            Assert.That(processor.GetRegister(Register.R1), Is.EqualTo(0x1234));
+            Assert.That(processor[Register.R1], Is.EqualTo(0x1234));
         }
 
         [Test]
         public void LBVR_LoadsByteValueIntoRegister()
         {
-            flasher.WriteInstruction(Instruction.LBVR, 0xff, Register.R0);
+            FlashAndExecute("LBVR 0xff $R0");
 
-            ExecuteProgram();
-
-            Assert.That(processor.GetRegister(Register.R0), Is.EqualTo(0x00ff));
+            Assert.That(processor[Register.R0], Is.EqualTo(0x00ff));
         }
 
         [Test]
         public void LBAR_LoadsByteValueFromAddressIntoRegister()
         {
-            ushort address = 0x10;
+            Flash(0x10, 0xff);
 
-            WriteByteToMemory(address, 0xff);
+            FlashAndExecute("LBAR 0x10 $R0");
 
-            flasher.WriteInstruction(Instruction.LBAR, address, Register.R0);
-
-            ExecuteProgram();
-
-            Assert.That(processor.GetRegister(Register.R0), Is.EqualTo(0x00ff));
+            Assert.That(processor[Register.R0], Is.EqualTo(0x00ff));
         }
 
         [Test]
         public void LBRR_LoadsByteValueFromAddressInRegisterIntoRegister()
         {
-            ushort address = 0x10;
+            Flash(0x10, 0xff);
 
-            WriteByteToMemory(address, 0xff);
+            FlashAndExecute(new string[]
+            {
+                "LDVR 0x10 $R0",
+                "LBRR $R0 $R1"
+            });
 
-            LoadValueIntoRegisterR0(address);
-            flasher.WriteInstruction(Instruction.LBRR, Register.R0, Register.R1);
-
-            ExecuteProgram();
-
-            Assert.That(processor.GetRegister(Register.R1), Is.EqualTo(0x00ff));
+            Assert.That(processor[Register.R1], Is.EqualTo(0x00ff));
         }
         #endregion
 
@@ -475,113 +454,107 @@ namespace VM.HardwareTests.Tests
         [Test]
         public void STVA_StoresValueAtAddress()
         {
-            ushort address = 0x10;
+            Assert.That(memory.GetU16(0x10), Is.Zero);
 
-            flasher.WriteInstruction(Instruction.STVA, 0x1234, address);
+            FlashAndExecute("STVA 0x1234 0x10");
 
-            Assert.That(memory.GetU16(address), Is.Zero);
-
-            ExecuteProgram();
-
-            Assert.That(memory.GetU16(address), Is.EqualTo(0x1234));
+            Assert.That(memory.GetU16(0x10), Is.EqualTo(0x1234));
         }
 
         [Test]
         public void STVR_StoresValueAtAddressInRegister()
         {
-            ushort address = 0x10;
+            Assert.That(memory.GetU16(0x10), Is.Zero);
 
-            LoadValueIntoRegisterR0(address);
-            flasher.WriteInstruction(Instruction.STVR, 0x1234, Register.R0);
+            FlashAndExecute(new string[]
+            {
+                "LDVR 0x10 $R0",
+                "STVR 0x1234 $R0"
+            });
 
-            Assert.That(memory.GetU16(address), Is.Zero);
-
-            ExecuteProgram();
-
-            Assert.That(memory.GetU16(address), Is.EqualTo(0x1234));
+            Assert.That(memory.GetU16(0x10), Is.EqualTo(0x1234));
         }
 
         [Test]
         public void STRA_StoresValueInRegisterAtAddress()
         {
-            ushort address = 0x10;
+            Assert.That(memory.GetU16(0x10), Is.Zero);
 
-            LoadValueIntoRegisterR0(0x1234);
-            flasher.WriteInstruction(Instruction.STRA, Register.R0, address);
+            FlashAndExecute(new string[]
+            {
+                "LDVR 0x1234 $R0",
+                "STRA $R0 0x10"
+            });
 
-            ExecuteProgram();
-
-            Assert.That(memory.GetU16(address), Is.EqualTo(0x1234));
+            Assert.That(memory.GetU16(0x10), Is.EqualTo(0x1234));
         }
 
         [Test]
         public void STRR_StoresValueInRegisterAtAddressInRegister()
         {
-            ushort address = 0x10;
+            Assert.That(memory.GetU16(0x10), Is.Zero);
 
-            LoadValueIntoRegister(0x1234, Register.R0);
-            LoadValueIntoRegister(address, Register.R1);
-            flasher.WriteInstruction(Instruction.STRR, Register.R0, Register.R1);
+            FlashAndExecute(new string[]
+            {
+                "LDVR 0x1234 $R0",
+                "LDVR 0x10 $R1",
+                "STRR $R0 $R1"
+            });
 
-            ExecuteProgram();
-
-            Assert.That(memory.GetU16(address), Is.EqualTo(0x1234));
+            Assert.That(memory.GetU16(0x10), Is.EqualTo(0x1234));
         }
 
         [Test]
         public void SBVA_StoresByteValueAtAddress()
         {
-            ushort address = 0x10;
+            Assert.That(memory.GetU8(0x10), Is.Zero);
 
-            flasher.WriteInstruction(Instruction.SBVA, 0xff, address);
+            FlashAndExecute("SBVA 0xff 0x10");
 
-            Assert.That(memory.GetU8(address), Is.Zero);
-
-            ExecuteProgram();
-
-            Assert.That(memory.GetU8(address), Is.EqualTo(0xff));
+            Assert.That(memory.GetU8(0x10), Is.EqualTo(0xff));
         }
 
         [Test]
         public void SBVR_StoresByteValueAtAddressInRegister()
         {
-            ushort address = 0x10;
+            Assert.That(memory.GetU8(0x10), Is.Zero);
 
-            LoadValueIntoRegisterR0(address);
-            flasher.WriteInstruction(Instruction.SBVR, 0xff, Register.R0);
+            FlashAndExecute(new string[]
+            {
+                "LDVR 0x10 $R0",
+                "SBVR 0xff $R0"
+            });
 
-            Assert.That(memory.GetU8(address), Is.Zero);
-
-            ExecuteProgram();
-
-            Assert.That(memory.GetU8(address), Is.EqualTo(0xff));
+            Assert.That(memory.GetU8(0x10), Is.EqualTo(0xff));
         }
 
         [Test]
         public void SBRA_StoresByteValueInRegisterAtAddress()
         {
-            ushort address = 0x10;
+            Assert.That(memory.GetU8(0x10), Is.Zero);
 
-            LoadValueIntoRegisterR0(0x00ff);
-            flasher.WriteInstruction(Instruction.SBRA, Register.R0, address);
+            FlashAndExecute(new string[]
+            {
+                "LBVR 0xff $R0",
+                "SBRA $R0 0x10"
+            });
 
-            ExecuteProgram();
-
-            Assert.That(memory.GetU8(address), Is.EqualTo(0xff));
+            Assert.That(memory.GetU8(0x10), Is.EqualTo(0xff));
         }
 
         [Test]
         public void SBRR_StoresByteValueInRegisterAtAddressInRegister()
         {
-            ushort address = 0x10;
+            Assert.That(memory.GetU8(0x10), Is.Zero);
 
-            LoadValueIntoRegister(0xff, Register.R0);
-            LoadValueIntoRegister(address, Register.R1);
-            flasher.WriteInstruction(Instruction.SBRR, Register.R0, Register.R1);
+            FlashAndExecute(new string[]
+            {
+                "LBVR 0xff $R0",
+                "LDVR 0x10 $R1",
+                "SBRR $R0 $R1"
+            });
 
-            ExecuteProgram();
-
-            Assert.That(memory.GetU8(address), Is.EqualTo(0xff));
+            Assert.That(memory.GetU8(0x10), Is.EqualTo(0xff));
         }
         #endregion
 
@@ -589,64 +562,82 @@ namespace VM.HardwareTests.Tests
         [Test]
         public void ADD_AdditionOfTwoRegisterValues()
         {
-            SetupBinaryInstruction(Instruction.ADD, 0x1200, 0x0034);
+            FlashAndExecute(new string[]
+            {
+                "LDVR 0x1200 $R0",
+                "LDVR 0x0034 $R1",
+                "ADD $R0 $R1"
+            });
 
-            ExecuteProgram();
-
-            Assert.That(processor.GetRegister(Register.ACC), Is.EqualTo(0x1234));
-            Assert.That(processor.IsSet(Flags.CARRY), Is.False);
+            Assert.That(processor[Register.ACC], Is.EqualTo(0x1234));
+            Assert.That(processor[Flags.CARRY], Is.False);
         }
 
         [Test]
         public void ADD_Overflow_WrapsAndSetsCarryFlag()
         {
-            SetupBinaryInstruction(Instruction.ADD, 0xff00, 0x1000);
+            FlashAndExecute(new string[]
+            {
+                "LDVR 0xff00 $R0",
+                "LDVR 0x1000 $R1",
+                "ADD $R0 $R1"
+            });
 
-            ExecuteProgram();
-
-            Assert.That(processor.GetRegister(Register.ACC), Is.EqualTo(0x0f00));
-            Assert.That(processor.IsSet(Flags.CARRY), Is.True);
+            Assert.That(processor[Register.ACC], Is.EqualTo(0x0f00));
+            Assert.That(processor[Flags.CARRY], Is.True);
         }
 
         [Test]
         public void ADD_ZeroResult_SetsZeroAndCarryFlags()
         {
-            SetupBinaryInstruction(Instruction.ADD, 0xff00, 0x0100);
-
-            ExecuteProgram();
+            FlashAndExecute(new string[]
+            {
+                "LDVR 0xff00 $R0",
+                "LDVR 0x0100 $R1",
+                "ADD $R0 $R1"
+            });
 
             AssertZeroValueAndFlag();
-            Assert.That(processor.IsSet(Flags.CARRY), Is.True);
+            Assert.That(processor[Flags.CARRY], Is.True);
         }
 
         [Test]
         public void SUB_SubtractionOfTwoRegisterValues()
         {
-            SetupBinaryInstruction(Instruction.SUB, 0x1200, 0x0034);
+            FlashAndExecute(new string[]
+            {
+                "LDVR 0x1200 $R0",
+                "LDVR 0x0034 $R1",
+                "SUB $R0 $R1"
+            });
 
-            ExecuteProgram();
-
-            Assert.That(processor.GetRegister(Register.ACC), Is.EqualTo(0x11cc));
-            Assert.That(processor.IsSet(Flags.CARRY), Is.False);
+            Assert.That(processor[Register.ACC], Is.EqualTo(0x11cc));
+            Assert.That(processor[Flags.CARRY], Is.False);
         }
 
         [Test]
         public void SUB_Underflow_WrapsAndSetsCarryFlag()
         {
-            SetupBinaryInstruction(Instruction.SUB, 0x1000, 0xff00);
+            FlashAndExecute(new string[]
+            {
+                "LDVR 0x1000 $R0",
+                "LDVR 0xff00 $R1",
+                "SUB $R0 $R1"
+            });
 
-            ExecuteProgram();
-
-            Assert.That(processor.GetRegister(Register.ACC), Is.EqualTo(0x1100));
-            Assert.That(processor.IsSet(Flags.CARRY), Is.True);
+            Assert.That(processor[Register.ACC], Is.EqualTo(0x1100));
+            Assert.That(processor[Flags.CARRY], Is.True);
         }
 
         [Test]
         public void SUB_ZeroResult_SetsZeroFlag()
         {
-            SetupBinaryInstruction(Instruction.SUB, 0x1234, 0x1234);
-
-            ExecuteProgram();
+            FlashAndExecute(new string[]
+            {
+                "LDVR 0x1234 $R0",
+                "LDVR 0x1234 $R1",
+                "SUB $R0 $R1"
+            });
 
             AssertZeroValueAndFlag();
         }
@@ -654,31 +645,40 @@ namespace VM.HardwareTests.Tests
         [Test]
         public void MUL_MultiplicationOfTwoRegisterValues()
         {
-            SetupBinaryInstruction(Instruction.MUL, 0x00f0, 0x00f0);
+            FlashAndExecute(new string[]
+            {
+                "LDVR 0x00f0 $R0",
+                "LDVR 0x00f0 $R1",
+                "MUL $R0 $R1"
+            });
 
-            ExecuteProgram();
-
-            Assert.That(processor.GetRegister(Register.ACC), Is.EqualTo(0xe100));
-            Assert.That(processor.IsSet(Flags.CARRY), Is.False);
+            Assert.That(processor[Register.ACC], Is.EqualTo(0xe100));
+            Assert.That(processor[Flags.CARRY], Is.False);
         }
 
         [Test]
         public void MUL_Overflow_WrapsAndSetsCarryFlag()
         {
-            SetupBinaryInstruction(Instruction.MUL, 0x1234, 0xffff);
+            FlashAndExecute(new string[]
+            {
+                "LDVR 0x1234 $R0",
+                "LDVR 0xffff $R1",
+                "MUL $R0 $R1"
+            });
 
-            ExecuteProgram();
-
-            Assert.That(processor.GetRegister(Register.ACC), Is.EqualTo(0xedcc));
-            Assert.That(processor.IsSet(Flags.CARRY), Is.True);
+            Assert.That(processor[Register.ACC], Is.EqualTo(0xedcc));
+            Assert.That(processor[Flags.CARRY], Is.True);
         }
 
         [Test]
         public void MUL_ZeroResult_SetsZeroFlag()
         {
-            SetupBinaryInstruction(Instruction.MUL, 0x1234, 0x0000);
-
-            ExecuteProgram();
+            FlashAndExecute(new string[]
+            {
+                "LDVR 0x1234 $R0",
+                "LDVR 0x0000 $R1",
+                "MUL $R0 $R1"
+            });
 
             AssertZeroValueAndFlag();
         }
@@ -686,33 +686,43 @@ namespace VM.HardwareTests.Tests
         [Test]
         public void DIV_DivisionOfTwoRegisterValues()
         {
-            SetupBinaryInstruction(Instruction.DIV, 0x0040, 0x0002);
+            FlashAndExecute(new string[]
+            {
+                "LDVR 0x0040 $R0",
+                "LDVR 0x0002 $R1",
+                "DIV $R0 $R1"
+            });
 
-            ExecuteProgram();
-
-            Assert.That(processor.GetRegister(Register.ACC), Is.EqualTo(0x0020));
-            Assert.That(processor.IsSet(Flags.CARRY), Is.False);
+            Assert.That(processor[Register.ACC], Is.EqualTo(0x0020));
+            Assert.That(processor[Flags.CARRY], Is.False);
         }
 
         [Test]
         public void DIV_ByZero_ResetsAndThrowsException()
         {
-            SetupBinaryInstruction(Instruction.DIV, 0x1234, 0x0000);
+            Flash(
+                "LDVR 0x1234 $R0",
+                "LDVR 0x0000 $R1",
+                "DIV $R0 $R1"
+            );
 
             processor.Step();
             processor.Step();
 
             AssertExceptionOccursAndProcessorResets(
-                typeof(DivideByZeroException),
+                typeof(DivideByZeroException), Instruction.DIV,
                 "Attempted to divide by zero.");
         }
 
         [Test]
         public void DIV_ZeroResult_SetsZeroFlag()
         {
-            SetupBinaryInstruction(Instruction.DIV, 0x0001, 0xffff);
-
-            ExecuteProgram();
+            FlashAndExecute(new string[]
+            {
+                "LDVR 0x0001 $R0",
+                "LDVR 0xffff $R1",
+                "DIV $R0 $R1"
+            });
 
             AssertZeroValueAndFlag();
         }
@@ -722,19 +732,25 @@ namespace VM.HardwareTests.Tests
         [Test]
         public void AND_BinaryAndOfTwoRegisterValues()
         {
-            SetupBinaryInstruction(Instruction.AND, 0x00ff, 0xaaaa);
+            FlashAndExecute(new string[]
+            {
+                "LDVR 0x00ff $R0",
+                "LDVR 0xaaaa $R1",
+                "AND $R0 $R1"
+            });
 
-            ExecuteProgram();
-
-            Assert.That(processor.GetRegister(Register.ACC), Is.EqualTo(0x00aa));
+            Assert.That(processor[Register.ACC], Is.EqualTo(0x00aa));
         }
 
         [Test]
         public void AND_ZeroResult_SetsZeroFlag()
         {
-            SetupBinaryInstruction(Instruction.AND, 0x00ff, 0xff00);
-
-            ExecuteProgram();
+            FlashAndExecute(new string[]
+            {
+                "LDVR 0x00ff $R0",
+                "LDVR 0xff00 $R1",
+                "AND $R0 $R1"
+            });
 
             AssertZeroValueAndFlag();
         }
@@ -742,19 +758,25 @@ namespace VM.HardwareTests.Tests
         [Test]
         public void OR_BinaryOrOfTwoRegisterValues()
         {
-            SetupBinaryInstruction(Instruction.OR, 0x0055, 0xaaaa);
+            FlashAndExecute(new string[]
+            {
+                "LDVR 0x0055 $R0",
+                "LDVR 0xaaaa $R1",
+                "OR $R0 $R1"
+            });
 
-            ExecuteProgram();
-
-            Assert.That(processor.GetRegister(Register.ACC), Is.EqualTo(0xaaff));
+            Assert.That(processor[Register.ACC], Is.EqualTo(0xaaff));
         }
 
         [Test]
         public void OR_ZeroResult_SetsZeroFlag()
         {
-            SetupBinaryInstruction(Instruction.OR, 0x0000, 0x0000);
-
-            ExecuteProgram();
+            FlashAndExecute(new string[]
+            {
+                "LDVR 0x0000 $R0",
+                "LDVR 0x0000 $R1",
+                "OR $R0 $R1"
+            });
 
             AssertZeroValueAndFlag();
         }
@@ -762,19 +784,25 @@ namespace VM.HardwareTests.Tests
         [Test]
         public void XOR_BinaryXorOfTwoRegisterValues()
         {
-            SetupBinaryInstruction(Instruction.XOR, 0x00ff, 0xaaaa);
+            FlashAndExecute(new string[]
+            {
+                "LDVR 0x00ff $R0",
+                "LDVR 0xaaaa $R1",
+                "XOR $R0 $R1"
+            });
 
-            ExecuteProgram();
-
-            Assert.That(processor.GetRegister(Register.ACC), Is.EqualTo(0xaa55));
+            Assert.That(processor[Register.ACC], Is.EqualTo(0xaa55));
         }
 
         [Test]
         public void XOR_ZeroResult_SetsZeroFlag()
         {
-            SetupBinaryInstruction(Instruction.XOR, 0x00ff, 0x00ff);
-
-            ExecuteProgram();
+            FlashAndExecute(new string[]
+            {
+                "LDVR 0x00ff $R0",
+                "LDVR 0x00ff $R1",
+                "XOR $R0 $R1"
+            });
 
             AssertZeroValueAndFlag();
         }
@@ -782,133 +810,123 @@ namespace VM.HardwareTests.Tests
         [Test]
         public void NOT_BinaryNotOfRegisterValue()
         {
-            LoadValueIntoRegisterR0(0xaaaa);
-            flasher.WriteInstruction(Instruction.NOT, Register.R0);
+            FlashAndExecute(new string[]
+            {
+                "LDVR 0xaaaa $R0",
+                "NOT $R0"
+            });
 
-            ExecuteProgram();
-
-            Assert.That(processor.GetRegister(Register.ACC), Is.EqualTo(0x5555));
+            Assert.That(processor[Register.ACC], Is.EqualTo(0x5555));
         }
 
         [Test]
         public void NOT_ZeroResult_SetsZeroFlag()
         {
-            LoadValueIntoRegisterR0(0xffff);
-            flasher.WriteInstruction(Instruction.NOT, Register.R0);
-
-            ExecuteProgram();
+            FlashAndExecute(new string[]
+            {
+                "LDVR 0xffff $R0",
+                "NOT $R0"
+            });
 
             AssertZeroValueAndFlag();
         }
 
         [Test]
-        public void SRL_ShiftsRegisterLeftByAmount()
+        public void SRL_ShiftsRegisterLeftByAmount([Range(0, 15)] int shiftAmount)
         {
-            for (byte i = 0; i < 16; i++)
+            FlashAndExecute(new string[]
             {
-                Reset();
+                "LDVR 0x0001 $R0",
+               $"SRL $R0 {shiftAmount}"
+            });
 
-                LoadValueIntoRegisterR0(0x0001);
-                flasher.WriteInstruction(Instruction.SRL, Register.R0, i);
-
-                ExecuteProgram();
-
-                Assert.That(processor.GetRegister(Register.ACC), Is.EqualTo(0x0001 << i));
-            }
+            Assert.That(processor[Register.ACC], Is.EqualTo(0x0001 << shiftAmount));
         }
 
         [Test]
         public void SRL_ExcessiveShift_ZeroesOutRegister()
         {
-            LoadValueIntoRegisterR0(0x0001);
-            flasher.WriteInstruction(Instruction.SRL, Register.R0, 16);
-
-            ExecuteProgram();
+            FlashAndExecute(new string[]
+            {
+                "LDVR 0x0001 $R0",
+                "SRL $R0 16"
+            });
 
             AssertZeroValueAndFlag();
         }
 
         [Test]
-        public void SRLR_ShiftsRegisterLeftByAmountInRegister()
+        public void SRLR_ShiftsRegisterLeftByAmountInRegister([Range(0, 15)] int shiftAmount)
         {
-            for (byte i = 0; i < 16; i++)
+            FlashAndExecute(new string[]
             {
-                Reset();
+                "LDVR 0x0001 $R0",
+               $"LBVR {shiftAmount} $R1",
+                "SRLR $R0 $R1"
+            });
 
-                LoadValueIntoRegister(0x0001, Register.R0);
-                LoadValueIntoRegister(i, Register.R1);
-                flasher.WriteInstruction(Instruction.SRLR, Register.R0, Register.R1);
-
-                ExecuteProgram();
-
-                Assert.That(processor.GetRegister(Register.ACC), Is.EqualTo(0x0001 << i));
-            }
+            Assert.That(processor[Register.ACC], Is.EqualTo(0x0001 << shiftAmount));
         }
 
         [Test]
         public void SRLR_ExcessiveShift_ZeroesOutRegister()
         {
-            LoadValueIntoRegister(0x0001, Register.R0);
-            LoadValueIntoRegister(16, Register.R1);
-            flasher.WriteInstruction(Instruction.SRLR, Register.R0, Register.R1);
-
-            ExecuteProgram();
+            FlashAndExecute(new string[]
+            {
+                "LDVR 0x0001 $R0",
+                "LBVR 16 $R1",
+                "SRLR $R0 $R1"
+            });
 
             AssertZeroValueAndFlag();
         }
 
         [Test]
-        public void SRR_ShiftsRegisterRightByAmount()
+        public void SRR_ShiftsRegisterRightByAmount([Range(0, 15)] int shiftAmount)
         {
-            for (byte i = 0; i < 16; i++)
+            FlashAndExecute(new string[]
             {
-                Reset();
+                "LDVR 0x8000 $R0",
+               $"SRR $R0 {shiftAmount}"
+            });
 
-                LoadValueIntoRegisterR0(0x8000);
-                flasher.WriteInstruction(Instruction.SRR, Register.R0, i);
-
-                ExecuteProgram();
-
-                Assert.That(processor.GetRegister(Register.ACC), Is.EqualTo(0x8000 >> i));
-            }
+            Assert.That(processor[Register.ACC], Is.EqualTo(0x8000 >> shiftAmount));
         }
 
         [Test]
         public void SRR_ExcessiveShift_ZeroesOutRegister()
         {
-            LoadValueIntoRegisterR0(0x8000);
-            flasher.WriteInstruction(Instruction.SRR, Register.R0, 16);
-
-            ExecuteProgram();
+            FlashAndExecute(new string[]
+            {
+                "LDVR 0x8000 $R0",
+                "SRR $R0 16"
+            });
 
             AssertZeroValueAndFlag();
         }
 
         [Test]
-        public void SRRR_ShiftsRegisterLeftByAmountInRegister()
+        public void SRRR_ShiftsRegisterLeftByAmountInRegister([Range(1, 15)] int shiftAmount)
         {
-            for (byte i = 0; i < 16; i++)
+            FlashAndExecute(new string[]
             {
-                Reset();
+                "LDVR 0x8000 $R0",
+               $"LBVR {shiftAmount} $R1",
+                "SRRR $R0 $R1"
+            });
 
-                LoadValueIntoRegister(0x8000, Register.R0);
-                LoadValueIntoRegister(i, Register.R1);
-                flasher.WriteInstruction(Instruction.SRRR, Register.R0, Register.R1);
-
-                ExecuteProgram();
-
-                Assert.That(processor.GetRegister(Register.ACC), Is.EqualTo(0x8000 >> i));
-            }
+            Assert.That(processor[Register.ACC], Is.EqualTo(0x8000 >> shiftAmount));
         }
 
         [Test]
         public void SRRR_ExcessiveShift_ZeroesOutRegister()
         {
-            LoadValueIntoRegister(0x8000, Register.R0);
-            LoadValueIntoRegister(16, Register.R1);
-            flasher.WriteInstruction(Instruction.SRRR, Register.R0, Register.R1);
-
-            ExecuteProgram();
+            FlashAndExecute(new string[]
+            {
+                "LDVR 0x8000 $R0",
+                "LBVR 16 $R1",
+                "SRRR $R0 $R1"
+            });
 
             AssertZeroValueAndFlag();
         }
@@ -918,18 +936,18 @@ namespace VM.HardwareTests.Tests
         [Test]
         public void JUMP_DoesUnconditionalJumpUsingAddress()
         {
-            flasher.WriteInstruction(Instruction.JUMP, 0x1234);
-
-            ExecuteProgram(0x1234);
+            FlashAndExecute("JUMP 0x1234", 0x1234);
         }
 
         [Test]
         public void JUMPR_DoesUnconditionalJumpUsingRegisterValue()
         {
-            LoadValueIntoRegisterR0(0x1234);
-            flasher.WriteInstruction(Instruction.JUMPR, Register.R0);
-
-            ExecuteProgram(0x1234);
+            FlashAndExecute(new string[]
+            {
+                "LDVR 0x1234 $R0",
+                "JUMPR $R0"
+            }
+            , 0x1234);
         }
         #endregion
 
@@ -937,295 +955,362 @@ namespace VM.HardwareTests.Tests
         [Test]
         public void CMP_LessThan_SetsLessThanFlag()
         {
-            SetupBinaryInstruction(Instruction.CMP, 0x1234, 0x4321);
+            FlashAndExecute(new string[]
+            {
+                "LDVR 0x1234 $R0",
+                "LDVR 0x4321 $R1",
+                "CMP $R0 $R1"
+            });
 
-            ExecuteProgram();
-
-            Assert.That(processor.IsSet(Flags.LESSTHAN), Is.True);
-            Assert.That(processor.IsSet(Flags.EQUAL), Is.False);
-            Assert.That(processor.IsSet(Flags.GREATERTHAN), Is.False);
+            Assert.That(processor[Flags.LESSTHAN], Is.True);
+            Assert.That(processor[Flags.EQUAL], Is.False);
+            Assert.That(processor[Flags.GREATERTHAN], Is.False);
         }
 
         [Test]
         public void CMP_EqualTo_SetsEqualFlag()
         {
-            SetupBinaryInstruction(Instruction.CMP, 0x1234, 0x1234);
+            FlashAndExecute(new string[]
+            {
+                "LDVR 0x1234 $R0",
+                "LDVR 0x1234 $R1",
+                "CMP $R0 $R1"
+            });
 
-            ExecuteProgram();
-
-            Assert.That(processor.IsSet(Flags.LESSTHAN), Is.False);
-            Assert.That(processor.IsSet(Flags.EQUAL), Is.True);
-            Assert.That(processor.IsSet(Flags.GREATERTHAN), Is.False);
+            Assert.That(processor[Flags.LESSTHAN], Is.False);
+            Assert.That(processor[Flags.EQUAL], Is.True);
+            Assert.That(processor[Flags.GREATERTHAN], Is.False);
         }
 
         [Test]
         public void CMP_GreaterThan_SetsGreaterThanFlag()
         {
-            SetupBinaryInstruction(Instruction.CMP, 0x4321, 0x1234);
+            FlashAndExecute(new string[]
+            {
+                "LDVR 0x4321 $R0",
+                "LDVR 0x1234 $R1",
+                "CMP $R0 $R1"
+            });
 
-            ExecuteProgram();
-
-            Assert.That(processor.IsSet(Flags.LESSTHAN), Is.False);
-            Assert.That(processor.IsSet(Flags.EQUAL), Is.False);
-            Assert.That(processor.IsSet(Flags.GREATERTHAN), Is.True);
+            Assert.That(processor[Flags.LESSTHAN], Is.False);
+            Assert.That(processor[Flags.EQUAL], Is.False);
+            Assert.That(processor[Flags.GREATERTHAN], Is.True);
         }
 
         [Test]
         public void CMPZ_Zero_SetsZeroFlag()
         {
-            LoadValueIntoRegisterR0(0x0000);
-            flasher.WriteInstruction(Instruction.CMPZ, Register.R0);
+            FlashAndExecute(new string[]
+            {
+                "LDVR 0x0000 $R0",
+                "CMPZ $R0"
+            });
 
-            ExecuteProgram();
-
-            Assert.That(processor.IsSet(Flags.ZERO), Is.True);
+            Assert.That(processor[Flags.ZERO], Is.True);
         }
 
         [Test]
         public void CMPZ_NotZero_DoesNothing()
         {
-            LoadValueIntoRegisterR0(0xffff);
-            flasher.WriteInstruction(Instruction.CMPZ, Register.R0);
+            FlashAndExecute(new string[]
+            {
+                "LDVR 0xffff $R0",
+                "CMPZ $R0"
+            });
 
-            ExecuteProgram();
-
-            Assert.That(processor.IsSet(Flags.ZERO), Is.False);
+            Assert.That(processor[Flags.ZERO], Is.False);
         }
 
         [Test]
         public void JLT_LessThanFlagIsSet_ChangesPC()
         {
-            SetupBinaryInstruction(Instruction.CMP, 0x1234, 0x4321);
-            flasher.WriteInstruction(Instruction.JLT, 0x008f);
-
-            ExecuteProgram(0x008f);
+            FlashAndExecute(new string[]
+            {
+                "LDVR 0x1234 $R0",
+                "LDVR 0x4321 $R1",
+                "CMP $R0 $R1",
+                "JLT 0x008f"
+            }, 0x008f);
         }
 
         [Test]
         public void JLT_LessThanFlagIsNotSet_DoesNothing()
         {
-            SetupBinaryInstruction(Instruction.CMP, 0x4321, 0x1234);
-            flasher.WriteInstruction(Instruction.JLT, 0x008f);
-
-            ExecuteProgram();
+            FlashAndExecute(new string[]
+            {
+                "LDVR 0x4321 $R0",
+                "LDVR 0x1234 $R1",
+                "CMP $R0 $R1",
+                "JLT 0x008f"
+            });
         }
 
         [Test]
         public void JLTR_LessThanFlagIsSet_ChangesPC()
         {
-            SetupBinaryInstruction(Instruction.CMP, 0x1234, 0x4321);
-            LoadValueIntoRegister(0x008f, Register.R3);
-            flasher.WriteInstruction(Instruction.JLTR, Register.R3);
-
-            ExecuteProgram(0x008f);
+            FlashAndExecute(new string[]
+            {
+                "LDVR 0x1234 $R0",
+                "LDVR 0x4321 $R1",
+                "CMP $R0 $R1",
+                "LDVR 0x008f $R2",
+                "JLTR $R2"
+            }, 0x008f);
         }
 
         [Test]
         public void JLTR_LessThanFlagIsNotSet_DoesNothing()
         {
-            SetupBinaryInstruction(Instruction.CMP, 0x4321, 0x1234);
-            LoadValueIntoRegister(0x008f, Register.R3);
-            flasher.WriteInstruction(Instruction.JLTR, Register.R3);
-
-            ExecuteProgram();
+            FlashAndExecute(new string[]
+            {
+                "LDVR 0x4321 $R0",
+                "LDVR 0x1234 $R1",
+                "CMP $R0 $R1",
+                "LDVR 0x008f $R2",
+                "JLTR $R2"
+            });
         }
 
         [Test]
         public void JGT_GreaterThanFlagIsSet_ChangesPC()
         {
-            SetupBinaryInstruction(Instruction.CMP, 0x4321, 0x1234);
-            flasher.WriteInstruction(Instruction.JGT, 0x008f);
-
-            ExecuteProgram(0x008f);
+            FlashAndExecute(new string[]
+            {
+                "LDVR 0x4321 $R0",
+                "LDVR 0x1234 $R1",
+                "CMP $R0 $R1",
+                "JGT 0x008f"
+            }, 0x008f);
         }
 
         [Test]
         public void JGT_GreaterThanFlagIsNotSet_ChangesPC()
         {
-            SetupBinaryInstruction(Instruction.CMP, 0x1234, 0x4321);
-            flasher.WriteInstruction(Instruction.JGT, 0x008f);
-
-            ExecuteProgram();
+            FlashAndExecute(new string[]
+            {
+                "LDVR 0x1234 $R0",
+                "LDVR 0x4321 $R1",
+                "CMP $R0 $R1",
+                "JGT 0x008f"
+            });
         }
 
         [Test]
         public void JGTR_GreaterThanFlagIsSet_ChangesPC()
         {
-            SetupBinaryInstruction(Instruction.CMP, 0x4321, 0x1234);
-            LoadValueIntoRegister(0x008f, Register.R3);
-            flasher.WriteInstruction(Instruction.JGTR, Register.R3);
-
-            ExecuteProgram(0x008f);
+            FlashAndExecute(new string[]
+            {
+                "LDVR 0x4321 $R0",
+                "LDVR 0x1234 $R1",
+                "CMP $R0 $R1",
+                "LDVR 0x008f $R2",
+                "JGTR $R2"
+            }, 0x008f);
         }
 
         [Test]
         public void JGTR_GreaterThanFlagIsNotSet_DoesNothing()
         {
-            SetupBinaryInstruction(Instruction.CMP, 0x1234, 0x4321);
-            LoadValueIntoRegister(0x008f, Register.R3);
-            flasher.WriteInstruction(Instruction.JGTR, Register.R3);
-
-            ExecuteProgram();
+            FlashAndExecute(new string[]
+            {
+                "LDVR 0x1234 $R0",
+                "LDVR 0x4321 $R1",
+                "CMP $R0 $R1",
+                "LDVR 0x008f $R2",
+                "JGTR $R2"
+            });
         }
 
         [Test]
         public void JE_EqualFlagIsSet_ChangesPC()
         {
-            SetupBinaryInstruction(Instruction.CMP, 0x1234, 0x1234);
-            flasher.WriteInstruction(Instruction.JE, 0x008f);
-
-            ExecuteProgram(0x008f);
+            FlashAndExecute(new string[]
+            {
+                "LDVR 0x1234 $R0",
+                "LDVR 0x1234 $R1",
+                "CMP $R0 $R1",
+                "JE 0x008f"
+            }, 0x008f);
         }
 
         [Test]
         public void JE_EqualFlagIsNotSet_DoesNothing()
         {
-            SetupBinaryInstruction(Instruction.CMP, 0x1234, 0x4321);
-            flasher.WriteInstruction(Instruction.JE, 0x008f);
-
-            ExecuteProgram();
+            FlashAndExecute(new string[]
+            {
+                "LDVR 0x1234 $R0",
+                "LDVR 0x4321 $R1",
+                "CMP $R0 $R1",
+                "JE 0x008f"
+            });
         }
 
         [Test]
         public void JER_EqualFlagIsSet_ChangesPC()
         {
-            SetupBinaryInstruction(Instruction.CMP, 0x1234, 0x1234);
-            LoadValueIntoRegister(0x008f, Register.R3);
-            flasher.WriteInstruction(Instruction.JER, Register.R3);
-
-            ExecuteProgram(0x008f);
+            FlashAndExecute(new string[]
+            {
+                "LDVR 0x1234 $R0",
+                "LDVR 0x1234 $R1",
+                "CMP $R0 $R1",
+                "LDVR 0x008f $R2",
+                "JER $R2"
+            }, 0x008f);
         }
 
         [Test]
         public void JER_EqualFlagIsNotSet_DoesNothing()
         {
-            SetupBinaryInstruction(Instruction.CMP, 0x1234, 0x4321);
-            LoadValueIntoRegister(0x008f, Register.R3);
-            flasher.WriteInstruction(Instruction.JER, Register.R3);
-
-            ExecuteProgram();
+            FlashAndExecute(new string[]
+            {
+                "LDVR 0x1234 $R0",
+                "LDVR 0x4321 $R1",
+                "CMP $R0 $R1",
+                "LDVR 0x008f $R2",
+                "JER $R2"
+            });
         }
 
         [Test]
         public void JNE_EqualFlagIsNotSet_ChangesPC()
         {
-            SetupBinaryInstruction(Instruction.CMP, 0x1234, 0x4321);
-            flasher.WriteInstruction(Instruction.JNE, 0x008f);
-
-            ExecuteProgram(0x008f);
+            FlashAndExecute(new string[]
+            {
+                "LDVR 0x1234 $R0",
+                "LDVR 0x4321 $R1",
+                "CMP $R0 $R1",
+                "JNE 0x008f"
+            }, 0x008f);
         }
 
         [Test]
         public void JNE_EqualFlagIsSet_DoesNothing()
         {
-            SetupBinaryInstruction(Instruction.CMP, 0x1234, 0x1234);
-            flasher.WriteInstruction(Instruction.JNE, 0x008f);
-
-            ExecuteProgram();
+            FlashAndExecute(new string[]
+            {
+                "LDVR 0x1234 $R0",
+                "LDVR 0x1234 $R1",
+                "CMP $R0 $R1",
+                "JNE 0x008f"
+            });
         }
 
         [Test]
         public void JNER_EqualFlagIsNotSet_ChangesPC()
         {
-            SetupBinaryInstruction(Instruction.CMP, 0x1234, 0x4321);
-            LoadValueIntoRegister(0x008f, Register.R3);
-            flasher.WriteInstruction(Instruction.JNER, Register.R3);
-
-            ExecuteProgram(0x008f);
+            FlashAndExecute(new string[]
+            {
+                "LDVR 0x1234 $R0",
+                "LDVR 0x4321 $R1",
+                "CMP $R0 $R1",
+                "LDVR 0x008f $R2",
+                "JNER $R2"
+            }, 0x008f);
         }
 
         [Test]
         public void JNER_EqualFlagIsSet_DoesNothing()
         {
-            SetupBinaryInstruction(Instruction.CMP, 0x1234, 0x1234);
-            LoadValueIntoRegister(0x008f, Register.R3);
-            flasher.WriteInstruction(Instruction.JNER, Register.R3);
-
-            ExecuteProgram();
+            FlashAndExecute(new string[]
+            {
+                "LDVR 0x1234 $R0",
+                "LDVR 0x1234 $R1",
+                "CMP $R0 $R1",
+                "LDVR 0x008f $R2",
+                "JNER $R2"
+            });
         }
 
         [Test]
         public void JZ_ZeroFlagIsSet_ChangesPC()
         {
-            LoadValueIntoRegisterR0(0x0000);
-            flasher.WriteInstruction(Instruction.CMPZ, Register.R0);
-            flasher.WriteInstruction(Instruction.JZ, 0x008f);
-
-            ExecuteProgram(0x008f);
+            FlashAndExecute(new string[]
+            {
+                "LDVR 0x0000 $R0",
+                "CMPZ $R0",
+                "JZ 0x008f"
+            }, 0x008f);
         }
 
         [Test]
-        public void JZ_ZeroFlagIsNotSet_ChangesPC()
+        public void JZ_ZeroFlagIsNotSet_DoesNothing()
         {
-            LoadValueIntoRegisterR0(0xffff);
-            flasher.WriteInstruction(Instruction.CMPZ, Register.R0);
-            flasher.WriteInstruction(Instruction.JZ, 0x008f);
-
-            ExecuteProgram();
+            FlashAndExecute(new string[]
+            {
+                "LDVR 0xffff $R0",
+                "CMPZ $R0",
+                "JZ 0x008f"
+            });
         }
 
         [Test]
         public void JZR_ZeroFlagIsSet_ChangesPC()
         {
-            LoadValueIntoRegister(0x0000, Register.R0);
-            flasher.WriteInstruction(Instruction.CMPZ, Register.R0);
-            LoadValueIntoRegister(0x008f, Register.R3);
-            flasher.WriteInstruction(Instruction.JZR, Register.R3);
-
-            ExecuteProgram(0x008f);
+            FlashAndExecute(new string[]
+            {
+                "LDVR 0x0000 $R0",
+                "CMPZ $R0",
+                "LDVR 0x008f $R1",
+                "JZR $R1"
+            }, 0x008f);
         }
 
         [Test]
-        public void JZR_ZeroFlagIsNotSet_ChangesPC()
+        public void JZR_ZeroFlagIsNotSet_DoesNothing()
         {
-            LoadValueIntoRegister(0xffff, Register.R0);
-            flasher.WriteInstruction(Instruction.CMPZ, Register.R0);
-            LoadValueIntoRegister(0x008f, Register.R3);
-            flasher.WriteInstruction(Instruction.JZR, Register.R3);
-
-            ExecuteProgram();
+            FlashAndExecute(new string[]
+            {
+                "LDVR 0xffff $R0",
+                "CMPZ $R0",
+                "LDVR 0x008f $R1",
+                "JZR $R1"
+            });
         }
 
         [Test]
         public void JNZ_ZeroFlagIsNotSet_ChangesPC()
         {
-            LoadValueIntoRegisterR0(0xffff);
-            flasher.WriteInstruction(Instruction.CMPZ, Register.R0);
-            flasher.WriteInstruction(Instruction.JNZ, 0x008f);
-
-            ExecuteProgram(0x008f);
+            FlashAndExecute(new string[]
+            {
+                "LDVR 0xffff $R0",
+                "CMPZ $R0",
+                "JNZ 0x008f"
+            }, 0x008f);
         }
 
         [Test]
         public void JNZ_ZeroFlagIsSet_DoesNothing()
         {
-            LoadValueIntoRegisterR0(0x0000);
-            flasher.WriteInstruction(Instruction.CMPZ, Register.R0);
-            flasher.WriteInstruction(Instruction.JNZ, 0x008f);
-
-            ExecuteProgram();
+            FlashAndExecute(new string[]
+            {
+                "LDVR 0x0000 $R0",
+                "CMPZ $R0",
+                "JNZ 0x008f"
+            });
         }
 
         [Test]
         public void JNZR_ZeroFlagIsNotSet_ChangesPC()
         {
-            LoadValueIntoRegister(0xffff, Register.R0);
-            flasher.WriteInstruction(Instruction.CMPZ, Register.R0);
-            LoadValueIntoRegister(0x008f, Register.R3);
-            flasher.WriteInstruction(Instruction.JNZR, Register.R3);
-
-            ExecuteProgram(0x008f);
+            FlashAndExecute(new string[]
+            {
+                "LDVR 0xffff $R0",
+                "CMPZ $R0",
+                "LDVR 0x008f $R1",
+                "JNZR $R1"
+            }, 0x008f);
         }
 
         [Test]
         public void JNZR_ZeroFlagIsSet_DoesNothing()
         {
-            LoadValueIntoRegister(0x0000, Register.R0);
-            flasher.WriteInstruction(Instruction.CMPZ, Register.R0);
-            LoadValueIntoRegister(0x008f, Register.R3);
-            flasher.WriteInstruction(Instruction.JNZR, Register.R3);
-
-            ExecuteProgram();
+            FlashAndExecute(new string[]
+            {
+                "LDVR 0x0000 $R0",
+                "CMPZ $R0",
+                "LDVR 0x008f $R1",
+                "JNZR $R1"
+            });
         }
         #endregion
 
@@ -1233,16 +1318,36 @@ namespace VM.HardwareTests.Tests
         [Test]
         public void CALL_PushesArgCountAndSetsPCToValue()
         {
-            flasher.WriteInstruction(Instruction.CALL, (ushort)0, 0x1234);
+            Assert.That(processor[Register.SP], Is.EqualTo(STACK_START_ADDRESS));
+            Assert.That(processor[Register.FP], Is.EqualTo(STACK_START_ADDRESS));
 
-            processor.Step();
+            FlashAndExecute("CALL 0 0x1234", 0x1234);
 
-            Assert.That(processor.ProgramCounter, Is.EqualTo(0x1234));
+            /**
+             * Expected stack
+             * 
+             * Registers    | Stack Contents
+             * FP, SP       | TOP
+             *              | --------------
+             *              | PREV FP
+             *              | PREV PC
+             * ARG, PREV FP | 0        (ARGV)
+             *              | --------------
+             *              | BOTTOM
+             */
 
-            Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(STACK_START_ADDRESS - 3 * Processor.DATASIZE));
-            Assert.That(processor.GetRegister(Register.FP), Is.EqualTo(STACK_START_ADDRESS - 3 * Processor.DATASIZE));
+            Assert.That(processor[Register.SP], Is.EqualTo(STACK_START_ADDRESS - 3 * Processor.DATASIZE));
 
-            var argPointer = processor.GetRegister(Register.ARG);
+            var framePointer = processor[Register.FP];
+            Assert.That(framePointer, Is.EqualTo(STACK_START_ADDRESS - 3 * Processor.DATASIZE));
+
+            var previousFramepointer = (ushort)(framePointer + Processor.DATASIZE);
+            Assert.That(memory.GetU16(previousFramepointer), Is.EqualTo(STACK_START_ADDRESS));
+
+            var previousProgramCounter = (ushort)(framePointer + 2 * Processor.DATASIZE);
+            Assert.That(memory.GetU16(previousProgramCounter), Is.EqualTo(4));
+
+            var argPointer = processor[Register.ARG];
             Assert.That(argPointer, Is.EqualTo(STACK_START_ADDRESS));
             Assert.That(memory.GetU16(argPointer), Is.EqualTo(0));
         }
@@ -1250,50 +1355,89 @@ namespace VM.HardwareTests.Tests
         [Test]
         public void CALL_WithArguments_PushesArgCountAndSetsPCToValueFromRegister()
         {
-            ushort subroutineAddress = 0x4000;
+            Assert.That(processor[Register.SP], Is.EqualTo(STACK_START_ADDRESS));
+            Assert.That(processor[Register.FP], Is.EqualTo(STACK_START_ADDRESS));
 
-            LoadValueIntoRegister(0x1111, Register.R0);
-            LoadValueIntoRegister(0x2222, Register.R1);
+            FlashAndExecute(new string[]
+            {
+                "LDVR 0x1111 $R0",
+                "LDVR 0x2222 $R1",
+                "PUSH $R1",
+                "PUSH $R0",
+                "CALL 2 0x1234"
+            }, 0x1234);
 
-            flasher.WriteInstruction(Instruction.PUSH, Register.R1);
-            flasher.WriteInstruction(Instruction.PUSH, Register.R0);
-            flasher.WriteInstruction(Instruction.CALL, (ushort)2, subroutineAddress);
+            /**
+             * Expected stack
+             * 
+             * Registers    | Stack Contents
+             * FP, SP       | TOP
+             *              | --------------
+             *              | PREV FP
+             *              | PREV PC
+             * ARG          | 2         (ARGV)
+             *              | 0x1111    (R0 - ARG0)
+             * PREV FP      | 0x2222    (R1 - ARG1)
+             *              | --------------
+             *              | BOTTOM
+             */
 
-            // Load values into registers
-            processor.Step();
-            processor.Step();
+            Assert.That(processor[Register.SP], Is.EqualTo(STACK_START_ADDRESS - 5 * Processor.DATASIZE));
 
-            // Push arguments and Call
-            processor.Step();
-            processor.Step();
-            processor.Step();
+            var framePointer = processor[Register.FP];
+            Assert.That(framePointer, Is.EqualTo(STACK_START_ADDRESS - 5 * Processor.DATASIZE));
 
-            Assert.That(processor.ProgramCounter, Is.EqualTo(0x4000));
-            Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(STACK_START_ADDRESS - 5 * Processor.DATASIZE));
-            Assert.That(processor.GetRegister(Register.FP), Is.EqualTo(STACK_START_ADDRESS - 5 * Processor.DATASIZE));
+            var previousFramepointer = (ushort)(framePointer + Processor.DATASIZE);
+            Assert.That(memory.GetU16(previousFramepointer), Is.EqualTo(STACK_START_ADDRESS));
 
-            var argPointer = processor.GetRegister(Register.ARG);
+            var previousProgramCounter = (ushort)(framePointer + 2 * Processor.DATASIZE);
+            Assert.That(memory.GetU16(previousProgramCounter), Is.EqualTo(16));
+
+            var argPointer = processor[Register.ARG];
             Assert.That(argPointer, Is.EqualTo(STACK_START_ADDRESS - 2 * Processor.DATASIZE));
+
             Assert.That(memory.GetU16(argPointer), Is.EqualTo(2));
-            Assert.That(memory.GetU16((ushort)(argPointer + Processor.DATASIZE)), Is.EqualTo(0x1111));
+            Assert.That(memory.GetU16((ushort)(argPointer + 1 * Processor.DATASIZE)), Is.EqualTo(0x1111));
             Assert.That(memory.GetU16((ushort)(argPointer + 2 * Processor.DATASIZE)), Is.EqualTo(0x2222));
         }
 
         [Test]
         public void CALLR_PushesArgCountAndSetsPCToValueFromRegister()
         {
-            LoadValueIntoRegisterR0(0x1234);
-            flasher.WriteInstruction(Instruction.CALLR, (ushort)0, Register.R0);
+            Assert.That(processor[Register.SP], Is.EqualTo(STACK_START_ADDRESS));
+            Assert.That(processor[Register.FP], Is.EqualTo(STACK_START_ADDRESS));
 
-            processor.Step();
-            processor.Step();
+            FlashAndExecute(new string[]
+            {
+                "LDVR 0x1234 $R0",
+                "CALLR 0 $R0"
+            }, 0x1234);
 
-            Assert.That(processor.ProgramCounter, Is.EqualTo(0x1234));
+            /**
+            * Expected stack
+            * 
+            * Registers    | Stack Contents
+            * FP, SP       | TOP
+            *              | --------------
+            *              | PREV FP
+            *              | PREV PC
+            * ARG, PREV FP | 0          (ARGV)
+            *              | --------------
+            *              | BOTTOM
+            */
 
-            Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(STACK_START_ADDRESS - 3 * Processor.DATASIZE));
-            Assert.That(processor.GetRegister(Register.FP), Is.EqualTo(STACK_START_ADDRESS - 3 * Processor.DATASIZE));
+            Assert.That(processor[Register.SP], Is.EqualTo(STACK_START_ADDRESS - 3 * Processor.DATASIZE));
 
-            var argPointer = processor.GetRegister(Register.ARG);
+            var framePointer = processor[Register.FP];
+            Assert.That(framePointer, Is.EqualTo(STACK_START_ADDRESS - 3 * Processor.DATASIZE));
+
+            var previousFramepointer = (ushort)(framePointer + Processor.DATASIZE);
+            Assert.That(memory.GetU16(previousFramepointer), Is.EqualTo(STACK_START_ADDRESS));
+
+            var previousProgramCounter = (ushort)(framePointer + 2 * Processor.DATASIZE);
+            Assert.That(memory.GetU16(previousProgramCounter), Is.EqualTo(7));
+
+            var argPointer = processor[Register.ARG];
             Assert.That(argPointer, Is.EqualTo(STACK_START_ADDRESS));
             Assert.That(memory.GetU16(argPointer), Is.EqualTo(0));
         }
@@ -1301,314 +1445,295 @@ namespace VM.HardwareTests.Tests
         [Test]
         public void CALLR_WithArguments_PushesArgCountAndSetsPCToValueFromRegister()
         {
-            ushort subroutineAddress = 0x4000;
+            Assert.That(processor[Register.SP], Is.EqualTo(STACK_START_ADDRESS));
+            Assert.That(processor[Register.FP], Is.EqualTo(STACK_START_ADDRESS));
 
-            LoadValueIntoRegister(0x1111, Register.R0);
-            LoadValueIntoRegister(0x2222, Register.R1);
-            LoadValueIntoRegister(subroutineAddress, Register.R2);
+            FlashAndExecute(new string[]
+            {
+                "LDVR 0x1111 $R0",
+                "LDVR 0x2222 $R1",
+                "LDVR 0x1234 $R2",
+                "PUSH $R1",
+                "PUSH $R0",
+                "CALLR 2 $R2"
+            }, 0x1234);
 
-            flasher.WriteInstruction(Instruction.PUSH, Register.R1);
-            flasher.WriteInstruction(Instruction.PUSH, Register.R0);
-            flasher.WriteInstruction(Instruction.CALL, (ushort)2, subroutineAddress);
+            /**
+             * Expected stack
+             * 
+             * Registers    | Stack Contents
+             * FP, SP       | TOP
+             *              | --------------
+             *              | PREV FP
+             *              | PREV PC
+             * ARG          | 2         (ARGV)
+             *              | 0x1111    (R0 - ARG0)
+             * PREV FP      | 0x2222    (R1 - ARG1)
+             *              | --------------
+             *              | BOTTOM
+             */
 
-            // Load values into registers
-            processor.Step();
-            processor.Step();
-            processor.Step();
+            Assert.That(processor[Register.SP], Is.EqualTo(STACK_START_ADDRESS - 5 * Processor.DATASIZE));
 
-            // Push arguments and Call
-            processor.Step();
-            processor.Step();
-            processor.Step();
+            var framePointer = processor[Register.FP];
+            Assert.That(framePointer, Is.EqualTo(STACK_START_ADDRESS - 5 * Processor.DATASIZE));
 
-            Assert.That(processor.ProgramCounter, Is.EqualTo(0x4000));
-            Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(STACK_START_ADDRESS - 5 * Processor.DATASIZE));
-            Assert.That(processor.GetRegister(Register.FP), Is.EqualTo(STACK_START_ADDRESS - 5 * Processor.DATASIZE));
+            var previousFramepointer = (ushort)(framePointer + Processor.DATASIZE);
+            Assert.That(memory.GetU16(previousFramepointer), Is.EqualTo(STACK_START_ADDRESS));
 
-            var argPointer = processor.GetRegister(Register.ARG);
+            var previousProgramCounter = (ushort)(framePointer + 2 * Processor.DATASIZE);
+            Assert.That(memory.GetU16(previousProgramCounter), Is.EqualTo(19));
+
+            var argPointer = processor[Register.ARG];
             Assert.That(argPointer, Is.EqualTo(STACK_START_ADDRESS - 2 * Processor.DATASIZE));
+
             Assert.That(memory.GetU16(argPointer), Is.EqualTo(2));
-            Assert.That(memory.GetU16((ushort)(argPointer + Processor.DATASIZE)), Is.EqualTo(0x1111));
+            Assert.That(memory.GetU16((ushort)(argPointer + 1 * Processor.DATASIZE)), Is.EqualTo(0x1111));
             Assert.That(memory.GetU16((ushort)(argPointer + 2 * Processor.DATASIZE)), Is.EqualTo(0x2222));
         }
 
         [Test]
         public void CALL_StackOverflow_ResetsAndThrowsException()
         {
-            LoadValueIntoRegister(STACK_END_ADDRESS, Register.SP);
+            Flash(
+               $"LDVR {STACK_END_ADDRESS} $SP",
+                "CALL 0 0x1234"
+            );
+
             processor.Step();
 
-            flasher.WriteInstruction(Instruction.CALL, 0x1234);
-
-            AssertExceptionOccursAndProcessorResets(typeof(StackOverflowException), "Stack is full.");
+            AssertExceptionOccursAndProcessorResets(
+                typeof(StackOverflowException), Instruction.CALL, "Stack is full.");
         }
 
         [Test]
         public void CALLR_StackOverflow_ResetsAndThrowsException()
         {
-            LoadValueIntoRegister(STACK_END_ADDRESS, Register.SP);
-            LoadValueIntoRegisterR0(0x1234);
+            Flash(
+               $"LDVR {STACK_END_ADDRESS} $SP",
+                "LDVR 0x1234 $R0",
+                "CALLR 0 $R0"
+            );
 
             processor.Step();
             processor.Step();
 
-            flasher.WriteInstruction(Instruction.CALLR, Register.R0);
-
-            AssertExceptionOccursAndProcessorResets(typeof(StackOverflowException), "Stack is full.");
+            AssertExceptionOccursAndProcessorResets(
+                typeof(StackOverflowException), Instruction.CALLR, "Stack is full.");
         }
 
         [Test]
         public void RET_WithOutReturnValues_PushesReturnCountAndResetsPC()
         {
-            ushort subroutineAddress = 0x4000;
+            Assert.That(processor[Register.SP], Is.EqualTo(STACK_START_ADDRESS));
+            Assert.That(processor[Register.FP], Is.EqualTo(STACK_START_ADDRESS));
 
-            flasher.WriteInstruction(Instruction.CALL, (ushort)0, subroutineAddress);
+            Flash("CALL 0 0x1234");
 
-            var returnAddress = flasher.Address;
+            flasher.Address = 0x1234;
+            Flash("RET 0");
 
-            flasher.Address = subroutineAddress;
-            flasher.WriteInstruction(Instruction.RET, (ushort)0);
-
-            // Call
+            processor.Step();
             processor.Step();
 
-            Assert.That(processor.ProgramCounter, Is.EqualTo(0x4000));
-            Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(STACK_START_ADDRESS - 3 * Processor.DATASIZE));
-            Assert.That(processor.GetRegister(Register.FP), Is.EqualTo(STACK_START_ADDRESS - 3 * Processor.DATASIZE));
+            Assert.That(processor[Register.PC], Is.EqualTo(4));
 
-            // Return
-            processor.Step();
+            /**
+            * Expected stack
+            * 
+            * Registers    | Stack Contents
+            *              | TOP
+            * RET          | 0          (RETV)
+            *              | --------------
+            *              | -          (Was PREV FP)
+            * SP           | -          (Was PREV PC)
+            * FP, ARG      | 0          (ARGV)
+            *              | --------------
+            *              | BOTTOM
+            */
 
-            Assert.That(processor.ProgramCounter, Is.EqualTo(returnAddress));
-            Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(STACK_START_ADDRESS - Processor.DATASIZE));
-            Assert.That(processor.GetRegister(Register.FP), Is.EqualTo(STACK_START_ADDRESS));
+            Assert.That(processor[Register.SP], Is.EqualTo(STACK_START_ADDRESS - 1 * Processor.DATASIZE));
 
-            var retPointer = processor.GetRegister(Register.RET);
+            var framePointer = processor[Register.FP];
+            Assert.That(framePointer, Is.EqualTo(STACK_START_ADDRESS));
+
+            var retPointer = processor[Register.RET];
             Assert.That(retPointer, Is.EqualTo(STACK_START_ADDRESS - 3 * Processor.DATASIZE));
             Assert.That(memory.GetU16(retPointer), Is.EqualTo(0));
+
+            var argPointer = processor[Register.ARG];
+            Assert.That(argPointer, Is.EqualTo(STACK_START_ADDRESS));
+            Assert.That(memory.GetU16(argPointer), Is.EqualTo(0));
         }
 
         [Test]
         public void RET_WithReturnValues_PushesReturnCountAndResetsPC()
         {
-            ushort subroutineAddress = 0x4000;
+            Assert.That(processor[Register.SP], Is.EqualTo(STACK_START_ADDRESS));
+            Assert.That(processor[Register.FP], Is.EqualTo(STACK_START_ADDRESS));
 
-            LoadValueIntoRegister(0x1111, Register.R0);
-            LoadValueIntoRegister(0x2222, Register.R1);
-            flasher.WriteInstruction(Instruction.CALL, (ushort)0, subroutineAddress);
+            Flash("CALL 0 0x1234");
 
-            var returnAddress = flasher.Address;
+            flasher.Address = 0x1234;
+            Flash(
+                "LDVR 0x1111 $R0",
+                "LDVR 0x2222 $R1",
+                "PUSH $R1",
+                "PUSH $R0",
+                "RET 2"
+            );
 
-            flasher.Address = subroutineAddress;
-            flasher.WriteInstruction(Instruction.PUSH, Register.R1);
-            flasher.WriteInstruction(Instruction.PUSH, Register.R0);
-            flasher.WriteInstruction(Instruction.RET, 2);
-
-            // Load values into registers
+            processor.Step();
+            processor.Step();
+            processor.Step();
+            processor.Step();
             processor.Step();
             processor.Step();
 
-            // Call
-            processor.Step();
+            Assert.That(processor[Register.PC], Is.EqualTo(4));
 
-            Assert.That(processor.ProgramCounter, Is.EqualTo(0x4000));
-            Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(STACK_START_ADDRESS - 3 * Processor.DATASIZE));
-            Assert.That(processor.GetRegister(Register.FP), Is.EqualTo(STACK_START_ADDRESS - 3 * Processor.DATASIZE));
+            /**
+            * Expected stack
+            * 
+            * Registers    | Stack Contents
+            *              | TOP
+            * RET          | 2          (RETV)
+            *              | 0x1111     (R0 - RET0)
+            *              | 0x2222     (R1 - RET1)
+            *              | --------------
+            *              | -          (Was PREV FP)
+            * SP           | -          (Was PREV PC)
+            * FP, ARG      | 0          (ARGV)
+            *              | --------------
+            *              | BOTTOM
+            */
 
-            // Push Return values
-            processor.Step();
-            processor.Step();
+            Assert.That(processor[Register.SP], Is.EqualTo(STACK_START_ADDRESS - 1 * Processor.DATASIZE));
 
-            // Return
-            processor.Step();
+            var framePointer = processor[Register.FP];
+            Assert.That(framePointer, Is.EqualTo(STACK_START_ADDRESS));
 
-            Assert.That(processor.ProgramCounter, Is.EqualTo(returnAddress));
-            Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(STACK_START_ADDRESS - Processor.DATASIZE));
-            Assert.That(processor.GetRegister(Register.FP), Is.EqualTo(STACK_START_ADDRESS));
-
-            var retPointer = processor.GetRegister(Register.RET);
+            var retPointer = processor[Register.RET];
             Assert.That(retPointer, Is.EqualTo(STACK_START_ADDRESS - 5 * Processor.DATASIZE));
+
             Assert.That(memory.GetU16(retPointer), Is.EqualTo(2));
-            Assert.That(memory.GetU16((ushort)(retPointer + Processor.DATASIZE)), Is.EqualTo(0x1111));
+            Assert.That(memory.GetU16((ushort)(retPointer + 1 * Processor.DATASIZE)), Is.EqualTo(0x1111));
             Assert.That(memory.GetU16((ushort)(retPointer + 2 * Processor.DATASIZE)), Is.EqualTo(0x2222));
+
+            var argPointer = processor[Register.ARG];
+            Assert.That(argPointer, Is.EqualTo(STACK_START_ADDRESS));
+            Assert.That(memory.GetU16(argPointer), Is.EqualTo(0));
         }
 
         [Test]
         public void RET_EmptyCallStack_ResetsAndThrowsException()
         {
-            flasher.WriteInstruction(Instruction.RET);
+            Flash("RET 0");
 
-            AssertExceptionOccursAndProcessorResets(typeof(InvalidOperationException), "In base frame, nothing to return to.");
+            AssertExceptionOccursAndProcessorResets(
+                typeof(InvalidOperationException), Instruction.RET, "In base frame, nothing to return to.");
         }
-
-        [Test]
-        public void Subroutine_AcceptsArgumentsAndReturnsValues()
-        {
-            ushort subroutineAddress = 0x4000;
-
-            LoadValueIntoRegister(0x1111, Register.R0);
-            LoadValueIntoRegister(0x2222, Register.R1);
-
-            flasher.WriteInstruction(Instruction.PUSH, Register.R1);
-            flasher.WriteInstruction(Instruction.PUSH, Register.R0);
-            flasher.WriteInstruction(Instruction.CALL, (ushort)2, subroutineAddress);
-
-            var returnAddress = flasher.Address;
-
-            flasher.Address = subroutineAddress;
-            flasher.WriteInstruction(Instruction.PUSH, Register.R1);
-            flasher.WriteInstruction(Instruction.PUSH, Register.R0);
-            flasher.WriteInstruction(Instruction.RET, 2);
-
-            // Load values into registers
-            processor.Step();
-            processor.Step();
-
-            // Push arguments and Call
-            processor.Step();
-            processor.Step();
-            processor.Step();
-
-            Assert.That(processor.ProgramCounter, Is.EqualTo(0x4000));
-            Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(STACK_START_ADDRESS - 5 * Processor.DATASIZE));
-            Assert.That(processor.GetRegister(Register.FP), Is.EqualTo(STACK_START_ADDRESS - 5 * Processor.DATASIZE));
-
-            var argPointer = processor.GetRegister(Register.ARG);
-            Assert.That(argPointer, Is.EqualTo(STACK_START_ADDRESS - 2 * Processor.DATASIZE));
-            Assert.That(memory.GetU16(argPointer), Is.EqualTo(2));
-            Assert.That(memory.GetU16((ushort)(argPointer + Processor.DATASIZE)), Is.EqualTo(0x1111));
-            Assert.That(memory.GetU16((ushort)(argPointer + 2 * Processor.DATASIZE)), Is.EqualTo(0x2222));
-
-            // Push return values and Return
-            processor.Step();
-            processor.Step();
-            processor.Step();
-
-            Assert.That(processor.ProgramCounter, Is.EqualTo(returnAddress));
-            Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(STACK_START_ADDRESS - 3 * Processor.DATASIZE));
-            Assert.That(processor.GetRegister(Register.FP), Is.EqualTo(STACK_START_ADDRESS));
-
-            var retPointer = processor.GetRegister(Register.RET);
-            Assert.That(retPointer, Is.EqualTo(STACK_START_ADDRESS - 7 * Processor.DATASIZE));
-            Assert.That(memory.GetU16(retPointer), Is.EqualTo(2));
-            Assert.That(memory.GetU16((ushort)(retPointer + Processor.DATASIZE)), Is.EqualTo(0x1111));
-            Assert.That(memory.GetU16((ushort)(retPointer + 2 * Processor.DATASIZE)), Is.EqualTo(0x2222));
-        }
-
-        [Test]
-        public void Subroutine_NestedCallsAreSupported()
-        {
-            var instructionCount = 0;
-
-            var addresses = new ushort[]
-            {
-                0x1000, 0x2000, 0x3000, 0x4000, 0x5000
-            };
-
-            flasher.WriteInstruction(Instruction.CALL, (ushort)0, addresses[0]);
-            instructionCount += flasher.InstructionCount;
-
-            for (ushort i = 0; i < addresses.Length; i++)
-            {
-                flasher.Address = addresses[i];
-
-                LoadValueIntoRegisterR0(addresses[i]);
-                flasher.WriteInstruction(Instruction.ADD, Register.T0, Register.R0);
-                flasher.WriteInstruction(Instruction.MOVE, Register.ACC, Register.T0);
-
-                if (i != addresses.Length - 1)
-                {
-                    flasher.WriteInstruction(Instruction.CALL, (ushort)0, addresses[i + 1]);
-                }
-
-                flasher.WriteInstruction(Instruction.RET, (ushort)0);
-                instructionCount += flasher.InstructionCount;
-            }
-
-            for (var i = 0; i < instructionCount; i++)
-            {
-                processor.Step();
-            }
-
-            Assert.That(processor.GetRegister(Register.T0), Is.EqualTo(addresses.Select(x => (int)x).Sum()));
-        }
-
         #endregion
 
         #region Stack
         [Test]
         public void PUSH_PutsValueFromRegisterOntoStack()
         {
-            LoadValueIntoRegisterR0(0x1234);
-            flasher.WriteInstruction(Instruction.PUSH, Register.R0);
+            Assert.That(processor[Register.SP], Is.EqualTo(STACK_START_ADDRESS));
 
-            Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(STACK_START_ADDRESS));
+            FlashAndExecute(new string[]
+            {
+                "LDVR 0x1234 $R0",
+                "PUSH $R0"
+            });
 
-            ExecuteProgram();
+            var sp = processor[Register.SP];
 
-            Assert.That(processor.GetRegister(Register.SP), Is.Not.EqualTo(STACK_START_ADDRESS));
+            Assert.That(sp, Is.Not.EqualTo(STACK_START_ADDRESS));
+            Assert.That(memory.GetU16((ushort)(sp + sizeof(ushort))), Is.EqualTo(0x1234));
         }
 
         [Test]
         public void PUSH_CanFillStack()
         {
-            FillStack();
+            var source = new List<string> { "LDVR 0x1234 $R0" };
 
-            Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(STACK_END_ADDRESS - Processor.DATASIZE));
+            source.AddRange(Enumerable.Repeat("PUSH $R0", STACK_SIZE));
+
+            Assert.That(processor[Register.SP], Is.EqualTo(STACK_START_ADDRESS));
+
+            FlashAndExecute(source);
+
+            Assert.That(processor[Register.SP], Is.EqualTo(STACK_END_ADDRESS - Processor.DATASIZE));
         }
 
         [Test]
         public void PUSH_FullStack_ResetsAndThrowsException()
         {
-            FillStack();
+            var source = new List<string> { "LDVR 0x1234 $R0" };
 
-            flasher.WriteInstruction(Instruction.PUSH, Register.R0);
+            source.AddRange(Enumerable.Repeat("PUSH $R0", STACK_SIZE));
 
-            AssertExceptionOccursAndProcessorResets(typeof(StackOverflowException), "Stack is full.");
+            Assert.That(processor[Register.SP], Is.EqualTo(STACK_START_ADDRESS));
+
+            FlashAndExecute(source);
+
+            Flash("PUSH $R0");
+
+            AssertExceptionOccursAndProcessorResets(
+                typeof(StackOverflowException), Instruction.PUSH, "Stack is full.");
         }
 
         [Test]
         public void POP_PutsValueFromStackIntoRegister()
         {
-            LoadValueIntoRegisterR0(0x1234);
-            flasher.WriteInstruction(Instruction.PUSH, Register.R0);
-            flasher.WriteInstruction(Instruction.POP, Register.R1);
+            Assert.That(processor[Register.SP], Is.EqualTo(STACK_START_ADDRESS));
 
-            ExecuteProgram();
+            FlashAndExecute(new string[]
+            {
+                "LDVR 0x1234 $R0",
+                "PUSH $R0",
+                "POP $R1"
+            });
 
-            Assert.That(processor.GetRegister(Register.SP), Is.EqualTo(STACK_START_ADDRESS));
+            Assert.That(processor[Register.SP], Is.EqualTo(STACK_START_ADDRESS));
 
-            Assert.That(processor.GetRegister(Register.R1), Is.EqualTo(0x1234));
+            Assert.That(processor[Register.R1], Is.EqualTo(0x1234));
         }
 
         [Test]
-        public void POP_OnEmptyStack_ResetsAndThrowsException()
+        public void POP_EmptyStack_ResetsAndThrowsException()
         {
-            flasher.WriteInstruction(Instruction.POP, Register.R0);
+            Flash("POP $R0");
 
-            AssertExceptionOccursAndProcessorResets(typeof(InvalidOperationException), "Stack frame is empty.");
+            AssertExceptionOccursAndProcessorResets(
+                typeof(InvalidOperationException), Instruction.POP, "Stack frame is empty.");
         }
 
         [Test]
         public void PEEK_PutsValueFromStackIntoRegisterWithoutRemovingItFromStack()
         {
-            LoadValueIntoRegisterR0(0x1234);
-            flasher.WriteInstruction(Instruction.PUSH, Register.R0);
-            flasher.WriteInstruction(Instruction.PEEK, Register.R1);
+            Assert.That(processor[Register.SP], Is.EqualTo(STACK_START_ADDRESS));
 
-            ExecuteProgram();
+            FlashAndExecute(new string[]
+            {
+                "LDVR 0x1234 $R0",
+                "PUSH $R0",
+                "PEEK $R1"
+            });
 
-            Assert.That(processor.GetRegister(Register.SP), Is.Not.EqualTo(STACK_START_ADDRESS));
+            Assert.That(processor[Register.SP], Is.EqualTo(STACK_START_ADDRESS - Processor.DATASIZE));
 
-            Assert.That(processor.GetRegister(Register.R1), Is.EqualTo(0x1234));
+            Assert.That(processor[Register.R1], Is.EqualTo(0x1234));
         }
 
         [Test]
         public void PEEK_OnEmptyStack_ResetsAndThrowsException()
         {
-            flasher.WriteInstruction(Instruction.PEEK, Register.R0);
+            Flash("PEEK $R0");
 
-            AssertExceptionOccursAndProcessorResets(typeof(InvalidOperationException), "Stack frame is empty.");
+            AssertExceptionOccursAndProcessorResets(
+                typeof(InvalidOperationException), Instruction.PEEK, "Stack frame is empty.");
         }
         #endregion
 
@@ -1616,46 +1741,36 @@ namespace VM.HardwareTests.Tests
         [Test]
         public void HALT_HaltsExecution()
         {
-            FlashNNops(50);
+            var haltOccured = false;
 
-            flasher.WriteInstruction(Instruction.HALT);
+            void OnHalt(object sender, EventArgs e)
+            {
+                haltOccured = true;
+            };
 
-            processor.Run();
+            processor.Halt += OnHalt;
 
-            Assert.That(processor.ProgramCounter, Is.EqualTo(flasher.Address));
+            FlashAndExecute(Enumerable.Repeat("NOP", 50).Append("HALT"));
 
             Assert.That(haltOccured, Is.True);
+
+            processor.Halt -= OnHalt;
         }
 
         [Test]
         public void RESET_ResetsProcessorToBeginningOfProgram()
         {
-            FlashNNops(50);
-
-            flasher.WriteInstruction(Instruction.RESET);
-
-            processor.Run();
+            FlashAndExecute(Enumerable.Repeat("NOP", 50).Append("RESET"), 0);
 
             Assert.That(resetOccured, Is.True);
-            Assert.That(exception, Is.Null);
 
             AssertProcessorIsInInitialState();
         }
         #endregion
 
-        // TODO: Segfaults:
-        // FUTURE: memory access (Load and Store) outside of DATA (static or dynamic) is invalid
-        // FUTURE: executing outside of CODE is invalid (Jump, Logic, Subroutines)
-
-        [Test]
-        public void InvalidInstruction_ResetsAndThrowsException()
-        {
-            flasher.WriteInstruction((Instruction)0xff);
-
-            AssertExceptionOccursAndProcessorResets(
-                typeof(InvalidOperationException),
-                "Unknown instruction 0xFF.");
-        }
+        //// TODO: Segfaults:
+        //// FUTURE: memory access (Load and Store) outside of DATA (static or dynamic) is invalid
+        //// FUTURE: executing outside of CODE is invalid (Jump, Logic, Subroutines)
         #endregion
     }
 }

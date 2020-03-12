@@ -157,7 +157,7 @@ namespace VM.Software.Assembling.Parsing
                 return new Argument(0, sizeof(ushort), Advance().Lexeme);
             }
 
-            throw Error(Peek, "Expected U16 or label name");
+            throw Error(Peek, Resources.Parser_InvalidJumpTargetMessage);
         }
 
         private static Argument Register()
@@ -167,7 +167,7 @@ namespace VM.Software.Assembling.Parsing
                 return new Argument((byte)(Register)Advance().Literal, sizeof(byte));
             }
 
-            throw Error(Peek, $"Expected register");
+            throw Error(Peek, Resources.Parser_ExpectedRegisterMessage);
         }
 
         private static Argument U8()

@@ -6,7 +6,7 @@ using VM.Software.Assembling.Scanning;
 namespace VM.Software.Assembling
 {
     /// <summary>
-    /// Converts assembly into executable program for the <see cref="VM.Hardware.Processor"/> to run.
+    /// Converts assembly into executable program for the <see cref="Hardware.Processor"/> to run.
     /// </summary>
     public static class Assembler
     {

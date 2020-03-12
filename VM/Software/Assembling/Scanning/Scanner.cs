@@ -162,14 +162,14 @@ namespace VM.Software.Assembling.Scanning
             {
                 if (_source[_start] == '0' && _current != _start + 1)
                 {
-                    ThrowException($"Invalid leading '0'");
+                    ThrowException(Resources.Scanner_InvalidLeadingZeroMessage);
                 }
 
                 AddToken(TokenType.NUMBER, ushort.Parse(_source.Extract(_start, _current), NumberStyles.Integer, CultureInfo.InvariantCulture));
             }
             catch (OverflowException e)
             {
-                ThrowException("Value was too large for U16", e);
+                ThrowException(Resources.Scanner_U16OverflowMessage, e);
             }
         }
 
@@ -180,7 +180,7 @@ namespace VM.Software.Assembling.Scanning
 
             if (!IsHex(Peek()))
             {
-                ThrowException("Missing digits for hex value");
+                ThrowException(Resources.Scanner_HexMissingDigitsMessage);
             }
 
             while (IsHex(Peek()))
@@ -194,7 +194,7 @@ namespace VM.Software.Assembling.Scanning
             }
             catch (OverflowException e)
             {
-                ThrowException("Value was too large for U16", e);
+                ThrowException(Resources.Scanner_U16OverflowMessage, e);
             }
         }
 

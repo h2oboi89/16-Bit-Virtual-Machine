@@ -17,7 +17,7 @@ namespace VM.Hardware
         {
             if (sizeInBytes > ushort.MaxValue + 1)
             {
-                throw new ArgumentOutOfRangeException(nameof(sizeInBytes), "Must be in range [0x0000, 0x10000]");
+                throw new ArgumentOutOfRangeException(nameof(sizeInBytes), Resources.Memory_InvalidSizeMessage);
             }
 
             memory = new byte[sizeInBytes];

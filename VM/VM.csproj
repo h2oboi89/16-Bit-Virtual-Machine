@@ -70,6 +70,11 @@
     <Compile Include="Register.cs" />
     <Compile Include="Hardware\ResetEventArgs.cs" />
     <Compile Include="Hardware\Stack.cs" />
+    <Compile Include="Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
     <Compile Include="Software\Assembling\Assembler.cs" />
     <Compile Include="Software\Assembling\AssemblingException.cs" />
     <Compile Include="Software\Assembling\Parsing\Argument.cs" />
@@ -102,6 +107,12 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Software\Assembling\Grammar.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">

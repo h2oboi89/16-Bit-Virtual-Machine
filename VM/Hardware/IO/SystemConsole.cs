@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 
 namespace VM.Hardware.IO
 {
@@ -29,10 +30,12 @@ namespace VM.Hardware.IO
             System.Console.Clear();
             System.Console.CursorVisible = false;
 
+            System.Console.BackgroundColor = ConsoleColor.Blue;
+            System.Console.ForegroundColor = ConsoleColor.White;
+
             for (var i = 0; i < Height; i++)
             {
-                System.Console.SetCursorPosition(Width, i);
-                System.Console.Write(Environment.NewLine);
+                System.Console.WriteLine(string.Join("", Enumerable.Repeat(" ", Width)));
             }
         }
 
@@ -57,6 +60,7 @@ namespace VM.Hardware.IO
             System.Console.SetCursorPosition(0, Height);
             System.Console.WriteLine();
             System.Console.CursorVisible = true;
+            System.Console.ResetColor();
         }
     }
 }

@@ -5,27 +5,34 @@ using VM.Hardware;
 using VM.Hardware.IO;
 using VM.Software.Assembling;
 
-namespace VM.HelloWorld
+namespace VM.Terminal
 {
     class Program
     {
         const ushort CONSOLE_ADDRESS = 0xf000;
         const byte WIDTH = 80;
         const byte HEIGHT = 25;
-        const string PROGRAM_FILE = "Hello.VM";
 
-        static void Main()
+        static void Main(string[] args)
         {
-            var memory = new Memory(0x10000);
-            var console = new SystemConsole(memory, CONSOLE_ADDRESS, WIDTH, HEIGHT);
-            var processor = new Processor(memory, 0x800);
-            var flasher = new Flasher(memory);
+            if (args.Length == 0)
+            {
+                System.Console.WriteLine("Require program to run");
+                Environment.Exit(1);
+            }
 
-            var programFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, PROGRAM_FILE);
+            var file = args[0];
+
+            var programFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, file);
 
             string source = File.ReadAllText(programFile);
 
             var binary = Assembler.Assemble(source);
+
+            var memory = new Memory(0x10000);
+            var console = new SystemConsole(memory, CONSOLE_ADDRESS, WIDTH, HEIGHT);
+            var processor = new Processor(memory, 0x800);
+            var flasher = new Flasher(memory);
 
             flasher.Flash(binary);
 

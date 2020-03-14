@@ -1,0 +1,14 @@
+﻿; increment $R0 from 0 to 65,535 + 1
+
+	LDVR 	0		$R0
+	LDVR	0x0010 	$R1 ; Carry flag
+
+ITERATION_LOOP:
+
+	INC 	$R0
+	AND		$FLAG	$R1
+	JZ 		ITERATION_LOOP
+
+; Halt program
+
+	HALT

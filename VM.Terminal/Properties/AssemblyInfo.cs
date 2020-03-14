@@ -1,14 +1,15 @@
 ﻿using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("VM.HelloWorld")]
+[assembly: AssemblyTitle("VM.Terminal")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("VM.HelloWorld")]
+[assembly: AssemblyProduct("VM.Terminal")]
 [assembly: AssemblyCopyright("Copyright ©  2020")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -19,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("9874a16f-e896-4691-b4f2-acc92c9bfad6")]
+[assembly: Guid("b8454dc4-d3b3-43cc-acf5-80e0a8bf52df")]
 
 // Version information for an assembly consists of the following four values:
 //

@@ -105,7 +105,7 @@ package: tdd
 	@echo Copying to $(RELEASE_DIR) ...
 	@echo -----------------------------------
 	$(call copy_dll_to_release,VM)
-	$(call copy_exe_to_release,VM.HelloWorld)
+	$(call copy_exe_to_release,VM.Terminal)
 
 # Builds a release build.
 .PHONY: release

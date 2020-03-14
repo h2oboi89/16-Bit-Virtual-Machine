@@ -4,10 +4,10 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{9874A16F-E896-4691-B4F2-ACC92C9BFAD6}</ProjectGuid>
+    <ProjectGuid>{B8454DC4-D3B3-43CC-ACF5-80E0A8BF52DF}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <RootNamespace>VM.HelloWorld</RootNamespace>
-    <AssemblyName>VM.HelloWorld</AssemblyName>
+    <RootNamespace>VM.Terminal</RootNamespace>
+    <AssemblyName>VM.Terminal</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
@@ -48,13 +48,22 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+    <None Include="Bork.vm">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Fib.VM">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="Hello.VM">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Increment.VM">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\VM\VM.csproj">
-      <Project>{0205cef5-fbf3-4bb6-828e-9aea54f6294a}</Project>
+      <Project>{0205CEF5-FBF3-4BB6-828E-9AEA54F6294A}</Project>
       <Name>VM</Name>
     </ProjectReference>
   </ItemGroup>

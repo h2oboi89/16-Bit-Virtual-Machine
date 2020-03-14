@@ -1,4 +1,4 @@
-﻿; increment $R0 from 0 to 65,535 + 1
+﻿; increment $R0 from 0 to 2^17 (wraps back to 0 and sets carry flag)
 
 	LDVR 	0		$R0
 	LDVR	0x0010 	$R1 ; Carry flag

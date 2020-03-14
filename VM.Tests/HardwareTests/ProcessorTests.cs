@@ -726,6 +726,50 @@ namespace VM.HardwareTests.Tests
 
             AssertZeroValueAndFlag();
         }
+
+        [Test]
+        public void MOD_ModuloOfTwoRegisterValues()
+        {
+            FlashAndExecute(new string[]
+            {
+                "LDVR 0x0005 $R0",
+                "LDVR 0x0003 $R1",
+                "MOD $R0 $R1"
+            });
+
+            Assert.That(processor[Register.ACC], Is.EqualTo(0x0002));
+            Assert.That(processor[Flags.CARRY], Is.False);
+        }
+
+        [Test]
+        public void MOD_ByZero_ResetsAndThrowsException()
+        {
+            Flash(
+                "LDVR 0x1234 $R0",
+                "LDVR 0x0000 $R1",
+                "MOD $R0 $R1"
+            );
+
+            processor.Step();
+            processor.Step();
+
+            AssertExceptionOccursAndProcessorResets(
+                typeof(DivideByZeroException), Instruction.MOD,
+                "Attempted to divide by zero.");
+        }
+
+        [Test]
+        public void MOD_ZeroResult_SetsZeroFlag()
+        {
+            FlashAndExecute(new string[]
+            {
+                "LDVR 0x000f $R0",
+                "LDVR 0x0005 $R1",
+                "MOD $R0 $R1"
+            });
+
+            AssertZeroValueAndFlag();
+        }
         #endregion
 
         #region Bitwise

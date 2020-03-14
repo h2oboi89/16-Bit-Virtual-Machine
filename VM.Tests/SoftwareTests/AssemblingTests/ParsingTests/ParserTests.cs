@@ -24,6 +24,13 @@ namespace VM.Tests.SoftwareTests.AssemblingTests.ParsingTests
             }
         }
 
+        [Test]
+        public void NullTokens_ThrowsException()
+        {
+            Assert.That(() => Parser.Parse(null), Throws.ArgumentNullException
+                .With.Property("ParamName").EqualTo("tokens"));
+        }
+
         #region Statements
         [Test]
         public void Label()

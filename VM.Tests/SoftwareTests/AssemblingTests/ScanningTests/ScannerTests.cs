@@ -18,6 +18,13 @@ namespace VM.Tests.SoftwareTests.AssemblingTests.ScanningTests
         }
 
         [Test]
+        public void NullSource_ThrowsException()
+        {
+            Assert.That(() => Scanner.Scan(null), Throws.ArgumentNullException
+                .With.Property("ParamName").EqualTo("source"));
+        }
+
+        [Test]
         public void Whitespace_IsIgnored()
         {
             AssertEmptyInput(" \r\t\n \r\t", 2);

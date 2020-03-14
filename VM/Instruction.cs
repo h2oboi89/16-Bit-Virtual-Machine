@@ -122,26 +122,30 @@
 
         #region Arithmetic Instructions
         /// <summary>
-        /// Adds values in two registers and stores them in <see cref="Register.ACC"/> (A + B).<br/>
+        /// Adds values in two registers and stores result in <see cref="Register.ACC"/> (A + B).<br/>
         /// Arguments: A (<see cref="Register"/>), B (<see cref="Register"/>).
         /// </summary>
         ADD,
         /// <summary>
-        /// Subtracts values in two registers and stores them in <see cref="Register.ACC"/> (A - B).<br/>
+        /// Subtracts values in two registers and stores result in <see cref="Register.ACC"/> (A - B).<br/>
         /// Arguments: A (<see cref="Register"/>), B (<see cref="Register"/>).
         /// </summary>
         SUB,
         /// <summary>
-        /// Multiplies values in two registers and stores them in <see cref="Register.ACC"/> (A * B).<br/>
+        /// Multiplies values in two registers and stores result in <see cref="Register.ACC"/> (A * B).<br/>
         /// Arguments: A (<see cref="Register"/>), B (<see cref="Register"/>).
         /// </summary>
         MUL,
         /// <summary>
-        /// Divides values in two registers and stores them in <see cref="Register.ACC"/> (A / B).<br/>
+        /// Divides values in two registers and stores result in <see cref="Register.ACC"/> (A / B).<br/>
         /// Arguments: A (<see cref="Register"/>), B (<see cref="Register"/>).
         /// </summary>
         DIV,
-        // TODO: Modulo instruction?
+        /// <summary>
+        /// Divides values in two register and stores remainder in <see cref="Register.ACC"/> (A % B).<br/>
+        /// Arguments: A (<see cref="Register"/>), B (<see cref="Register"/>).
+        /// </summary>
+        MOD,
         #endregion
 
         #region Bitwise Instructions

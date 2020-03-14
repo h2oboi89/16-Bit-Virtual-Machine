@@ -15,6 +15,8 @@ namespace VM.Tests.HardwareTests.IOTests
 
         private Memory memory;
 
+        private int screenSize;
+
         [SetUp]
         public void SetUp()
         {
@@ -24,6 +26,8 @@ namespace VM.Tests.HardwareTests.IOTests
 
             memory = new Memory(120);
             console = new SystemConsole(memory, 10, 10, 10);
+
+            screenSize = (console.Width + Environment.NewLine.Length) * console.Height;
         }
 
         [TearDown]
@@ -69,28 +73,24 @@ namespace VM.Tests.HardwareTests.IOTests
         {
             var output = consoleOut.ToString();
 
-            Assert.That(output.Length, Is.EqualTo(console.Height * Environment.NewLine.Length));
+            Assert.That(output.Length, Is.EqualTo(screenSize));
         }
 
         [Test]
         public void WritingToValidMemory_UpdatesConsole()
         {
-            var endOfInput = console.Height * Environment.NewLine.Length;
-
             memory.SetU8(10, (byte)'#');
             memory.SetU8(109, (byte)'#');
 
             var output = consoleOut.ToString();
 
-            Assert.That(output[endOfInput], Is.EqualTo('#'));
-            Assert.That(output[endOfInput + 1], Is.EqualTo('#'));
+            Assert.That(output[screenSize], Is.EqualTo('#'));
+            Assert.That(output[screenSize + 1], Is.EqualTo('#'));
         }
 
         [Test]
         public void WritingOutsideConsoleMemory_DoesNothing()
         {
-            var endOfInput = console.Height * Environment.NewLine.Length;
-
             memory.SetU8(0, (byte)'#');
             memory.SetU8(9, (byte)'#');
             memory.SetU8(110, (byte)'#');
@@ -98,7 +98,7 @@ namespace VM.Tests.HardwareTests.IOTests
 
             var output = consoleOut.ToString();
 
-            Assert.That(output.Length, Is.EqualTo(endOfInput));
+            Assert.That(output.Length, Is.EqualTo(screenSize));
         }
     }
 }

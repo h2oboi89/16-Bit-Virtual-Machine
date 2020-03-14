@@ -314,6 +314,7 @@ namespace VM.Hardware
                 case Instruction.SUB:
                 case Instruction.MUL:
                 case Instruction.DIV:
+                case Instruction.MOD:
                 case Instruction.AND:
                 case Instruction.OR:
                 case Instruction.XOR:
@@ -451,6 +452,7 @@ namespace VM.Hardware
                 case Instruction.SUB:
                 case Instruction.MUL:
                 case Instruction.DIV:
+                case Instruction.MOD:
                 case Instruction.AND:
                 case Instruction.OR:
                 case Instruction.XOR:

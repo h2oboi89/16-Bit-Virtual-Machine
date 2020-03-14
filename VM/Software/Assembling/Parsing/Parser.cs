@@ -19,6 +19,8 @@ namespace VM.Software.Assembling.Parsing
         /// <returns>Abstract Syntax Tree that can be converted into binary.</returns>
         public static IEnumerable<Statement> Parse(IEnumerable<Token> tokens)
         {
+            if (tokens == null) throw new ArgumentNullException(nameof(tokens));
+            
             _tokens = new List<Token>(tokens);
             _current = 0;
 
@@ -105,6 +107,7 @@ namespace VM.Software.Assembling.Parsing
                 case Instruction.SUB:
                 case Instruction.MUL:
                 case Instruction.DIV:
+                case Instruction.MOD:
                 case Instruction.AND:
                 case Instruction.OR:
                 case Instruction.XOR:

@@ -175,6 +175,12 @@
                     Accumulator = (ushort)temp;
                     break;
 
+                case Instruction.MOD:
+                    temp = (uint)(valueA % valueB);
+
+                    Accumulator = (ushort)temp;
+                    break;
+
                 case Instruction.AND:
                     Accumulator = (ushort)(valueA & valueB);
                     break;

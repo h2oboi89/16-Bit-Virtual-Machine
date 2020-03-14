@@ -171,6 +171,30 @@ namespace VM.HardwareTests.Tests
         }
 
         [Test]
+        public void MOD_ModuloOfTwoValues()
+        {
+            alu.Execute(Instruction.MOD, 5, 3);
+
+            Assert.That(alu.Accumulator, Is.EqualTo(2));
+            Assert.That(alu.IsSet(Flags.CARRY), Is.False);
+        }
+
+        [Test]
+        public void MOD_ByZero_ThrowsException()
+        {
+            Assert.That(() => alu.Execute(Instruction.MOD, 0x1234, 0x0000), Throws.InstanceOf<DivideByZeroException>()
+                .With.Message.EqualTo("Attempted to divide by zero."));
+        }
+
+        [Test]
+        public void MOD_ZeroResult_SetsZeroFlag()
+        {
+            alu.Execute(Instruction.MOD, 5, 5);
+
+            AssertZeroValueAndFlag();
+        }
+
+        [Test]
         public void AND_BinaryAndOfTwoValues()
         {
             alu.Execute(Instruction.AND, 0x00ff, 0xaaaa);

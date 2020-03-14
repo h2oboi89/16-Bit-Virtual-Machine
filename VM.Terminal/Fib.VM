@@ -1,28 +1,28 @@
 ﻿START:
     ; initialize register values
-    LDVR 0 $R0
-    LDVR 1 $R1
-    LDVR 0x10 $R2
-    LDVR 0x00a0 $R3
-    LDVR 2 $R4
-    LDVR 0 $S0
-    LDVR 0xf000 $S1
+    LDVR 0 $R0      ; fib0
+    LDVR 1 $R1      ; fib 1
+    LDVR 0x10 $R2   ; carry flag
+    LDVR 0x1000 $R3 ; memory to store values at
+    LDVR 2 $R4      ; address increment
+    LDVR 0 $S0      ; number of fib numbers found
+    LDVR 0xf000 $S1 ; console address
 
     ; Save R0 and R1 value to memory
     STRR $R0 $R3
-    CALL 0 INCREMENT
+    CALL 0 INCREMENT_ADDRESS
     POP $T1 ; return value count (0)
     INC $S0
 
     STRR $R1 $R3
-    CALL 0 INCREMENT
+    CALL 0 INCREMENT_ADDRESS
     POP $T1 ; return value count (0)
     INC $S0
 
 LOOP:
     ; Check for overflow
     AND $T0 $R2
-    JNZ END
+    JNZ PRINT_NUMBERS
 
     ; increment number of numbers found
     INC $S0
@@ -41,34 +41,97 @@ LOOP:
     MOVE $ACC $R1
 
     ; Increment address to save fibonnaci values at
-    CALL 0 INCREMENT
+    CALL 0 INCREMENT_ADDRESS
     POP $T1 ; return value count (0)
 
     JUMP LOOP
 
-END:
+PRINT_NUMBERS:
     ; print all the values
-    LDVR 0x00a0 $S2
+    LDVR 0x1000 $R3
 
-PRINT:
+PRINT_LOOP:
+    ; are we done?
     CMPZ $S0
     JZ EXIT
 
-    LDRR $S2 $R0
-    STRR $R0 $S1
-    ADD $R4 $S1 ; console address
+    ; load next number
+    LDRR $R3 $R0
+    CALL 0 INCREMENT_ADDRESS
+
+    ; decrement number count
+    DEC $S0
+    MOVE $ACC $S0
+
+    ; print number
+    PUSH $R0
+    CALL 1 PRINT_NUMBER
+
+    ; space between numbers
+    INC $S1
     MOVE $ACC $S1
 
-    ADD $R4 $S2 ; values address
-    MOVE $ACC $S2
-
-    DEC $S0 ; number of values left
-    JUMP PRINT
+    JUMP PRINT_LOOP
 
 EXIT:
     HALT
 
-INCREMENT:
+;
+; INCREMENT MEMORY ADDRESS
+;
+INCREMENT_ADDRESS:
     ADD $R3 $R4
     MOVE $ACC $R3
+    RET 0
+
+;
+; PRINT NUMBER TO CONSOLE
+;
+PRINT_NUMBER:
+    ; get arg
+    MOVE $ARG $T0
+    LBVR 2 $T1
+    ADD $T0 $T1
+    LDRR $ACC $T0 ; number to print
+
+    LDVR 10 $T1
+    LDVR 0 $T2 ; number of digits
+    LDVR '0' $T3 ; int -> ascii offset
+
+DIGIT_LOOP:
+    ; get least significant digit
+    MOD $T0 $T1
+
+    ; convert to ascii and push on stack
+    ADD $ACC $T3
+    PUSH $ACC
+
+    ; increment number of digits
+    INC $T2
+    MOVE $ACC $T2
+
+    ; shift digits
+    DIV $T0 $T1
+    MOVE $ACC $T0
+
+    ; done if $T0 == 0
+    CMPZ $T0
+    JNZ DIGIT_LOOP
+
+PRINT_DIGITS:
+    ; print digit
+    POP $T0
+    SBRR $T0 $S1
+
+    ; increment console
+    INC $S1
+    MOVE $ACC $S1
+
+    DEC $T2
+    MOVE $ACC $T2
+
+    CMPZ $T2
+    JNZ PRINT_DIGITS
+
+END_PRINT_NUMBER:
     RET 0

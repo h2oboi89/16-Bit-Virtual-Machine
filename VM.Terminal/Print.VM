@@ -1,0 +1,50 @@
+﻿
+START:
+	; number to print
+	LDVR 12340 $R0
+	LDVR 10 $R1
+	LDVR 0 $R2
+
+	; offset for int -> ascii #
+	LDVR '0' $T0
+
+	; console address
+	LDVR 0xf000 $S0
+
+LOOP:
+	; get last digit
+	MOD $R0 $R1
+
+	; int -> ASCII and push on stack
+	ADD $ACC $T0
+	PUSH $ACC
+
+	; increment digit count
+	INC $R2
+	MOVE $ACC $R2
+
+	; shift digits
+	DIV $R0 $R1
+	MOVE $ACC $R0
+
+	; done if number == 0
+	CMPZ $R0
+	JNZ LOOP
+
+PRINT:
+	; get digit and print
+	POP $R0
+	SBRR $R0 $S0
+
+	; increment console
+	INC $S0
+	MOVE $ACC $S0
+
+	DEC $R2
+	MOVE $ACC $R2
+
+	CMPZ $R2
+	JNZ PRINT
+
+END:
+	HALT

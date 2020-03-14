@@ -22,7 +22,7 @@ namespace VM.Software.Assembling.Scanning
         /// <returns>Collection of <see cref="Token"/>s representing the source.</returns>
         public static IEnumerable<Token> Scan(string source)
         {
-            _source = source;
+            _source = source ?? throw new ArgumentNullException(nameof(source));
             _tokens = new List<Token>();
             _start = 0;
             _current = 0;

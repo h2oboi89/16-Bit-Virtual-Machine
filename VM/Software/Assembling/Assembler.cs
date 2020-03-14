@@ -17,6 +17,8 @@ namespace VM.Software.Assembling
         /// <returns>Collection of bytes representing executable.</returns>
         public static IEnumerable<byte> Assemble(string source)
         {
+            if (source == null) throw new ArgumentNullException(nameof(source));
+
             IEnumerable<Statement> statements;
 
             try
@@ -30,6 +32,7 @@ namespace VM.Software.Assembling
                     throw new AssemblingException(e.Message, e);
                 }
 
+                // Should only reach here if we encounter unexpected error
                 throw;
             }
 
@@ -68,7 +71,7 @@ namespace VM.Software.Assembling
 
         private static void CheckForDuplicate(this List<LabelStatement> labels, LabelStatement label)
         {
-            foreach(var labelStatement in labels)
+            foreach (var labelStatement in labels)
             {
                 if (labelStatement.Identifier == label.Identifier)
                 {
@@ -83,7 +86,8 @@ namespace VM.Software.Assembling
 
             foreach (var statement in statements)
             {
-                if (statement is InstructionStatement instructionStatement) {
+                if (statement is InstructionStatement instructionStatement)
+                {
                     instructionStatement.SetIdentifiers(labels);
                     binary.AddRange(instructionStatement.ToBytes());
                 }

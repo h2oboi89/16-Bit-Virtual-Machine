@@ -1,4 +1,8 @@
-﻿START:
+;
+; Prints all fibonacci numbers < 2^17
+;
+
+START:
     ; initialize register values
     LDVR 0 $R0      ; fib0
     LDVR 1 $R1      ; fib 1

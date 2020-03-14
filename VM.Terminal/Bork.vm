@@ -1,4 +1,5 @@
-﻿NOP
+; Fails to assemble with invalid instruction 'BORK'
+NOP
 NOP
 BORK
 NOP

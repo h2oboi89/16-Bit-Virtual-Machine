@@ -1,4 +1,6 @@
-﻿
+;
+; Prints a number to the console by converting it to ASCII from a U16
+;
 START:
 	; number to print
 	LDVR 12340 $R0

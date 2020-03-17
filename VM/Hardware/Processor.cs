@@ -94,7 +94,7 @@ namespace VM.Hardware
         public void ResetProcessor()
         {
             Initialize();
-            Reset(this, new ResetEventArgs(Instruction.NOP));
+            Reset?.Invoke(this, new ResetEventArgs(Instruction.NOP));
         }
 
         /// <summary>

@@ -1,0 +1,81 @@
+﻿<Window x:Class="VM.GUI.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:VM.GUI"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="450" Width="1000">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="35"></RowDefinition>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <ToolBar>
+            <!-- TODO: Replace words with icons -->
+            <Button Click="NewProgram_Button_Click">New Progam</Button>
+            <Button Click="LoadProgram_Button_Click">Load Progam</Button>
+            <Button Click="SaveProgram_Button_Click">Save Progam</Button>
+            <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" />
+            <Button Click="Assemble_Button_Click">Assemble</Button>
+            <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" />
+            <Button Click="ProgramRun_Button_Click">Run</Button>
+            <Button>Stop</Button>
+            <Button Click="ProgramStep_Button_Click">Step</Button>
+            <Button Click="Reset_Button_Click">Reset</Button>
+            <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" />
+            <TextBlock VerticalAlignment="Center">Speed:</TextBlock>
+            <Slider Width="200" TickPlacement="BottomRight" TickFrequency="10" IsSnapToTickEnabled="True"/>
+        </ToolBar>
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" MinWidth="80"/>
+                <!-- TODO: find height for 80 columns of text and newline -->
+                <ColumnDefinition Width="2"/>
+                <ColumnDefinition Width="*" MinWidth="25"/>
+            </Grid.ColumnDefinitions>
+
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" MinHeight="25"/>
+                    <RowDefinition Height="2"/>
+                    <RowDefinition Height="*" MinHeight="25"/>
+                    <!-- TODO: find height for 25 rows of text-->
+                </Grid.RowDefinitions>
+
+                <TextBox Name="Code" VerticalAlignment="Stretch" HorizontalAlignment="Stretch"/>
+
+                <GridSplitter Grid.Row="1" Height="2" ResizeDirection="Rows" VerticalAlignment="Center" HorizontalAlignment="Stretch"/>
+
+                <TextBox  Name="Console" Grid.Row="2" Background="Blue" Foreground="White" 
+                  MaxLines="25" MaxLength="80" MinLines="25" FontFamily="Consolas" 
+                  IsReadOnly="True" Cursor="None"
+                  VerticalAlignment="Stretch" HorizontalAlignment="Stretch"/>
+            </Grid>
+
+            <GridSplitter Grid.Column="1" Width="2" ResizeDirection="Columns" VerticalAlignment="Stretch" HorizontalAlignment="Center"/>
+
+            <Grid Grid.Column="2">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" MinHeight="25"/>
+                    <RowDefinition Height="2"/>
+                    <RowDefinition Height="*" MinHeight="25"/>
+                    <RowDefinition Height="2"/>
+                    <RowDefinition Height="*" MinHeight="25"/>
+                </Grid.RowDefinitions>
+
+                <ListView Name="Registers" Grid.Row="0" Background="Green" VerticalAlignment="Stretch" HorizontalAlignment="Stretch"/>
+
+                <GridSplitter Grid.Row="1" Height="2" ResizeDirection="Rows" VerticalAlignment="Center" HorizontalAlignment="Stretch"/>
+
+                <ListView Name="Stack" Grid.Row="2" Background="Yellow" VerticalAlignment="Stretch" HorizontalAlignment="Stretch"/>
+
+                <GridSplitter Grid.Row="3" Height="2" ResizeDirection="Rows" VerticalAlignment="Center" HorizontalAlignment="Stretch"/>
+                
+                <ListView Name="Memory" Grid.Row="4" Background="Orange" VerticalAlignment="Stretch" HorizontalAlignment="Stretch"/>
+            </Grid>
+        </Grid>
+    </Grid>
+</Window>

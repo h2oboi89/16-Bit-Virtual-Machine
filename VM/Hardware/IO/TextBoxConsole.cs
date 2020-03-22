@@ -26,8 +26,11 @@ namespace VM.Hardware.IO
                     text[i, j] = ' ';
                 }
 
-                text[i, Width] = Environment.NewLine[0];
-                text[i, Width + 1] = Environment.NewLine[1];
+                if (i + 1 != Height)
+                {
+                    text[i, Width] = Environment.NewLine[0];
+                    text[i, Width + 1] = Environment.NewLine[1];
+                }
             }
         }
 
